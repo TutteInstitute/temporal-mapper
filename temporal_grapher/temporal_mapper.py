@@ -4,6 +4,7 @@ import numpy as np
 from utilities_ import *
 from weighted_clustering import *
 from tqdm import tqdm, trange
+from sklearn.metrics import pairwise_distances
 
 '''TemporalGraph class 
 minimal usage example: 
@@ -35,7 +36,7 @@ class TemporalGraph():
     ----------
     time : ndarray
         time array (1 dim)
-    data : ndarry
+    data : ndarray
         data array (n dim)
     clusterer : sklearn clusterer
         the clusterer to use for the slice-wise clustering, must accept sample_weights
@@ -46,8 +47,24 @@ class TemporalGraph():
     show_outliers : bool
         If true, include unclustered points in the graph
     slice_method : str
-        One of 'time' or 'data'. If time, generates N_checkpoints evenly spaced in time. If data, generates 
-        N_checkpoints such that there are equal amounts of data between the points. 
+        One of 'time' or 'data'. If time, generates N_checkpoints evenly spaced in time. If data,
+        generates N_checkpoints such that there are equal amounts of data between the points. 
+    rate_sensitivity : float
+        A positive float, or -1. The rate parameter is raised to this parameter, so higher numbers
+        means that the algorithm is more sensitive to changes in rate. If rate_sensivity == -1, 
+        then the rate parameter is taken log2. 
+    kernel : function
+        A function with signiture f(t0, t, density, binwidth, epsilon=0.01, params=None).
+        Two options are included in weighted_clustering.py, `weighted_clustering.square` and 
+        `weighted_clustering.gaussian`.
+    kernel_parameters : tuple or None,
+        Passed to `kernel` as params kwarg.
+    precomputed_distances : ndarray
+        an (n_data, n_data) array of pairwise distances between points. If None then it will
+        be computed using `sklearn.metrics.pairwise_distances`.
+    verbose : bool
+        Does what you expect.
+    
 
     G : networkx.classes.Digraph(Graph)
         The temporal graph itself.
@@ -66,6 +83,7 @@ class TemporalGraph():
         rate_sensitivity = 1,
         kernel = gaussian,
         kernel_params = None,
+        precomputed_distances = None,
         verbose=False,
     ):
         if np.size(time) != np.shape(data)[0]:
@@ -77,6 +95,9 @@ class TemporalGraph():
 
         self.time = np.array(time)
         self.N_data = np.size(time)
+        if len(data.shape) == 1:
+            data=data.reshape(-1,1)
+        self.n_components = data.shape[1]
         self.data = data
         self.checkpoints = checkpoints
         if slice_method in ['time','data']:
@@ -107,10 +128,15 @@ class TemporalGraph():
         self.verbose=verbose
         self.disable = not verbose # tqdm
         self.show_outliers = False
+        self.distances = precomputed_distances
+        if precomputed_distances is None:
+            self.distances = pairwise_distances(data)
 
     def _compute_checkpoints(self):
         if self.slice_method == 'data':
-            checkpoints = self.time[np.linspace(0, N_data, self.N_checkpoints+2)[1:-1]]
+            idx = np.linspace(0, self.N_data, self.N_checkpoints+2)[1:-1]
+            idx = np.array([int(x) for x in idx])
+            checkpoints = self.time[idx]
         if self.slice_method == 'time':
             checkpoints = np.linspace(np.amin(self.time), np.amax(self.time), self.N_checkpoints+2)[1:-1]
         self.checkpoints = checkpoints
@@ -121,13 +147,29 @@ class TemporalGraph():
             self._compute_checkpoints()
         if self.verbose:
             print("Computing spatial density...")
+        data_width = np.mean(
+            [np.amax(self.data[:,k])-np.amin(self.data[:,k])
+             for k in range(self.data.shape[1])]     
+        )
         rates = compute_point_rates(
             self.data,
             self.time,
+            self.distances,
             sensitivity=self.sensitivity,
+            width=data_width/10,
         )
-        self.densities = rates
-        return rates
+        iso_idx = (rates==np.inf)
+        nisolated = np.size((iso_idx).nonzero())
+        if nisolated != 0:
+            print(f'Warning: You have {nisolated} isolated points. If this is a small number, its probably fine.')
+        densities = 1/rates
+        densities = sigmoid(densities, np.median(densities))
+        if self.sensitivity == -1:
+            self.densities = 1/(1-np.log2(densities))
+        else:
+            self.densities = densities**self.sensitivity
+        self.densities[iso_idx] = 0
+        return self.densities
 
     def _cluster(self):
         if self.densities is None:
@@ -288,19 +330,25 @@ class TemporalGraph():
             self.G[u][v]['dst_weight'] = percentage_inweight
         
     def populate_node_attrs(self, cmap=None, labels=None):
+        pos = False #todo fix
+        if self.n_components == 2:
+            pos = True
         # Add colours and cluster name labels to the vertices.
         t_attrs = nx.get_node_attributes(self.G, 'slice_no')
         cl_attrs = nx.get_node_attributes(self.G, 'cluster_no')
-        avg_xpos = compute_cluster_yaxis(self.clusters, self.data[:,0])
-        avg_ypos = compute_cluster_yaxis(self.clusters, self.data[:,1])
+        if pos:
+            avg_xpos = compute_cluster_yaxis(self.clusters, self.data[:,0])
+            avg_ypos = compute_cluster_yaxis(self.clusters, self.data[:,1])
         clr_list = {}
         size_list = {}
         pos_list = {}
         for node in self.G.nodes():
             t_idx = t_attrs[node]
             cl_idx = cl_attrs[node]
-            node_xpos = avg_xpos[t_idx][cl_idx]
-            node_ypos = avg_ypos[t_idx][cl_idx]
+            if pos:
+                node_xpos = avg_xpos[t_idx][cl_idx]
+                node_ypos = avg_ypos[t_idx][cl_idx]
+                pos_list[node] = (node_xpos, node_ypos)
             if cmap:
                 clr = cmap(node_xpos, node_ypos)/255
             else:
@@ -309,11 +357,12 @@ class TemporalGraph():
             
             size = np.size(self.get_vertex_data(node))
             size_list[node] = size
-            pos_list[node] = (node_xpos, node_ypos)
+
             
         nx.set_node_attributes(self.G, clr_list, "colour")
         nx.set_node_attributes(self.G, size_list, "count")
-        nx.set_node_attributes(self.G, pos_list, "pos")
+        if pos:
+            nx.set_node_attributes(self.G, pos_list, "pos")
     
     def get_vertex_data(self, node, ghost=False):
         t_idx = self.G.nodes()[node]['slice_no']
@@ -336,19 +385,17 @@ class TemporalGraph():
         nx.draw_networkx_edges(
             G, pos, edgelist=esmall, width=0.5*edge_width, alpha=0.5, edge_color="b", style="dashed"
         )
-        nx.draw_networkx_edges(G, pos, edgelist=elarge, width=3)
+        nx.draw_networkx_edges(G, pos, edgelist=elarge, width=1, arrows=False)
         if label_edges:
             edge_labels = nx.get_edge_attributes(G, "weight")
             nx.draw_networkx_edge_labels(G, pos, edge_labels)
 
-        node_size = [np.size(self.get_vertex_data(node)) for node in vertices]
-        avg_xpos = compute_cluster_yaxis(self.clusters, self.data[:,0])
-        avg_ypos = compute_cluster_yaxis(self.clusters, self.data[:,1])
+        node_size = [5*np.log2(np.size(self.get_vertex_data(node))) for node in vertices]
         clr_dict = nx.get_node_attributes(self.G, 'colour')
         node_clr = [clr_dict[node] for node in vertices]
 
-        nx.draw_networkx_nodes(G, pos, node_size=node_size,node_color=node_clr)
-        nx.draw_networkx_labels(G, pos)
+        nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color=node_clr)
+        #nx.draw_networkx_labels(G, pos)
         ax = plt.gca()
 
         return ax

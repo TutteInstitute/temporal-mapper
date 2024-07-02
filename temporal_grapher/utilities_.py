@@ -4,6 +4,9 @@ import numpy as np
 from vectorizers.transformers import InformationWeightTransformer
 from vectorizers import NgramVectorizer
 
+def sigmoid(x, mu):
+    return 1/(1+np.exp(-(x-mu)))
+
 def cluster_avg_1D(cluster_data, y_data):
     #  Average out the y_data in each cluster,
     # to use as y-axis positions for the graph visualization

@@ -1,6 +1,6 @@
-## (Unclassified//OUO) Mapper' V.0.1 - June '24
+## (Unclassified//OUO) Mapper' V.0.2 - July 2nd '24
 This is a mostly-working version of the mapper' code for generating graphs & sankey diagrams of timestamped data.
-Direct questions to Kaleb D. Ruscitti; (kaleb.ruscitti@cse-cst.gc.ca before Aug 23 2024, or kaleb.ruscitti@uwaterloo.ca afterthat).
+Direct questions to Kaleb D. Ruscitti; (kaleb.ruscitti@cse-cst.gc.ca before Aug 23 2024, or kaleb.ruscitti@uwaterloo.ca after that).
 
 ### Components
 There are three subcomponents
@@ -16,7 +16,7 @@ Worst case scenario you can just manually install all the usual packages. Just d
 avoid collisions.
 
 ### Usage
-The file `DemoV0.1.ipynb` is a start-to-finish example of how to generate a Sankey diagram with this package.
+The file `DemoV0.2.ipynb` is a start-to-finish example of how to generate a Sankey diagram with this package.
 
 ### Parameters
 Since temporal grapher is mostly undocumented, let me quickly mention a few choices you can make. 
@@ -50,4 +50,4 @@ wide, and so on. The option -1 sets the scale to be logarithmic; 10x as dense = 
 ### A note on the Holoviews code
 I'm not sure why, but sometimes when you try to plot the Sankey diagram it throws an error like `no plotting option Sankey`
 (I can't recreate it and I don't remember exactly what the error says). If this happens just reload the kernel and run 
-the code again top-down. Not sure what is causing this one.
+the code again top-down.

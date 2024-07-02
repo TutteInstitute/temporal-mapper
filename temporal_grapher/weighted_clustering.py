@@ -6,9 +6,8 @@ import pandas as pd
 import math
 import numba
 from warnings import warn
-from sklearn.neighbors import NearestNeighbors
 
-def gaussian(t0, t, density, binwidth, epsilon = 0.1):
+def gaussian(t0, t, density, binwidth, epsilon = 0.01, params=None):
     K = -np.log(epsilon)/((binwidth/2)**2) 
     return np.exp(-K*(density*(t-t0))**2)
 
@@ -27,38 +26,45 @@ def window(distance, width=1):
     else:
         return 0
 
-def compute_point_rates(data, time, k=250, width=1, sensitivity=1):
-    nbrs = NearestNeighbors(n_neighbors=k).fit(data)
-    distances, indices = nbrs.kneighbors(data)
-    avg_knn_dist = np.min(distances[:,-1])
+def compute_point_rates(data, time, distances, width=1, sensitivity=1):
+    data_width = np.mean(
+        [np.amax(data[:,k])-np.amin(data[:,k])
+         for k in range(data.shape[1])]     
+    )
+    d_max = 100*data_width/np.size(time)
     lambdas = np.zeros(np.size(time))
     for i,d in enumerate(distances):
-        idx=(d<=avg_knn_dist).nonzero()[0]
-        vals_in_series = time[indices[i,idx]]
+        t0 = time[i]
+        idx=(d<=d_max).nonzero()[0]
+        vals_in_series = time[idx]
         vals_in_series.sort()
-        if np.size(indices[i,idx])==1:
+        t0_index = np.where(vals_in_series == t0)[0][0]
+        deltas=np.diff(vals_in_series)
+        np.roll(deltas, -t0_index)
+        N=np.size(deltas)
+        time_weights = np.zeros(N)
+        for k, _ in enumerate(deltas):
+            time_weights[k] = min(
+                [k, np.abs(k-(N-1))]
+            )
+        time_weights = np.exp(-time_weights)
+        if np.size(idx)==1:
             lambdas[i] = 0
         else:
-            lambdas[i] = np.mean(np.diff(vals_in_series))
+            lambdas[i] = np.average(deltas, weights=time_weights)
     # apply the window:
     smoothed_lambdas = np.zeros(np.size(time))
-    for idx, pt in enumerate(data):
+    for j, d in enumerate(distances):
         val = 0
-        val += lambdas[idx]
-        for i in range(k):
-            val += window(distances[idx][i], width)*lambdas[indices[idx][i]]
-        smoothed_lambdas[idx] = val
-    zero_idx = (smoothed_lambdas == 0)
-    nisolated = np.size((zero_idx).nonzero())
-    if nisolated != 0:
-        print(f'Warning: You have {nisolated} isolated points. If this is a small number, its probably fine.')
-    rates = 1/smoothed_lambdas
-    if sensitivity == -1:
-        rates = np.log10(rates)
-    else:
-        rates = rates**sensitivity
-    rates /= np.amax(rates[~zero_idx])
-    rates[zero_idx] = 1
+        norm = 0
+        idx=(d<=10*d_max).nonzero()[0]
+        for i in idx:
+            val += window(d[i], width)*lambdas[i]
+            norm +=  window(d[i], width)
+        smoothed_lambdas[j] = val/norm
+    iso_idx = (smoothed_lambdas == 0)
+    rates = smoothed_lambdas 
+    rates[iso_idx] = np.inf
     return rates
 
 def weighted_clusters(
@@ -90,7 +96,11 @@ def weighted_clusters(
                 )
         slice_ = (weights[idx] >= eps).nonzero()
         slice_ = np.squeeze(slice_)
-        cluster_labels = clusterer.fit(data[slice_], sample_weight=weights[idx,slice_]).labels_
+        try:
+            cluster_labels = clusterer.fit(data[slice_], sample_weight=weights[idx,slice_]).labels_
+        except(ValueError):
+            data_reshape = data[slice_].reshape(-1,1)
+            cluster_labels = clusterer.fit(data_reshape, sample_weight=weights[idx,slice_]).labels_
         clusters[idx, slice_] = cluster_labels
     
     return clusters, weights
