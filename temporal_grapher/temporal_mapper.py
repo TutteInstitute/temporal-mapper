@@ -5,14 +5,16 @@ from utilities_ import *
 from weighted_clustering import *
 from tqdm import tqdm, trange
 from sklearn.metrics import pairwise_distances
+from sklearn.preprocessing import StandardScaler
+from scipy.sparse import issparse
 
 '''TemporalGraph class 
 minimal usage example: 
 
     # load from your data file:
-    data : (n_dim, N_data) array
-    time : (N_data,) array
-    semantic_dist : (N_data,) array
+    data : (n_dim, N_data) array-like
+    time : (N_data,) array-like
+    semantic_dist : (N_data,) array-like
     # choose an sklearn clusterer:
     clusterer = HDBSCAN()
 
@@ -34,58 +36,70 @@ class TemporalGraph():
 
     Attributes
     ----------
-    time : ndarray
-        time array (1 dim)
-    data : ndarray
-        data array (n dim)
-    clusterer : sklearn clusterer
-        the clusterer to use for the slice-wise clustering, must accept sample_weights
-    N_checkpoints : int
-        number of time-points at which to cluster
-    checkpoints : arraylike
-        array of time-points at which to cluster
-    show_outliers : bool
-        If true, include unclustered points in the graph
-    slice_method : str
-        One of 'time' or 'data'. If time, generates N_checkpoints evenly spaced in time. If data,
-        generates N_checkpoints such that there are equal amounts of data between the points. 
-    rate_sensitivity : float
-        A positive float, or -1. The rate parameter is raised to this parameter, so higher numbers
-        means that the algorithm is more sensitive to changes in rate. If rate_sensivity == -1, 
-        then the rate parameter is taken log2. 
-    kernel : function
-        A function with signiture f(t0, t, density, binwidth, epsilon=0.01, params=None).
-        Two options are included in weighted_clustering.py, `weighted_clustering.square` and 
-        `weighted_clustering.gaussian`.
-    kernel_parameters : tuple or None,
-        Passed to `kernel` as params kwarg.
-    precomputed_distances : ndarray
-        an (n_data, n_data) array of pairwise distances between points. If None then it will
-        be computed using `sklearn.metrics.pairwise_distances`.
-    verbose : bool
-        Does what you expect.
-    
-
     G : networkx.classes.Digraph(Graph)
         The temporal graph itself.
+    density : ndarray
+        The f-density \rho for each data point.
+        
     Methods
     -------
     build(ydata=None):
         Perform all operations necessary to construct the graph.
     """
+    
     def __init__(
         self, time, data, clusterer, 
-        N_checkpoints=None,
-        clusters=None,
-        checkpoints=None,
-        show_outliers=False,
+        N_checkpoints = None,
+        resolution = 10,
+        overlap = 0.5,
+        clusters = None,
+        checkpoints = None,
+        show_outliers = False,
         slice_method = 'time',
         rate_sensitivity = 1,
         kernel = gaussian,
         kernel_params = None,
-        precomputed_distances = None,
-        verbose=False,
+        verbose = False,
     ):
+        """
+        Parameters 
+        ----------
+        time : ndarray
+            time array (1 dim)
+        data : ndarray
+            data array (n dim)
+        clusterer : sklearn clusterer
+            the clusterer to use for the slice-wise clustering, must accept sample_weights
+        N_checkpoints : int
+            number of time-points at which to cluster
+        checkpoints : arraylike
+            array of time-points at which to cluster
+        overlap : float
+            A float in (0,1) which specifies the `g` parameter (see README)
+        resolution: float
+            Determines the distance around each point which we use as a neighbourhood for 
+            determining the f-rate. If you get a warning about isolated points, you should
+            increase this parameter. If you plot the density and it is not very smooth
+            you can increase this parameter.
+        show_outliers : bool
+            If true, include unclustered points in the graph
+        slice_method : str
+            One of 'time' or 'data'. If time, generates N_checkpoints evenly spaced in time. If data,
+            generates N_checkpoints such that there are equal amounts of data between the points. 
+        rate_sensitivity : float
+            A positive float, or -1. The rate parameter is raised to this parameter, so higher numbers
+            means that the algorithm is more sensitive to changes in rate. If rate_sensivity == -1, 
+            then the rate parameter is taken log2. 
+        kernel : function
+            A function with signature f(t0, t, density, binwidth, epsilon=0.01, params=None).
+            Two options are included in weighted_clustering.py, `weighted_clustering.square` and 
+            `weighted_clustering.gaussian`.
+        kernel_parameters : tuple or None,
+            Passed to `kernel` as params kwarg.
+        verbose : bool
+            Does what you expect.
+        
+        """
         if np.size(time) != np.shape(data)[0]:
             raise AttributeError("Number of datapoints",
                                  np.shape(data)[0],
@@ -98,7 +112,11 @@ class TemporalGraph():
         if len(data.shape) == 1:
             data=data.reshape(-1,1)
         self.n_components = data.shape[1]
-        self.data = data
+        if issparse(data):
+            self.scaler = StandardScaler(copy=False, with_mean=False)
+        else:
+            self.scaler = StandardScaler(copy=False)
+        self.data = self.scaler.fit_transform(data)
         self.checkpoints = checkpoints
         if slice_method in ['time','data']:
             self.slice_method = slice_method
@@ -106,10 +124,8 @@ class TemporalGraph():
             raise AttributeError("Accepted slice_method is 'time' or 'data'.")
         if checkpoints is not None:
             self.N_checkpoints = np.size(checkpoints)
-            if (np.size(slices) == N_slices):
-                self.N_checkpoints = N_checkpoints
-            else: 
-                raise AttributeError("If you pass checkpoints and N_checkpoints, then len(checkpoints) must equal N_checkpoints.")
+            if not (self.N_checkpoints == N_checkpoints):
+                raise AttributeError("Given checkpoints and N_checkpoints, len(checkpoints) must equal N_checkpoints.")
         else:
             if N_checkpoints is not None:
                 self.N_checkpoints = N_checkpoints
@@ -118,7 +134,8 @@ class TemporalGraph():
 
         self.clusterer = clusterer
         self.clusters = clusters
-        self.densities = None
+        self.g = overlap
+        self.density = None
         self.sensitivity = rate_sensitivity
         self.kernel = kernel
         self.kernel_params = kernel_params
@@ -128,9 +145,10 @@ class TemporalGraph():
         self.verbose=verbose
         self.disable = not verbose # tqdm
         self.show_outliers = False
-        self.distances = precomputed_distances
-        if precomputed_distances is None:
-            self.distances = pairwise_distances(data)
+        self.resolution = resolution
+        if self.verbose:
+            print("Computing pairwise distances...")
+        self.distance = pairwise_distances(data)
 
     def _compute_checkpoints(self):
         if self.slice_method == 'data':
@@ -142,7 +160,7 @@ class TemporalGraph():
         self.checkpoints = checkpoints
         return checkpoints
 
-    def _compute_densities(self):
+    def _compute_density(self):
         if self.checkpoints is None:
             self._compute_checkpoints()
         if self.verbose:
@@ -154,33 +172,33 @@ class TemporalGraph():
         rates = compute_point_rates(
             self.data,
             self.time,
-            self.distances,
+            self.distance,
+            self.resolution*data_width,
             sensitivity=self.sensitivity,
-            width=data_width/10,
         )
         iso_idx = (rates==np.inf)
         nisolated = np.size((iso_idx).nonzero())
         if nisolated != 0:
-            print(f'Warning: You have {nisolated} isolated points. If this is a small number, its probably fine.')
-        densities = 1/rates
-        densities = sigmoid(densities, np.median(densities))
+            print(f'Warning: You have {nisolated} isolated points. If this is a small number, its probably fine. Otherwise, increase the resolution parameter.')
+        density = 1/rates
+        density = std_sigmoid(density)
         if self.sensitivity == -1:
-            self.densities = 1/(1-np.log2(densities))
+            self.density = 1/(1-np.log2(density))
         else:
-            self.densities = densities**self.sensitivity
-        self.densities[iso_idx] = 0
-        return self.densities
+            self.density = density**self.sensitivity
+        self.density[iso_idx] = np.amin(density[~iso_idx])
+        return self.density
 
     def _cluster(self):
-        if self.densities is None:
-            self._compute_densities()
+        if self.density is None:
+            self._compute_density()
         if self.verbose:
             print("Clusting at each time slice...")
         clusters, weights = weighted_clusters(
             self.data,
             self.time,
             self.checkpoints,
-            self.densities,
+            self.density,
             self.clusterer,
             self.kernel,
             self.kernel_params,
@@ -279,7 +297,7 @@ class TemporalGraph():
                 adj_mat[l][k] += self.kernel(
                     time_centers[i],
                     self.time[j],
-                    self.densities[j],
+                    self.density[j],
                     bin_width[i],
                     params=self.kernel_params
                 )

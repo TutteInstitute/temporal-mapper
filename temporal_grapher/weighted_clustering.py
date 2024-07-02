@@ -20,18 +20,13 @@ def square(t0, t, density, binwidth, epsilon = 0.1, params=(1,)):
     return out
     
 def window(distance, width=1):
-    # default to 10 because UMAP 
     if np.abs(distance) < width:
         return (1/2)*(1+np.cos(np.pi*distance/width))
     else:
         return 0
 
-def compute_point_rates(data, time, distances, width=1, sensitivity=1):
-    data_width = np.mean(
-        [np.amax(data[:,k])-np.amin(data[:,k])
-         for k in range(data.shape[1])]     
-    )
-    d_max = 100*data_width/np.size(time)
+def compute_point_rates(data, time, distances, width, sensitivity=1):
+    d_max = width/np.size(time)
     lambdas = np.zeros(np.size(time))
     for i,d in enumerate(distances):
         t0 = time[i]
@@ -52,16 +47,19 @@ def compute_point_rates(data, time, distances, width=1, sensitivity=1):
             lambdas[i] = 0
         else:
             lambdas[i] = np.average(deltas, weights=time_weights)
+    iso_idx = (lambdas == 0).nonzero()
     # apply the window:
     smoothed_lambdas = np.zeros(np.size(time))
     for j, d in enumerate(distances):
         val = 0
         norm = 0
-        idx=(d<=10*d_max).nonzero()[0]
+        idx=(d<=25*d_max).nonzero()[0]
         for i in idx:
-            val += window(d[i], width)*lambdas[i]
-            norm +=  window(d[i], width)
+            val += window(d[i], 5*d_max)*lambdas[i]
+            norm +=  window(d[i], 5*d_max)
         smoothed_lambdas[j] = val/norm
+
+    #smoothed_lambdas = lambdas
     iso_idx = (smoothed_lambdas == 0)
     rates = smoothed_lambdas 
     rates[iso_idx] = np.inf

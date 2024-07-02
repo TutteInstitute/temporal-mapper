@@ -4,12 +4,15 @@ import numpy as np
 from vectorizers.transformers import InformationWeightTransformer
 from vectorizers import NgramVectorizer
 
-def sigmoid(x, mu):
-    return 1/(1+np.exp(-(x-mu)))
+def std_sigmoid(x):
+    mu = np.mean(x)
+    std = np.std(x)
+    transform=(x-mu)/(std)
+    return 1/(1+np.exp(-1*transform))
 
 def cluster_avg_1D(cluster_data, y_data):
-    #  Average out the y_data in each cluster,
-    # to use as y-axis positions for the graph visualization
+    ''' Average out the y_data in each cluster,
+     to use as y-axis positions for the graph visualization '''
     clusters = np.unique(cluster_data)
     avg_arr = np.zeros(np.shape(clusters))
     i = 0
@@ -27,7 +30,7 @@ def cluster_avg_1D(cluster_data, y_data):
     return avg_arr
 
 def cluster_most_common(cluster_data, y_data):
-    # Get the most common y_data val in each cluster
+    ''' Get the most common y_data val in each cluster '''
     clusters = np.unique(cluster_data)
     most_arr = np.zeros(np.shape(clusters), dtype=int)
     i = 0
@@ -44,6 +47,7 @@ def cluster_most_common(cluster_data, y_data):
     return most_arr
 
 def graph_to_holoviews(G,dataset_func=None):
+    ''' Take TemporalGraph.G and output the required HoloViews objects for a modified Sankey diagram.''' 
     nxNodes = G.nodes()
     nodes = nxNodes  # lol
     cnt = 0
@@ -98,7 +102,9 @@ def compute_cluster_yaxis(clusters, semantic_dist, func=cluster_avg_1D):
 
     return y_data
 
-def generate_keyword_labels(word_bags, TG, newline=True):
+def generate_keyword_labels(word_bags, TG, n_words=3, sep=' '):
+    """ Using a bag of words corresponding to each data point, get highly informative
+    keywords for each cluster """
     ngram_vectorizer = NgramVectorizer()
     ngram_vectors = ngram_vectorizer.fit_transform(word_bags)
     ## Building cluster labels (crudely)
@@ -123,11 +129,13 @@ def generate_keyword_labels(word_bags, TG, newline=True):
         cluster_keywords = []
         for cl_vector in weighted_vectors:
             cl_vector = np.squeeze(cl_vector)
-            first_, second_, third_ = np.argsort(cl_vector)[-3:]
-            w1 = ngram_vectorizer._inverse_token_dictionary_[first_]
-            w2 = ngram_vectorizer._inverse_token_dictionary_[second_]
-            w3 = ngram_vectorizer._inverse_token_dictionary_[third_]
-            row = np.array([w1,w2,w3])
+            highest = np.argsort(cl_vector)[-n_words:]
+            row = []
+            for k in highest:
+                word = ngram_vectorizer._inverse_token_dictionary_[k]
+                row.append(word)
+            #w2 = ngram_vectorizer._inverse_token_dictionary_[second_]
+            row = np.array(row)
             cluster_keywords.append(row)
         keywords.append(cluster_keywords)
         t_attrs = nx.get_node_attributes(TG.G, 'slice_no')
@@ -137,11 +145,13 @@ def generate_keyword_labels(word_bags, TG, newline=True):
         t_idx = t_attrs[node]
         cl_idx = cl_attrs[node]
         words = keywords[t_idx][cl_idx]
-        if newline:
-            label_attrs[node] = words[0]+'\n'+words[1]+'\n'+words[2] 
-        else:
-            label_attrs[node] = words[0]+' '+words[1]+' '+words[2] 
-    
+        s = ''
+        for word in words[:-1]:
+            s += word+sep
+        s += word[-1] 
+        label_attrs[node] = s
+
+    print("Complete.        ")
     nx.set_node_attributes(TG.G, label_attrs, 'label')
     return TG
 
