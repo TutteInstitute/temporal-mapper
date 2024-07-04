@@ -1,3 +1,4 @@
+''' modified: 2024-07-04 ~10am'''
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -45,6 +46,18 @@ def cluster_most_common(cluster_data, y_data):
         i += 1
 
     return most_arr
+
+def epsilon_balls(data, epsilon):
+    ''' Return (distances, indices) of points in B(r,x) '''
+    distances=[]
+    indices=[]
+    for x in data:
+        d = np.linalg.norm(x-data, axis=1)
+        idx = (d<epsilon).nonzero()
+        dist = d[idx]
+        distances.append(dist)
+        indices.append(idx)
+    return distances, indices
 
 def graph_to_holoviews(G,dataset_func=None):
     ''' Take TemporalGraph.G and output the required HoloViews objects for a modified Sankey diagram.''' 

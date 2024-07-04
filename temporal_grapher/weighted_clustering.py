@@ -1,3 +1,4 @@
+''' modified: 2024-07-04 ~10am'''
 import fast_hdbscan ## This is the modified local copy!
 
 import sys
@@ -5,6 +6,7 @@ import numpy as np
 import pandas as pd
 import math
 import numba
+from tqdm import tqdm, trange
 from warnings import warn
 
 def gaussian(t0, t, density, binwidth, epsilon = 0.01, params=None):
@@ -20,20 +22,17 @@ def square(t0, t, density, binwidth, epsilon = 0.1, params=(1,)):
     return out
     
 def window(distance, width=1):
-    if np.abs(distance) < width:
-        return (1/2)*(1+np.cos(np.pi*distance/width))
-    else:
-        return 0
+    distance[np.abs(distance)>=width] = 0
+    distance[np.abs(distance)<width] = (1/2)*(1+np.cos(np.pi*distance/width))
 
-def compute_point_rates(data, time, distances, width, sensitivity=1):
-    d_max = width/np.size(time)
+def compute_point_rates(data, time, distances, width):
     lambdas = np.zeros(np.size(time))
-    for i,d in enumerate(distances):
+    for i,d in tqdm(enumerate(distances), desc='Computing f-rates'):
         t0 = time[i]
-        idx=(d<=d_max).nonzero()[0]
+        idx=(d<=width).nonzero()[0]
         vals_in_series = time[idx]
         vals_in_series.sort()
-        t0_index = np.where(vals_in_series == t0)[0][0]
+        t0_index = np.squeeze(np.where(vals_in_series == t0))
         deltas=np.diff(vals_in_series)
         np.roll(deltas, -t0_index)
         N=np.size(deltas)
@@ -44,26 +43,12 @@ def compute_point_rates(data, time, distances, width, sensitivity=1):
             )
         time_weights = np.exp(-time_weights)
         if np.size(idx)==1:
-            lambdas[i] = 0
+            lambdas[i] = np.inf
         else:
             lambdas[i] = np.average(deltas, weights=time_weights)
-    iso_idx = (lambdas == 0).nonzero()
-    # apply the window:
-    smoothed_lambdas = np.zeros(np.size(time))
-    for j, d in enumerate(distances):
-        val = 0
-        norm = 0
-        idx=(d<=25*d_max).nonzero()[0]
-        for i in idx:
-            val += window(d[i], 5*d_max)*lambdas[i]
-            norm +=  window(d[i], 5*d_max)
-        smoothed_lambdas[j] = val/norm
+            
+    return lambdas
 
-    #smoothed_lambdas = lambdas
-    iso_idx = (smoothed_lambdas == 0)
-    rates = smoothed_lambdas 
-    rates[iso_idx] = np.inf
-    return rates
 
 def weighted_clusters(
     data,

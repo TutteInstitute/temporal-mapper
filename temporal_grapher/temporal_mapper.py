@@ -1,3 +1,4 @@
+''' modified: 2024-07-04 ~10am'''
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -136,6 +137,7 @@ class TemporalGraph():
         self.clusters = clusters
         self.g = overlap
         self.density = None
+        self.rate = None
         self.sensitivity = rate_sensitivity
         self.kernel = kernel
         self.kernel_params = kernel_params
@@ -146,9 +148,18 @@ class TemporalGraph():
         self.disable = not verbose # tqdm
         self.show_outliers = False
         self.resolution = resolution
+        self.distance = None
+
+    def _compute_epsilon_balls(self):
         if self.verbose:
-            print("Computing pairwise distances...")
-        self.distance = pairwise_distances(data)
+            print("Computing epsilon balls...")
+        self.data_width = np.mean(
+            [np.amax(self.data[:,k])-np.amin(self.data[:,k])
+             for k in range(self.data.shape[1])]     
+        )
+        self.epsilon = (self.data_width*self.resolution)/self.N_data
+        # compute 10x the epsilon ball b.c. we need the rest for smoothing later
+        self.distance, self.dist_indices = epsilon_balls(self.data, 10*self.epsilon) 
 
     def _compute_checkpoints(self):
         if self.slice_method == 'data':
@@ -163,37 +174,46 @@ class TemporalGraph():
     def _compute_density(self):
         if self.checkpoints is None:
             self._compute_checkpoints()
+        if self.distance is None:
+            self._compute_epsilon_balls()
         if self.verbose:
             print("Computing spatial density...")
-        data_width = np.mean(
-            [np.amax(self.data[:,k])-np.amin(self.data[:,k])
-             for k in range(self.data.shape[1])]     
-        )
-        rates = compute_point_rates(
+        self.rate = compute_point_rates(
             self.data,
             self.time,
             self.distance,
-            self.resolution*data_width,
-            sensitivity=self.sensitivity,
+            self.epsilon,
         )
-        iso_idx = (rates==np.inf)
+        iso_idx = (self.rate==np.inf)
         nisolated = np.size((iso_idx).nonzero())
         if nisolated != 0:
             print(f'Warning: You have {nisolated} isolated points. If this is a small number, its probably fine. Otherwise, increase the resolution parameter.')
-        density = 1/rates
+        # apply the smoothing window:
+        d_window = self.data_width/10
+        smoothed_rates = np.array(
+            [np.average(self.rate[idx], weights=window(self.distance[k], d_window))
+             for k, idx in enumerate(self.dist_indices)]
+        )
+        # clip any infinities.
+        inf_idx = (self.rate == 0)
+        ninf = np.size((inf_idx).nonzero())
+        if ninf != 0:
+            print(f'Warning: You have {ninf} infinite-density points, which are being clipped.')
+        self.rate[inf_idx] = np.amax(self.rate[~inf_idx])
+        density = 1/self.rate
         density = std_sigmoid(density)
         if self.sensitivity == -1:
             self.density = 1/(1-np.log2(density))
         else:
             self.density = density**self.sensitivity
-        self.density[iso_idx] = np.amin(density[~iso_idx])
+        #self.density[iso_idx] = np.amin(density[~iso_idx])
         return self.density
 
     def _cluster(self):
         if self.density is None:
             self._compute_density()
         if self.verbose:
-            print("Clusting at each time slice...")
+            print("Clustering at each time slice...")
         clusters, weights = weighted_clusters(
             self.data,
             self.time,
@@ -400,9 +420,9 @@ class TemporalGraph():
         edge_width = np.array([d["weight"] for (u,v,d) in G.edges(data = True)])
         elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] >= threshold]
         esmall = [(u, v) for (u, v, d) in G.edges(data=True) if 0.1< d["weight"] < threshold]
-        nx.draw_networkx_edges(
-            G, pos, edgelist=esmall, width=0.5*edge_width, alpha=0.5, edge_color="b", style="dashed"
-        )
+        #nx.draw_networkx_edges(
+        #    G, pos, edgelist=esmall, width=0.5*edge_width, alpha=0.5, edge_color="b", style="dashed"
+        #)
         nx.draw_networkx_edges(G, pos, edgelist=elarge, width=1, arrows=False)
         if label_edges:
             edge_labels = nx.get_edge_attributes(G, "weight")
