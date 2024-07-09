@@ -8,6 +8,7 @@ from tqdm import tqdm, trange
 from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import StandardScaler
 from scipy.sparse import issparse
+from sklearn.neighbors import NearestNeighbors
 
 '''TemporalGraph class 
 minimal usage example: 
@@ -107,7 +108,6 @@ class TemporalGraph():
                                  "does not equal number of timestamps",
                                  np.size(time)
                                 )
-
         self.time = np.array(time)
         self.N_data = np.size(time)
         if len(data.shape) == 1:
@@ -148,6 +148,7 @@ class TemporalGraph():
         self.disable = not verbose # tqdm
         self.show_outliers = False
         self.resolution = resolution
+        self.k = resolution
         self.distance = None
 
     def _compute_epsilon_balls(self):
@@ -171,37 +172,37 @@ class TemporalGraph():
         self.checkpoints = checkpoints
         return checkpoints
 
+    def _compute_knn(self):
+        if self.verbose:
+            print("Computing k nearest neighbours...")
+        std_time = np.copy(self.time)
+        std_time = self.scaler.fit_transform(std_time.reshape(-1,1))
+        datatime = np.concatenate((self.data,std_time),axis=1)
+        nbrs = NearestNeighbors(n_neighbors=self.k).fit(datatime)
+        self.distance, self.dist_indices = nbrs.kneighbors(datatime)
+        return self.distance, self.dist_indices
+
     def _compute_density(self):
         if self.checkpoints is None:
             self._compute_checkpoints()
         if self.distance is None:
-            self._compute_epsilon_balls()
+            self._compute_knn()
         if self.verbose:
             print("Computing spatial density...")
-        self.rate = compute_point_rates(
-            self.data,
-            self.time,
-            self.distance,
-            self.epsilon,
+        self.data_width = np.mean(
+            [np.amax(self.data[:,k])-np.amin(self.data[:,k])
+             for k in range(self.data.shape[1])]     
         )
-        iso_idx = (self.rate==np.inf)
-        nisolated = np.size((iso_idx).nonzero())
-        if nisolated != 0:
-            print(f'Warning: You have {nisolated} isolated points. If this is a small number, its probably fine. Otherwise, increase the resolution parameter.')
+        self.epsilon = (self.data_width*self.resolution)/self.N_data
+        radius = self.distance[:,-1]
+        density = self.k*radius**(-self.n_components-1)
         # apply the smoothing window:
         d_window = self.data_width/10
-        smoothed_rates = np.array(
-            [np.average(self.rate[idx], weights=window(self.distance[k], d_window))
+        smoothed_densities = np.array(
+            [np.average(density[idx], weights=window(self.distance[k], d_window))
              for k, idx in enumerate(self.dist_indices)]
         )
-        # clip any infinities.
-        inf_idx = (self.rate == 0)
-        ninf = np.size((inf_idx).nonzero())
-        if ninf != 0:
-            print(f'Warning: You have {ninf} infinite-density points, which are being clipped.')
-        self.rate[inf_idx] = np.amax(self.rate[~inf_idx])
-        density = 1/self.rate
-        density = std_sigmoid(density)
+        density = std_sigmoid(smoothed_densities)
         if self.sensitivity == -1:
             self.density = 1/(1-np.log2(density))
         else:
@@ -402,14 +403,11 @@ class TemporalGraph():
         if pos:
             nx.set_node_attributes(self.G, pos_list, "pos")
     
-    def get_vertex_data(self, node, ghost=False):
+    def get_vertex_data(self, node):
         t_idx = self.G.nodes()[node]['slice_no']
         cl_idx = self.G.nodes()[node]['cluster_no']
-        if ghost:
-            vals_in_cl = (self.clusters[t_idx] == cl_idx).nonzero()
-        else:
-            vals_in_cl = (self.clusters[t_idx][self.slices[t_idx]] == cl_idx).nonzero()
-        return vals_in_cl
+        vals_in_cl = (self.clusters[t_idx] == cl_idx).nonzero()
+        return vals_in_cl[0]
 
     def generate_plot(self, label_edges = True, threshold = 0.48, vertices = None):
         if type(vertices) == type(None):

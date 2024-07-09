@@ -4,6 +4,8 @@ import networkx as nx
 import numpy as np
 from vectorizers.transformers import InformationWeightTransformer
 from vectorizers import NgramVectorizer
+from tqdm import tqdm, trange
+
 
 def std_sigmoid(x):
     mu = np.mean(x)
@@ -51,7 +53,7 @@ def epsilon_balls(data, epsilon):
     ''' Return (distances, indices) of points in B(r,x) '''
     distances=[]
     indices=[]
-    for x in data:
+    for x in tqdm(data):
         d = np.linalg.norm(x-data, axis=1)
         idx = (d<epsilon).nonzero()
         dist = d[idx]
@@ -115,15 +117,18 @@ def compute_cluster_yaxis(clusters, semantic_dist, func=cluster_avg_1D):
 
     return y_data
 
-def generate_keyword_labels(word_bags, TG, n_words=3, sep=' '):
+def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep=' '):
     """ Using a bag of words corresponding to each data point, get highly informative
     keywords for each cluster """
-    ngram_vectorizer = NgramVectorizer()
-    ngram_vectors = ngram_vectorizer.fit_transform(word_bags)
+    if ngram_vectorizer is None:
+        ngram_vectorizer = NgramVectorizer()
+        ngram_vectors = ngram_vectorizer.fit_transform(word_bags)
+    else:
+        ngram_vectors = ngram_vectorizer.transform(word_bags)
     ## Building cluster labels (crudely)
     IWT = InformationWeightTransformer()
     keywords = []
-    for i in range(len(TG.slices)):
+    for i in trange(len(TG.slices)):
         # build a vector for each cluster by summing the vectors of its constituent data
         cluster_vectors = []
         for cl in np.unique(TG.clusters[i]):
@@ -134,7 +139,7 @@ def generate_keyword_labels(word_bags, TG, n_words=3, sep=' '):
             vectors_in_cluster = ngram_vectors[cl_idx]
             cl_vector = np.sum(vectors_in_cluster,axis=0)
             cluster_vectors.append(cl_vector)
-        print("IWT on slice:",i,end="\r")    
+        #print("IWT on slice:",i,end="\r")    
             
         # IWT the vectors and get the most important keywords
         cluster_vectors = np.squeeze(np.array(cluster_vectors))

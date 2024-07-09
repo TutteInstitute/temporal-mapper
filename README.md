@@ -1,11 +1,16 @@
-## (Unclassified//OUO) Mapper' V.0.2 - July 2nd '24
-This is a mostly-working version of the mapper' code for generating graphs & sankey diagrams of timestamped data.
+(Unclassified//OUO)
+## Temporal/Fuzzy Mapper
+### V.0.2.x - July N '24
+-----------------------------------------------
+This is a mostly-working version of the fuzzy mapper code for generating graphs & sankey diagrams of timestamped data. The algorithm is still evolving and I only made the repo public to easily share
+it with a colleague, so use it at your own risk.
+
 Direct questions to Kaleb D. Ruscitti; (kaleb.ruscitti@cse-cst.gc.ca before Aug 23 2024, or kaleb.ruscitti@uwaterloo.ca after that).
 
 ### Components
 There are three subcomponents
 1. `temporal_grapher` - this is the original code which implements mapper' and builds the graph object.
-2. `weighted fast_hdbscan` - HDBSCAN but the points are weighted; thanks Patsy Greenwood for writing this code :)
+2. `weighted fast_hdbscan` - HDBSCAN but the points are weighted; thanks Aaron Smith for writing this code :)
 3. `modified holoviews` - A copy of holoviews with the Sankey diagram code mangled to work with mass creation & destruction.
 
 ### Conda Env
@@ -16,13 +21,14 @@ Worst case scenario you can just manually install all the usual packages. Just d
 avoid collisions.
 
 ### Usage
-The file `DemoV0.2.ipynb` is a start-to-finish example of how to generate a Sankey diagram with this package.
+The file `DemoV0.2.x.ipynb` is a start-to-finish example of how to generate a Sankey diagram with this package.
 
 ### Parameters
 Since temporal grapher is mostly undocumented, let me quickly mention a few choices you can make. 
 
 `HDBSCAN(min_cluster_size=n)`
-This is the usual HDBSCAN parameter, but now that the points are weighted, and the weights are strictly less than 1, you generally want to set this a bit lower than you might usually do.
+This is the usual HDBSCAN parameter, but now that the points are weighted, and the weights are strictly <= 1, 
+you generally want to set this a bit lower than you might usually do.
 
 #### `tm.TemporalGraph()` parameters
 
@@ -48,6 +54,4 @@ with double the temporal density will have a kernel that is half as wide. At sen
 wide, and so on. The option -1 sets the scale to be logarithmic; 10x as dense = 1/2 as wide.
 
 ### A note on the Holoviews code
-I'm not sure why, but sometimes when you try to plot the Sankey diagram it throws an error like `no plotting option Sankey`
-(I can't recreate it and I don't remember exactly what the error says). If this happens just reload the kernel and run 
-the code again top-down.
+I'm not sure why, but sometimes when you try to plot the Sankey diagram it throws an error `No plotting class for Sankey found`, I can't consistently reproduce this error. If this happens, one solution is to reload the kernel and run the code again top-down.

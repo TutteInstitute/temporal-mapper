@@ -143,7 +143,8 @@ class _layout_sankey(Operation):
         return height
 
     def computeNodeColumns(self, graph):
-        depth_upper_bound = max(x['depth'] for x in graph['nodes']) + 1
+        #depth_upper_bound = max(x['depth'] for x in graph['nodes']) + 1
+        depth_upper_bound = max(node['values'][3] for node in graph['nodes'])+1
         x0, x1 = self.p.bounds[0], self.p.bounds[2]
         dx = self.p.node_width
         kx = (x1 - x0 - dx) / (depth_upper_bound - 1)
