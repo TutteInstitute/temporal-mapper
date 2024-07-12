@@ -9,6 +9,7 @@ from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import StandardScaler
 from scipy.sparse import issparse
 from sklearn.neighbors import NearestNeighbors
+from datamapplot.palette_handling import palette_from_datamap
 
 '''TemporalGraph class 
 minimal usage example: 
@@ -198,6 +199,7 @@ class TemporalGraph():
         density = self.k*radius**(-self.n_components-1)
         # apply the smoothing window:
         d_window = self.data_width/10
+        # todo: figure out this strange bug with copying self.distance
         smoothed_densities = np.array(
             [np.average(density[idx], weights=window(self.distance[k], d_window))
              for k, idx in enumerate(self.dist_indices)]
@@ -230,16 +232,6 @@ class TemporalGraph():
 
     def add_vertices(self, y_data=1):
         # Add the clusters from each time slice as vertices.
-        pos ={
-        }
-        # If given an int, use as scale to generate y_data
-        if type(y_data) == int:
-            y_data_tmp = []
-            for clus in self.clusters:
-                y_data_i = np.ones(np.shape(np.unique(clus)))*y_data
-                y_data_tmp.append(y_data_i)
-            y_data = y_data_tmp
-
         node_counter = 0
         slices = []
         for i in trange(self.N_checkpoints, disable=self.disable,
@@ -255,31 +247,21 @@ class TemporalGraph():
                 slice_no = i
                 cluster_no = val
                 node_label = str(i)+":"+str(val)
-                y = val
-                if type(y_data) != None:
-                    y = y_data[i][l]
                 
                 # Add a node with the attributes
                 self.G.add_node(
                     node_label,
                     slice_no = slice_no,
                     cluster_no = cluster_no,
-                    y = y,
                     node_number = node_counter,
                 )
                 node_counter += 1
-                if type(y_data) != None:
-                    pos[str(i)+":"+str(val)] = np.array([i,y_data[i][l]])
-                else: 
-                    pos[str(i)+":"+str(val)] = np.array([i, val])
-
-        self.pos = pos
+                
         self.slices = slices
         if self.verbose:
             print("%d vertices added." % (np.size(self.G.nodes())) )
 
         return self
-
 
     def build_adj_matrix(self):
         verts = self.G.nodes()
@@ -343,15 +325,15 @@ class TemporalGraph():
             j+=1
         return self
 
-    def build(self, y_data=1, cmap=None):
+    def build(self):
         # Build the temporal graph
         if self.clusters is None:
             self._cluster()
-        self.add_vertices(y_data)
+        self.add_vertices()
         self.build_adj_matrix()
         self.add_edges()
         self.populate_edge_attrs()
-        self.populate_node_attrs(cmap=cmap)
+        self.populate_node_attrs()
         return self
 
     def populate_edge_attrs(self):
@@ -368,40 +350,54 @@ class TemporalGraph():
             percentage_inweight = round(percentage_inweight, 2) # as above
             self.G[u][v]['dst_weight'] = percentage_inweight
         
-    def populate_node_attrs(self, cmap=None, labels=None):
-        pos = False #todo fix
+    def populate_node_attrs(self, labels=None):
+        """ Add node attributes (dictionaries) to the vertices of the graph.
+            Mainly required for visualization purposes.
+        """
+        if self.verbose:
+            print("Populating node centroids, colours, sizes...")
+        pos = False 
         if self.n_components == 2:
             pos = True
-        # Add colours and cluster name labels to the vertices.
-        t_attrs = nx.get_node_attributes(self.G, 'slice_no')
-        cl_attrs = nx.get_node_attributes(self.G, 'cluster_no')
-        if pos:
-            avg_xpos = compute_cluster_yaxis(self.clusters, self.data[:,0])
-            avg_ypos = compute_cluster_yaxis(self.clusters, self.data[:,1])
-        clr_list = {}
+            
+        # Add cluster positions in 2D and sizes for visualization.
+        centroids = {}
         size_list = {}
-        pos_list = {}
+        t_attrs = nx.get_node_attributes(self.G, 'slice_no')
+        cl_attrs = nx.get_node_attributes(self.G, 'cluster_no')   
         for node in self.G.nodes():
             t_idx = t_attrs[node]
             cl_idx = cl_attrs[node]
-            if pos:
-                node_xpos = avg_xpos[t_idx][cl_idx]
-                node_ypos = avg_ypos[t_idx][cl_idx]
-                pos_list[node] = (node_xpos, node_ypos)
-            if cmap:
-                clr = cmap(node_xpos, node_ypos)/255
-            else:
-                clr = cl_idx
-            clr_list[node] = clr 
-            
             size = np.size(self.get_vertex_data(node))
             size_list[node] = size
-
-            
-        nx.set_node_attributes(self.G, clr_list, "colour")
-        nx.set_node_attributes(self.G, size_list, "count")
+            if pos:
+                pt_idx = self.get_vertex_data(node)
+                node_xpos = np.mean(self.data[pt_idx,0])
+                node_ypos = np.mean(self.data[pt_idx,1])
+                centroids[node] = (node_xpos, node_ypos)
         if pos:
-            nx.set_node_attributes(self.G, pos_list, "pos")
+            nx.set_node_attributes(self.G, centroids, 'centroid')
+        nx.set_node_attributes(self.G, size_list, 'count')
+
+        # Compute cluster colours that correspond to datamapplot colours.
+        if self.n_components != 2:
+            print("Warning: Cluster colours are only implemented for 2d data.")
+        else:
+            if self.verbose:
+                print("Computing cluster colours...")
+                clr_dict = {}
+                cluster_positions = np.zeros((len(self.G.nodes()),2))
+                for k,pt in enumerate(centroids.values()):
+                    cluster_positions[k] = pt
+                colours = np.array(palette_from_datamap(self.data, cluster_positions))
+                for k,node in enumerate(centroids.keys()):
+                    c = colours[k]
+                    pc = (t_attrs[node]+1)/self.N_checkpoints
+                    clr = hex_desaturate(c, pc)
+                    clr_dict[node] = clr
+            
+        nx.set_node_attributes(self.G, clr_dict, "colour")
+        return 0
     
     def get_vertex_data(self, node):
         t_idx = self.G.nodes()[node]['slice_no']
@@ -409,32 +405,6 @@ class TemporalGraph():
         vals_in_cl = (self.clusters[t_idx] == cl_idx).nonzero()
         return vals_in_cl[0]
 
-    def generate_plot(self, label_edges = True, threshold = 0.48, vertices = None):
-        if type(vertices) == type(None):
-            vertices = self.G.nodes()
-
-        G, pos = self.G.subgraph(vertices), self.pos
-
-        edge_width = np.array([d["weight"] for (u,v,d) in G.edges(data = True)])
-        elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d["weight"] >= threshold]
-        esmall = [(u, v) for (u, v, d) in G.edges(data=True) if 0.1< d["weight"] < threshold]
-        #nx.draw_networkx_edges(
-        #    G, pos, edgelist=esmall, width=0.5*edge_width, alpha=0.5, edge_color="b", style="dashed"
-        #)
-        nx.draw_networkx_edges(G, pos, edgelist=elarge, width=1, arrows=False)
-        if label_edges:
-            edge_labels = nx.get_edge_attributes(G, "weight")
-            nx.draw_networkx_edge_labels(G, pos, edge_labels)
-
-        node_size = [5*np.log2(np.size(self.get_vertex_data(node))) for node in vertices]
-        clr_dict = nx.get_node_attributes(self.G, 'colour')
-        node_clr = [clr_dict[node] for node in vertices]
-
-        nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color=node_clr)
-        #nx.draw_networkx_labels(G, pos)
-        ax = plt.gca()
-
-        return ax
     
     def get_dir_subvertices(self, v, threshold=0.1, backwards=True):
         vertices = [v]

@@ -1,11 +1,10 @@
-''' modified: 2024-07-04 ~10am'''
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 from vectorizers.transformers import InformationWeightTransformer
 from vectorizers import NgramVectorizer
 from tqdm import tqdm, trange
-
+from matplotlib.colors import to_rgba, rgb_to_hsv, hsv_to_rgb
 
 def std_sigmoid(x):
     mu = np.mean(x)
@@ -173,3 +172,98 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
     nx.set_node_attributes(TG.G, label_attrs, 'label')
     return TG
 
+def time_semantic_plot(
+    TG, semantic_axis, ax=None, vertices = None, label_edges = False, edge_scaling=1, **edge_kwargs,
+):
+    if ax is None:
+        ax = plt.gca()
+    if vertices is None:
+        vertices = TG.G.nodes()
+
+    pos = {}
+    slice_no = nx.get_node_attributes(TG.G, 'slice_no')
+    for node in vertices:
+        t = slice_no[node]
+        pt_idx = TG.get_vertex_data(node)
+        w = TG.weights[t,pt_idx]
+        node_ypos = np.average(semantic_axis[pt_idx],weights=w)
+        node_xpos = np.average(TG.time[pt_idx],weights=w)
+        pos[node] = (node_xpos, node_ypos)
+    
+    G = TG.G.subgraph(vertices)
+
+    edge_width = np.array([np.log(d["weight"]) for (u,v,d) in G.edges(data = True)])
+    edge_width /= np.amax(edge_width)
+    elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
+    if "arrows" in edge_kwargs:
+        arrows = edge_kwargs.pop("arrows")
+    nx.draw_networkx_edges(G, pos, ax=ax, edgelist=elarge, width=edge_scaling*2.5*edge_width, arrows=False, **edge_kwargs)
+    if label_edges:
+        edge_labels = nx.get_edge_attributes(G, "weight")
+        nx.draw_networkx_edge_labels(G, pos, edge_labels)
+
+    node_size = [5*np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
+    clr_dict = nx.get_node_attributes(TG.G, 'colour')
+    node_clr = [clr_dict[node] for node in vertices]
+
+    nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color=node_clr)
+    #nx.draw_networkx_labels(G, pos)
+    ax.tick_params(left=False, bottom=True, labelleft=False, labelbottom=True)
+    ax.set_xticks(TG.checkpoints)
+
+    return ax
+
+def hex_desaturate(c, pc):
+    """ Desaturate c by pc% """
+    r,g,b,a = to_rgba(c)
+    h,s,v = rgb_to_hsv((r,g,b))
+    s *= pc
+    r,g,b = hsv_to_rgb((h,s,v))
+    return np.array([r,g,b,a])
+
+def centroid_datamap(
+    TG, ax=None, label_edges = False, vertices = None, edge_scaling=1, node_colouring='desaturate', **edge_kwargs,
+):
+    """ Plot the temporal graph in 2d with vertices at their cluster centroids.
+        Returns a matplotlib axis """
+    if vertices is None:
+        vertices = TG.G.nodes()
+    if ax is None:
+        ax = plt.gca()
+    try:
+        pos = nx.get_node_attributes(TG.G, 'centroid')
+    except(AttributeError):
+        TG.populate_node_attrs()
+        pos = nx.get_node_attributes(TG.G, 'centroid')
+  
+    G = TG.G.subgraph(vertices)
+    edge_width = np.array([np.log(d["weight"]) for (u,v,d) in G.edges(data = True)])
+    edge_width /= np.amax(edge_width)
+    elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
+    if "arrows" in edge_kwargs:
+        arrows = edge_kwargs.pop("arrows")
+    nx.draw_networkx_edges(G, pos, ax=ax, edgelist=elarge, width=edge_scaling*2.5*edge_width, arrows=False, **edge_kwargs)
+    if label_edges:
+        tmp_dict=nx.get_edge_attributes(TG.G, "weight")
+        edge_labels = {k:"{:.2f}".format(tmp_dict[k]) for k in tmp_dict}
+        nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax)
+
+    node_size = [5*np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
+    slice_no = nx.get_node_attributes(TG.G, 'slice_no')
+    if node_colouring == 'override':
+        # Override cluster semantic colouring with time information
+        node_clr = [slice_no[node] for node in vertices]
+    elif node_colouring == 'desaturate':
+        # Keep semantic colouring and desaturate nodes in the past
+        colour_dict = nx.get_node_attributes(TG.G, 'colour')
+        pc = [(slice_no[node]+1)/TG.N_checkpoints for node in vertices]
+        node_clr = [hex_desaturate(colour_dict[node], pc[i]) for i,node in enumerate(colour_dict.keys())]
+    else:
+        print("Accepted values of node_colouring are 'desaturate' and 'override'.")
+        
+    #if "alpha" in node_kwargs:
+    #    alpha = node_kwargs.pop("arrows")
+    nx.draw_networkx_nodes(G, pos, ax=ax, node_size=node_size, node_color=node_clr, alpha=0.8,)
+    #nx.draw_networkx_labels(G, pos)
+
+    return ax

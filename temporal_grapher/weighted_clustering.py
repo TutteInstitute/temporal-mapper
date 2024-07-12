@@ -1,4 +1,4 @@
-''' modified: 2024-07-04 ~10am'''
+''' modified: 2024-07-11 ~10am'''
 import fast_hdbscan ## This is the modified local copy!
 
 import sys
@@ -32,8 +32,8 @@ def square_nodensity(t0, t, density, binwidth, epsilon = 0.1, params=(1,)):
     return out
     
 def window(distance, width=1):
-    distance[np.abs(distance)>=width] = 0
-    distance[np.abs(distance)<width] = (1/2)*(1+np.cos(np.pi*distance/width))
+    mask = np.abs(distance) <= width
+    return(1/2)*(1+np.cos(np.pi*distance/width))*mask
 
 def compute_point_rates(data, time, distances, width):
     lambdas = np.zeros(np.size(time))
@@ -92,8 +92,13 @@ def weighted_clusters(
         data_slice = data[slice_]
         if data[slice_].ndim == 1:
             data_slice = data_slice.reshape(-1,1)
-        
-        cluster_labels = clusterer.fit(data_slice, sample_weight=weights[idx,slice_]).labels_
+
+        try:
+            cluster_labels = clusterer.fit(data_slice, sample_weight=weights[idx,slice_]).labels_
+        except:
+            print("Clusterer does not accept sample weights. Falling back to unweighted clustering.")
+            cluster_labels = clusterer.fit(data_slice).labels_
+
         clusters[idx, slice_] = cluster_labels
     
     return clusters, weights
