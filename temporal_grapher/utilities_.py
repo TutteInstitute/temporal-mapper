@@ -210,6 +210,7 @@ def time_semantic_plot(
     #nx.draw_networkx_labels(G, pos)
     ax.tick_params(left=False, bottom=True, labelleft=False, labelbottom=True)
     ax.set_xticks(TG.checkpoints)
+    ax.tick_params(axis='x', labelrotation=90)
 
     return ax
 

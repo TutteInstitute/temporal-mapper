@@ -1,11 +1,24 @@
 (Unclassified//OUO)
 ## Temporal/Fuzzy Mapper
-### V.0.2.x - July N '24
+### V.0.3.x - July 12 '24
 -----------------------------------------------
 This is a mostly-working version of the fuzzy mapper code for generating graphs & sankey diagrams of timestamped data. The algorithm is still evolving and I only made the repo public to easily share
 it with a colleague, so use it at your own risk.
 
 Direct questions to Kaleb D. Ruscitti; (kaleb.ruscitti@cse-cst.gc.ca before Aug 23 2024, or kaleb.ruscitti@uwaterloo.ca after that).
+
+### Example:
+#### ArXiV Papers 
+~ 500,000 ArXiV titles and abstracts, UMAPped to 2D.
+
+Using [DataMapPlot](https://github.com/tutteinstitute/datamapplot) and [TopicNaming](https://github.com/tutteinstitute/topicnaming) we can produce a static plot of our data:
+
+![A DataMapPlot of ArXiV papers](./doc/arxiv_static.png "A DataMapPlot of ArXiV Papers").
+
+Now, using this repository we can additionally analyse the temporal information:
+
+![](./doc/arxiv_centroids.png) ![](./doc/arxiv_time.png)
+
 
 ### Components
 There are three subcomponents

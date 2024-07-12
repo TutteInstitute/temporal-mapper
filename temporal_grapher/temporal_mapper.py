@@ -390,11 +390,7 @@ class TemporalGraph():
                 for k,pt in enumerate(centroids.values()):
                     cluster_positions[k] = pt
                 colours = np.array(palette_from_datamap(self.data, cluster_positions))
-                for k,node in enumerate(centroids.keys()):
-                    c = colours[k]
-                    pc = (t_attrs[node]+1)/self.N_checkpoints
-                    clr = hex_desaturate(c, pc)
-                    clr_dict[node] = clr
+                clr_dict = {node:colours[k] for k,node in enumerate(centroids.keys())}
             
         nx.set_node_attributes(self.G, clr_dict, "colour")
         return 0
