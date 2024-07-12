@@ -13,11 +13,15 @@ Direct questions to Kaleb D. Ruscitti; (kaleb.ruscitti@cse-cst.gc.ca before Aug 
 
 Using [DataMapPlot](https://github.com/tutteinstitute/datamapplot) and [TopicNaming](https://github.com/tutteinstitute/topicnaming) we can produce a static plot of our data:
 
-![A DataMapPlot of ArXiV papers](./doc/arxiv_static.png "A DataMapPlot of ArXiV Papers").
+![A DataMapPlot of ArXiV papers](./doc/arxiv_static.png "A DataMapPlot of ArXiV Papers")
 
-Now, using this repository we can additionally analyse the temporal information:
+Now, using this repository we can additionally analyse the temporal information. Using the Mapper algorithm with time as our 
+lens function, we create a *temporal graph* of the topics (clusters) through time. The package includes two types of plots
+to visualize this graph:
 
-![](./doc/arxiv_centroids.png) ![](./doc/arxiv_time.png)
+Centroid Plot             |  Temporal-Semantic Plot
+:-------------------------:|:-------------------------:
+![](./doc/arxiv_centroids.png)  |  ![](./doc/arxiv_time.png)
 
 
 ### Components
