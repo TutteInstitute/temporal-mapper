@@ -39,21 +39,23 @@ class TemporalGraph():
 
     Attributes
     ----------
-    G : networkx.classes.Digraph(Graph)
+    G: networkx.classes.Digraph(Graph)
         The temporal graph itself.
-    density : ndarray
+    density: ndarray
         The f-density \rho for each data point.
         
     Methods
     -------
-    build(ydata=None):
-        Perform all operations necessary to construct the graph.
+    build():
+        Run the fuzzy mapper algorithm to construct the temporal graph.
+    get_vertex_data(str node):
+        Returns the index of elements of ``data`` which are in vertex ``node``.
     """
     
     def __init__(
         self, time, data, clusterer, 
         N_checkpoints = None,
-        resolution = 10,
+        neighbours = 50,
         overlap = 0.5,
         clusters = None,
         checkpoints = None,
@@ -67,50 +69,44 @@ class TemporalGraph():
         """
         Parameters 
         ----------
-        time : ndarray
+        time: ndarray
             time array (1 dim)
-        data : ndarray
+        data: ndarray
             data array (n dim)
-        clusterer : sklearn clusterer
+        clusterer: sklearn clusterer
             the clusterer to use for the slice-wise clustering, must accept sample_weights
-        N_checkpoints : int
+        N_checkpoints: int
             number of time-points at which to cluster
-        checkpoints : arraylike
+        checkpoints: arraylike
             array of time-points at which to cluster
-        overlap : float
-            A float in (0,1) which specifies the `g` parameter (see README)
-        resolution: float
-            Determines the distance around each point which we use as a neighbourhood for 
-            determining the f-rate. If you get a warning about isolated points, you should
-            increase this parameter. If you plot the density and it is not very smooth
-            you can increase this parameter.
-        show_outliers : bool
+        overlap: float
+            A float in (0,1) which specifies the ``g`` parameter (see README)
+        neighbours: float
+            The number of nearest neighbours used in the density computation.
+        show_outliers: bool
             If true, include unclustered points in the graph
-        slice_method : str
+        slice_method: str
             One of 'time' or 'data'. If time, generates N_checkpoints evenly spaced in time. If data,
             generates N_checkpoints such that there are equal amounts of data between the points. 
-        rate_sensitivity : float
+        rate_sensitivity: float
             A positive float, or -1. The rate parameter is raised to this parameter, so higher numbers
-            means that the algorithm is more sensitive to changes in rate. If rate_sensivity == -1, 
+            means that the algorithm is more sensitive to changes in rate. If ``rate_sensivity == -1``, 
             then the rate parameter is taken log2. 
-        kernel : function
-            A function with signature f(t0, t, density, binwidth, epsilon=0.01, params=None).
-            Two options are included in weighted_clustering.py, `weighted_clustering.square` and 
-            `weighted_clustering.gaussian`.
-        kernel_parameters : tuple or None,
+        kernel: function
+            A function with signature ``f(t0, t, density, binwidth, epsilon=0.01, params=None)``.
+            Two options are included in weighted_clustering.py, ``weighted_clustering.square`` and 
+            ``weighted_clustering.gaussian``.
+        kernel_parameters: tuple or None,
             Passed to `kernel` as params kwarg.
-        verbose : bool
+        verbose: bool
             Does what you expect.
         
         """
         if np.size(time) != np.shape(data)[0]:
-            raise AttributeError("Number of datapoints",
-                                 np.shape(data)[0],
-                                 "does not equal number of timestamps",
-                                 np.size(time)
-                                )
+            raise AttributeError("Number of datapoints", np.shape(data)[0],
+                                 "does not equal number of timestamps", np.size(time))
         self.time = np.array(time)
-        self.N_data = np.size(time)
+        self.n_samples = np.size(time)
         if len(data.shape) == 1:
             data=data.reshape(-1,1)
         self.n_components = data.shape[1]
@@ -126,7 +122,7 @@ class TemporalGraph():
             raise AttributeError("Accepted slice_method is 'time' or 'data'.")
         if checkpoints is not None:
             self.N_checkpoints = np.size(checkpoints)
-            if not (self.N_checkpoints == N_checkpoints):
+            if N_checkpoints is not None and (not (self.N_checkpoints == N_checkpoints)):
                 raise AttributeError("Given checkpoints and N_checkpoints, len(checkpoints) must equal N_checkpoints.")
         else:
             if N_checkpoints is not None:
@@ -146,26 +142,15 @@ class TemporalGraph():
         self.adj_matrix = None
         self.pos = None
         self.verbose=verbose
-        self.disable = not verbose # tqdm
+        self.disable = not verbose # for tqdm
         self.show_outliers = False
-        self.resolution = resolution
-        self.k = resolution
+        self.k = neighbours
         self.distance = None
 
-    def _compute_epsilon_balls(self):
-        if self.verbose:
-            print("Computing epsilon balls...")
-        self.data_width = np.mean(
-            [np.amax(self.data[:,k])-np.amin(self.data[:,k])
-             for k in range(self.data.shape[1])]     
-        )
-        self.epsilon = (self.data_width*self.resolution)/self.N_data
-        # compute 10x the epsilon ball b.c. we need the rest for smoothing later
-        self.distance, self.dist_indices = epsilon_balls(self.data, 10*self.epsilon) 
-
     def _compute_checkpoints(self):
+        """ Compute evenly spaced checkpoints at which to center the mapper slices. """
         if self.slice_method == 'data':
-            idx = np.linspace(0, self.N_data, self.N_checkpoints+2)[1:-1]
+            idx = np.linspace(0, self.n_samples, self.N_checkpoints+2)[1:-1]
             idx = np.array([int(x) for x in idx])
             checkpoints = self.time[idx]
         if self.slice_method == 'time':
@@ -174,6 +159,7 @@ class TemporalGraph():
         return checkpoints
 
     def _compute_knn(self):
+        """ Run sklearn NearestNeighbours to compute knns. """
         if self.verbose:
             print("Computing k nearest neighbours...")
         std_time = np.copy(self.time)
@@ -184,8 +170,12 @@ class TemporalGraph():
         return self.distance, self.dist_indices
 
     def _compute_density(self):
-        if self.checkpoints is None:
-            self._compute_checkpoints()
+        """ Compute the temporal density (f-rate) at each point. """
+        if self.sensitivity == 0:
+            if self.verbose:
+                print("Temporal density sensitivity is set to 0, skipping density computation.")
+            self.density == np.ones(self.n_samples)
+            return self.density
         if self.distance is None:
             self._compute_knn()
         if self.verbose:
@@ -194,25 +184,32 @@ class TemporalGraph():
             [np.amax(self.data[:,k])-np.amin(self.data[:,k])
              for k in range(self.data.shape[1])]     
         )
-        self.epsilon = (self.data_width*self.resolution)/self.N_data
         radius = self.distance[:,-1]
-        density = self.k*radius**(-self.n_components-1)
+        density = self.k*np.ones(self.n_samples)#**(-self.n_components-1)
+        temporal_width = [max(self.time[idx])-min(self.time[idx]) for idx in self.dist_indices]
+        density /= temporal_width
+        
         # apply the smoothing window:
         d_window = self.data_width/10
-        # todo: figure out this strange bug with copying self.distance
         smoothed_densities = np.array(
             [np.average(density[idx], weights=window(self.distance[k], d_window))
              for k, idx in enumerate(self.dist_indices)]
         )
         density = std_sigmoid(smoothed_densities)
+
         if self.sensitivity == -1:
             self.density = 1/(1-np.log2(density))
         else:
             self.density = density**self.sensitivity
-        #self.density[iso_idx] = np.amin(density[~iso_idx])
         return self.density
 
     def _cluster(self):
+        """ At each checkpoint, use the clustering algorithm to cluster the points in the
+            associated bin. A convention here is that a cluster of -1 means noise, and a 
+            cluster of -2 means unclustered.
+        """
+        if self.checkpoints is None:
+            self._compute_checkpoints()
         if self.density is None:
             self._compute_density()
         if self.verbose:
@@ -221,9 +218,10 @@ class TemporalGraph():
             self.data,
             self.time,
             self.checkpoints,
-            self.density,
+            self.density/np.median(self.density),
             self.clusterer,
             self.kernel,
+            self.g,
             self.kernel_params,
         )
         self.clusters = clusters
@@ -231,7 +229,7 @@ class TemporalGraph():
         return clusters
 
     def add_vertices(self, y_data=1):
-        # Add the clusters from each time slice as vertices.
+        """ Add the clusters from each time slice as vertices in the networkx graph (self.G). """
         node_counter = 0
         slices = []
         for i in trange(self.N_checkpoints, disable=self.disable,
@@ -326,7 +324,7 @@ class TemporalGraph():
         return self
 
     def build(self):
-        # Build the temporal graph
+        """ Run the fuzzy mapper algorithm to construct the temporal graph. """
         if self.clusters is None:
             self._cluster()
         self.add_vertices()
@@ -336,8 +334,12 @@ class TemporalGraph():
         self.populate_node_attrs()
         return self
 
+    def fit(self):
+        """ SKlearn naming convention. """
+        return self.build()
+
     def populate_edge_attrs(self):
-        # Add src_weight and dst_weight properties to every edge.
+        """ Add src_weight and dst_weight properties to every edge. """
         for u,v,d in self.G.edges(data = True):
             u_outdeg = self.G.out_degree(u, weight='weight')
             v_indeg = self.G.in_degree(v, weight='weight')
@@ -356,9 +358,6 @@ class TemporalGraph():
         """
         if self.verbose:
             print("Populating node centroids, colours, sizes...")
-        pos = False 
-        if self.n_components == 2:
-            pos = True
             
         # Add cluster positions in 2D and sizes for visualization.
         centroids = {}
@@ -370,29 +369,26 @@ class TemporalGraph():
             cl_idx = cl_attrs[node]
             size = np.size(self.get_vertex_data(node))
             size_list[node] = size
-            if pos:
-                pt_idx = self.get_vertex_data(node)
-                node_xpos = np.mean(self.data[pt_idx,0])
-                node_ypos = np.mean(self.data[pt_idx,1])
-                centroids[node] = (node_xpos, node_ypos)
-        if pos:
-            nx.set_node_attributes(self.G, centroids, 'centroid')
+            pt_idx = self.get_vertex_data(node)
+            centroids[node] = [np.mean(self.data[pt_idx,d]) for d in range(self.n_components)]
+        nx.set_node_attributes(self.G, centroids, 'centroid')
         nx.set_node_attributes(self.G, size_list, 'count')
 
         # Compute cluster colours that correspond to datamapplot colours.
         if self.n_components != 2:
-            print("Warning: Cluster colours are only implemented for 2d data.")
+            if self.verbose:
+                print("Warning: Cluster colours are only implemented for 2d data.")
         else:
             if self.verbose:
                 print("Computing cluster colours...")
-                clr_dict = {}
-                cluster_positions = np.zeros((len(self.G.nodes()),2))
-                for k,pt in enumerate(centroids.values()):
-                    cluster_positions[k] = pt
-                colours = np.array(palette_from_datamap(self.data, cluster_positions))
-                clr_dict = {node:colours[k] for k,node in enumerate(centroids.keys())}
+            clr_dict = {}
+            cluster_positions = np.zeros((len(self.G.nodes()),2))
+            for k,pt in enumerate(centroids.values()):
+                cluster_positions[k] = pt
+            colours = np.array(palette_from_datamap(self.data, cluster_positions))
+            clr_dict = {node:colours[k] for k,node in enumerate(centroids.keys())}
             
-        nx.set_node_attributes(self.G, clr_dict, "colour")
+            nx.set_node_attributes(self.G, clr_dict, "colour")
         return 0
     
     def get_vertex_data(self, node):

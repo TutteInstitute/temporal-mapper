@@ -175,6 +175,25 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
 def time_semantic_plot(
     TG, semantic_axis, ax=None, vertices = None, label_edges = False, edge_scaling=1, **edge_kwargs,
 ):
+    """
+    Create a time-semantic plot of the graph ``TemporalGraph.G``. 
+
+    Parameters:
+        TemporalGraph: temporal_mapper.TemporalGraph
+            The temporal graph object to plot.
+        semantic_axis: ndarray
+            Array of shape ``(n_samples,)`` with the 1D semantic data to use in the plot. 
+        ax: matplotlib.axes (optional, default=None)
+            Matplotlib axis to draw on
+        vertices: list (optional, default=None)
+            List of nodes in TG.G to include in the plot.
+        label_edges: bool (optional, default=False)
+            If true, include text labels of the edge weight on top of edges.
+        edge_scaling: float (optional, default = 1)
+            Scales the thickness of edges, larger is thicker.
+
+    Returns: matplotlib.axes
+    """
     if ax is None:
         ax = plt.gca()
     if vertices is None:
@@ -203,10 +222,14 @@ def time_semantic_plot(
         nx.draw_networkx_edge_labels(G, pos, edge_labels)
 
     node_size = [5*np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
-    clr_dict = nx.get_node_attributes(TG.G, 'colour')
-    node_clr = [clr_dict[node] for node in vertices]
+    if TG.n_components != 2:
+        cval_dict = nx.get_node_attributes(TG.G, 'cluster_no')
+        node_clr = node_clr = [cval_dict[node] for node in vertices]
+    else:
+        clr_dict = nx.get_node_attributes(TG.G, 'colour')
+        node_clr = [clr_dict[node] for node in vertices]
 
-    nx.draw_networkx_nodes(G, pos, node_size=node_size, node_color=node_clr)
+    nx.draw_networkx_nodes(G, pos, ax=ax, node_size=node_size, node_color=node_clr)
     #nx.draw_networkx_labels(G, pos)
     ax.tick_params(left=False, bottom=True, labelleft=False, labelbottom=True)
     ax.set_xticks(TG.checkpoints)
@@ -226,7 +249,26 @@ def centroid_datamap(
     TG, ax=None, label_edges = False, vertices = None, edge_scaling=1, node_colouring='desaturate', **edge_kwargs,
 ):
     """ Plot the temporal graph in 2d with vertices at their cluster centroids.
-        Returns a matplotlib axis """
+
+    Parameters:
+        TemporalGraph: temporal_mapper.TemporalGraph
+            The temporal graph object to plot.
+        ax: matplotlib.axes (optional, default=None)
+            Matplotlib axis to draw on
+        node_colouring: ``'desaturate'`` or ``'override'`` (optional, default='desaturate')
+            Determines how to incorporate temporal information in the color. 
+            The desaturate option will take the semantic colouring from datamapplot and desaturate points that are further back in time.
+            The override option will throw away the semantic colouring and colour points only based on their time value.
+        vertices: list (optional, default=None)
+            List of nodes in TG.G to include in the plot.
+        label_edges: bool (optional, default=False)
+            If true, include text labels of the edge weight on top of edges.
+        edge_scaling: float (optional, default = 1)
+            Scales the thickness of edges, larger is thicker.
+
+    Returns: matplotlib.axes
+    """
+    
     if vertices is None:
         vertices = TG.G.nodes()
     if ax is None:

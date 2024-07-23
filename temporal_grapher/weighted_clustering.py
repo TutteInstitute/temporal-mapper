@@ -9,16 +9,15 @@ import numba
 from tqdm import tqdm, trange
 from warnings import warn
 
-def gaussian(t0, t, density, binwidth, epsilon = 0.01, params=None):
+def gaussian(t0, t, density, binwidth, epsilon = 0.1, params=None):
+    if params is not None:
+        epsilon, = params
     K = -np.log(epsilon)/((binwidth/2)**2) 
     return np.exp(-K*(density*(t-t0))**2)
 
-def square(t0, t, density, binwidth, epsilon = 0.1, params=(1,)):
-    if params == None:
-        print("Warning: Your kernel has parameters but you didn't pass any.")
-    overlap, = params
+def square(t0, t, density, binwidth, epsilon = 0.1, params=None):
     distance = (t-t0)
-    out = (np.abs(distance)<((1+overlap)*np.sqrt(
+    out = (np.abs(distance)<(np.sqrt(
         binwidth/(4*density)
     ))).astype(int)
     return out
@@ -67,6 +66,7 @@ def weighted_clusters(
     densities,
     clusterer,
     kernel,
+    overlap,
     kernel_params=None,
     eps = 0.01
 ):
@@ -77,6 +77,7 @@ def weighted_clusters(
     cp_with_ends = [np.amin(time)]+list(checkpoints)+[np.amax(time)]
     for idx, t0 in enumerate(checkpoints):
         bin_width = (cp_with_ends[idx+2]-cp_with_ends[idx])/2
+        bin_width *= (1+overlap)
         if kernel_params == None:
             for i in np.arange(np.size(time)):
                 weights[idx,i] = kernel(

@@ -23,13 +23,6 @@ Centroid Plot             |  Temporal-Semantic Plot
 :-------------------------:|:-------------------------:
 ![](./doc/arxiv_centroids.png)  |  ![](./doc/arxiv_time.png)
 
-
-### Components
-There are three subcomponents
-1. `temporal_grapher` - this is the original code which implements mapper' and builds the graph object.
-2. `weighted fast_hdbscan` - HDBSCAN but the points are weighted; thanks Aaron Smith for writing this code :)
-3. `modified holoviews` - A copy of holoviews with the Sankey diagram code mangled to work with mass creation & destruction.
-
 ### Conda Env
 The environment.yml file contains a dump of my conda env when I tested this code. 
 Stack overflow tells me that you can make a copy of the environment by running 
