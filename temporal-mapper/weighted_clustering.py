@@ -1,6 +1,3 @@
-''' modified: 2024-07-11 ~10am'''
-import fast_hdbscan ## This is the modified local copy!
-
 import sys
 import numpy as np
 import pandas as pd
@@ -10,8 +7,6 @@ from tqdm import tqdm, trange
 from warnings import warn
 
 def gaussian(t0, t, density, binwidth, epsilon = 0.1, params=None):
-    if params is not None:
-        epsilon, = params
     K = -np.log(epsilon)/((binwidth/2)**2) 
     return np.exp(-K*(density*(t-t0))**2)
 
@@ -21,16 +16,8 @@ def square(t0, t, density, binwidth, epsilon = 0.1, params=None):
         binwidth/(4*density)
     ))).astype(int)
     return out
-
-def square_nodensity(t0, t, density, binwidth, epsilon = 0.1, params=(1,)):
-    if params == None:
-        print("Warning: Your kernel has parameters but you didn't pass any.")
-    overlap, = params
-    distance = (t-t0)
-    out = (np.abs(distance)<((1+overlap)*binwidth/2)).astype(int)
-    return out
-    
-def window(distance, width=1):
+   
+def cosine_window(distance, width=1):
     mask = np.abs(distance) <= width
     return(1/2)*(1+np.cos(np.pi*distance/width))*mask
 

@@ -1,4 +1,3 @@
-''' modified: 2024-07-04 ~10am'''
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
@@ -11,7 +10,7 @@ from scipy.sparse import issparse
 from sklearn.neighbors import NearestNeighbors
 from datamapplot.palette_handling import palette_from_datamap
 
-'''TemporalGraph class 
+'''TemporalMapper class 
 minimal usage example: 
 
     # load from your data file:
@@ -33,7 +32,7 @@ minimal usage example:
     myGraph = TG.G
 '''
 
-class TemporalGraph():
+class TemporalMapper():
     """
     Generate and store a temporal graph - a 1D-mapper-style representation of temporal data.
 
@@ -174,7 +173,7 @@ class TemporalGraph():
         if self.sensitivity == 0:
             if self.verbose:
                 print("Temporal density sensitivity is set to 0, skipping density computation.")
-            self.density == np.ones(self.n_samples)
+            self.density = np.ones(self.n_samples)
             return self.density
         if self.distance is None:
             self._compute_knn()
@@ -192,7 +191,7 @@ class TemporalGraph():
         # apply the smoothing window:
         d_window = self.data_width/10
         smoothed_densities = np.array(
-            [np.average(density[idx], weights=window(self.distance[k], d_window))
+            [np.average(density[idx], weights=cosine_window(self.distance[k], d_window))
              for k, idx in enumerate(self.dist_indices)]
         )
         density = std_sigmoid(smoothed_densities)
