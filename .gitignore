@@ -2,8 +2,8 @@
 __pycache__/*
 mapperplayground.ipynb
 data/.ipynb_checkpoints/*
-temporal_grapher/__pycache__/*
-temporal_grapher/.ipynb_checkpoints/*
+temporal-mapper/__pycache__/*
+temporal-mapper/.ipynb_checkpoints/*
 holoviews-main/*
 fast_hdbscan/*
 tests.ipynb
