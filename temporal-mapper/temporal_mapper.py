@@ -155,7 +155,32 @@ class TemporalMapper():
         if self.slice_method == 'time':
             checkpoints = np.linspace(np.amin(self.time), np.amax(self.time), self.N_checkpoints+2)[1:-1]
         self.checkpoints = checkpoints
+        if self.slice_method == 'morse':
+            self._compute_critical_points()
         return checkpoints
+
+    def _compute_critical_points():
+        if self.distance is None:
+            self._compute_knn()
+        if verbose:
+            print("Computing morse critical points...")
+            
+        std_time = np.copy(self.time)
+        std_time = self.scaler.fit_transform(std_time.reshape(-1,1))
+        temporal_delta = [np.mean(std_time[indx]-std_time[indx[0]]) for indx in TG.dist_indices]
+        temporal_delta = np.squeeze(np.vstack(temporal_delta))
+        event_strength = temporal_delta/self.distance[:,-1]
+        ## smooth it out a bit
+        smooth_strength = np.zeros(self.n_samples)
+        for k in trange(self.time, disable=self.disable):
+            smooth_strength += tmwc.square(
+                self.time[k], self.time, 1, 0.05
+            )*event_strength[k]
+        ## find peaks & troughs
+        peaks = find_peaks(smooth_vals, prominence=0.8, height=0.5)[0]
+        troughs = find_peaks(-smooth_vals, prominence=0.8, height=0.5)[0]
+        critical_points = np.hstack((peaks, troughs))
+            
 
     def _compute_knn(self):
         """ Run sklearn NearestNeighbours to compute knns. """
