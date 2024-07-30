@@ -5,6 +5,8 @@ from vectorizers.transformers import InformationWeightTransformer
 from vectorizers import NgramVectorizer
 from tqdm import tqdm, trange
 from matplotlib.colors import to_rgba, rgb_to_hsv, hsv_to_rgb
+from datashader.bundling import hammer_bundle
+from pandas import DataFrame
 
 def std_sigmoid(x):
     mu = np.mean(x)
@@ -173,7 +175,7 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
     return TG
 
 def time_semantic_plot(
-    TG, semantic_axis, ax=None, vertices = None, label_edges = False, edge_scaling=1, **edge_kwargs,
+    TG, semantic_axis, ax=None, vertices = None, label_edges = False, bundle = False, edge_scaling=1, node_kwargs = {}, edge_kwargs = {},
 ):
     """
     Create a time-semantic plot of the graph ``TemporalGraph.G``. 
@@ -191,16 +193,20 @@ def time_semantic_plot(
             If true, include text labels of the edge weight on top of edges.
         edge_scaling: float (optional, default = 1)
             Scales the thickness of edges, larger is thicker.
-
+        bundle: bool (optional, default=True)
+            If true, bundle the edges of the graph using datashader's hammer_bundle function.
+            
     Returns: matplotlib.axes
     """
     if ax is None:
         ax = plt.gca()
     if vertices is None:
         vertices = TG.G.nodes()
-
+    G = TG.G.subgraph(vertices)
+    
     pos = {}
     slice_no = nx.get_node_attributes(TG.G, 'slice_no')
+    semantic_axis = np.squeeze(semantic_axis)
     for node in vertices:
         t = slice_no[node]
         pt_idx = TG.get_vertex_data(node)
@@ -209,18 +215,7 @@ def time_semantic_plot(
         node_xpos = np.average(TG.time[pt_idx],weights=w)
         pos[node] = (node_xpos, node_ypos)
     
-    G = TG.G.subgraph(vertices)
-
-    edge_width = np.array([np.log(d["weight"]) for (u,v,d) in G.edges(data = True)])
-    edge_width /= np.amax(edge_width)
-    elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
-    if "arrows" in edge_kwargs:
-        arrows = edge_kwargs.pop("arrows")
-    nx.draw_networkx_edges(G, pos, ax=ax, edgelist=elarge, width=edge_scaling*2.5*edge_width, arrows=False, **edge_kwargs)
-    if label_edges:
-        edge_labels = nx.get_edge_attributes(G, "weight")
-        nx.draw_networkx_edge_labels(G, pos, edge_labels)
-
+    """ Plot nodes of graph. """
     node_size = [5*np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
     if TG.n_components != 2:
         cval_dict = nx.get_node_attributes(TG.G, 'cluster_no')
@@ -228,12 +223,57 @@ def time_semantic_plot(
     else:
         clr_dict = nx.get_node_attributes(TG.G, 'colour')
         node_clr = [clr_dict[node] for node in vertices]
-
-    nx.draw_networkx_nodes(G, pos, ax=ax, node_size=node_size, node_color=node_clr)
-    #nx.draw_networkx_labels(G, pos)
+    if bundle:
+        alpha = 0.8
+    else:
+        alpha = 0.4
+    if "alpha" in node_kwargs.keys():
+        alpha = node_kwargs.pop("alpha")
+    nx.draw_networkx_nodes(
+        G,
+        pos,
+        ax=ax,
+        node_size=node_size,
+        node_color=node_clr,
+        alpha=alpha,
+        **node_kwargs,
+    )
     ax.tick_params(left=False, bottom=True, labelleft=False, labelbottom=True)
     ax.set_xticks(TG.checkpoints)
     ax.tick_params(axis='x', labelrotation=90)
+
+    """ Plot edges of graph. """
+    c='k'
+    if 'c' in edge_kwargs.keys():
+        c = edge_kwargs.pop('c')
+    if 'color' in edge_kwargs.keys():
+        c = edge_kwargs.pop('color')
+    if bundle==True:
+        bundles = write_edge_bundling_datashader(TG,pos)
+        x=bundles['x'].to_numpy()
+        y=bundles['y'].to_numpy()
+        ax.plot(x,y,c=c,lw=.5*edge_scaling,**edge_kwargs)
+        if label_edges:
+            print("Warning: edge labels are not supported with bundling, consider passing bundle=False")
+    else:
+        edge_width = np.array([np.log(d["weight"]) for (u,v,d) in G.edges(data = True)])
+        edge_width /= np.amax(edge_width)
+        elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
+        if "arrows" in edge_kwargs:
+            arrows = edge_kwargs.pop("arrows")
+        nx.draw_networkx_edges(
+            G,
+            pos,
+            ax=ax,
+            edgelist=elarge,
+            width=edge_scaling*2.5*edge_width,
+            arrows=False,
+            edge_color = c,
+            **edge_kwargs
+        )
+        if label_edges:
+            edge_labels = nx.get_edge_attributes(G, "weight")
+            nx.draw_networkx_edge_labels(G, pos, edge_labels)
 
     return ax
 
@@ -246,7 +286,7 @@ def hex_desaturate(c, pc):
     return np.array([r,g,b,a])
 
 def centroid_datamap(
-    TG, ax=None, label_edges = False, vertices = None, edge_scaling=1, node_colouring='desaturate', **edge_kwargs,
+    TG, ax=None, label_edges = False, vertices = None, edge_scaling=1, node_colouring='desaturate', bundle = True, node_kwargs={}, edge_kwargs={},
 ):
     """ Plot the temporal graph in 2d with vertices at their cluster centroids.
 
@@ -265,12 +305,14 @@ def centroid_datamap(
             If true, include text labels of the edge weight on top of edges.
         edge_scaling: float (optional, default = 1)
             Scales the thickness of edges, larger is thicker.
-
+        bundle: bool (optional, default=True)
+            If true, bundle the edges of the graph using datashader's hammer_bundle function.
     Returns: matplotlib.axes
     """
     
     if vertices is None:
         vertices = TG.G.nodes()
+    G = TG.G.subgraph(vertices)
     if ax is None:
         ax = plt.gca()
     try:
@@ -278,19 +320,8 @@ def centroid_datamap(
     except(AttributeError):
         TG.populate_node_attrs()
         pos = nx.get_node_attributes(TG.G, 'centroid')
-  
-    G = TG.G.subgraph(vertices)
-    edge_width = np.array([np.log(d["weight"]) for (u,v,d) in G.edges(data = True)])
-    edge_width /= np.amax(edge_width)
-    elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
-    if "arrows" in edge_kwargs:
-        arrows = edge_kwargs.pop("arrows")
-    nx.draw_networkx_edges(G, pos, ax=ax, edgelist=elarge, width=edge_scaling*2.5*edge_width, arrows=False, **edge_kwargs)
-    if label_edges:
-        tmp_dict=nx.get_edge_attributes(TG.G, "weight")
-        edge_labels = {k:"{:.2f}".format(tmp_dict[k]) for k in tmp_dict}
-        nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax)
 
+    """ Plot nodes of graph """
     node_size = [5*np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
     slice_no = nx.get_node_attributes(TG.G, 'slice_no')
     if node_colouring == 'override':
@@ -303,10 +334,85 @@ def centroid_datamap(
         node_clr = [hex_desaturate(colour_dict[node], pc[i]) for i,node in enumerate(colour_dict.keys())]
     else:
         print("Accepted values of node_colouring are 'desaturate' and 'override'.")
-        
-    #if "alpha" in node_kwargs:
-    #    alpha = node_kwargs.pop("arrows")
-    nx.draw_networkx_nodes(G, pos, ax=ax, node_size=node_size, node_color=node_clr, alpha=0.8,)
-    #nx.draw_networkx_labels(G, pos)
+
+    if bundle:
+        alpha = 0.8
+    else:
+        alpha = 0.4
+    if "alpha" in node_kwargs.keys():
+        alpha = node_kwargs.pop("alpha")
+    nx.draw_networkx_nodes(
+        G,
+        pos,
+        ax=ax,
+        node_size=node_size,
+        node_color=node_clr,
+        alpha=alpha,
+        **node_kwargs
+    )
+    
+    """ Plot edges of graph """
+    c='k'
+    if 'c' in edge_kwargs.keys():
+        c = edge_kwargs.pop('c')
+    if 'color' in edge_kwargs.keys():
+        c = edge_kwargs.pop('color')
+    if bundle==True:
+        bundles = write_edge_bundling_datashader(TG,pos)
+        x=bundles['x'].to_numpy()
+        y=bundles['y'].to_numpy()
+
+        ax.plot(x,y, c=c,lw=.5*edge_scaling, **edge_kwargs)
+    else:
+        edge_width = np.array([np.log(d["weight"]) for (u,v,d) in G.edges(data = True)])
+        edge_width /= np.amax(edge_width)
+        elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
+        if "arrows" in edge_kwargs:
+            arrows = edge_kwargs.pop("arrows")
+        nx.draw_networkx_edges(
+            G,
+            pos,
+            ax=ax,
+            edgelist=elarge,
+            width=edge_scaling*2.5*edge_width,
+            arrows=False,
+            node_size=node_size,
+            edge_color=c,
+            **edge_kwargs
+        )
+        if label_edges:
+            tmp_dict=nx.get_edge_attributes(TG.G, "weight")
+            edge_labels = {k:"{:.2f}".format(tmp_dict[k]) for k in tmp_dict}
+            nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax)
 
     return ax
+
+def write_edge_bundling_javascript(TG):
+    """ write the javascript file for Roberta's edge bundling code."""
+    try:
+        pos = nx.get_node_attributes(TG.G, "centroid")
+    except(AttributeError):
+        TG.populate_node_attrs()
+        pos = nx.get_node_attributes(TG.G, "centroid")
+    node_indices = {node:i for i, node in enumerate(pos.keys())}
+    file = "const sampleData = {\n\tnodes: [\n"
+    for node in TG.G.nodes():
+        x,y = pos[node]
+        file += '\t{'+f'x: {x}, y:{y}'+'},\n'
+    file += "],\n edges: [\n"
+    for src, dst, data in TG.G.edges(data=True):
+        w = data['weight']
+        file += '\t{'+f'source_node_idx: {node_indices[src]}, target_node_idx: {node_indices[dst]}'+'},\n'
+    file += "]\n}"
+    return file
+            
+def write_edge_bundling_datashader(TG,pos):
+    edge_df = DataFrame()
+    node_df = DataFrame()
+    node_idx = {node:i for i, node in enumerate(pos.keys())}
+    node_df['name'] = pos.keys()
+    node_df['x'] = [val[0] for val in pos.values()]
+    node_df['y'] = [val[1] for val in pos.values()]
+    edge_df['source'] = [node_idx[src] for src,dst in TG.G.edges()]
+    edge_df['target'] = [node_idx[dst] for src,dst in TG.G.edges()]
+    return hammer_bundle(node_df, edge_df)
