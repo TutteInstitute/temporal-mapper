@@ -3,14 +3,12 @@ import sys, os
 import networkx as nx
 import pickle as pkl
 from sklearn.decomposition import PCA
+from sklearn.cluster import DBSCAN
 
 sys.path.append(os.path.relpath("./../"))
 import temporal_mapper as tm
 import utilities_ as tmutils
 import weighted_clustering as tmwc
-
-import fast_hdbscan
-
 
 data_folder = 'data/'
 
@@ -19,7 +17,7 @@ def computeGraph(kwargs={}):
     data_arr = np.load(data_folder+'arxivML_test_data.npy')
     timestamps = data_arr[:,0]
     map_data = data_arr[:,1:]
-    clusterer = fast_hdbscan.HDBSCAN()
+    clusterer = DBSCAN()
 
     TM = tm.TemporalMapper(
         timestamps,
