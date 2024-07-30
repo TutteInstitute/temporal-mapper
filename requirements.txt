@@ -19,7 +19,7 @@ nc_time_axis>=1.4.1
 networkx>=3.1
 notebook>=7.2.1
 numba>=0.59.1
-1.23.0<=numpy<=1.26.4
+numpy<=1.26.4;>=1.23.0
 packaging>=24.1
 panel>=1.4.4
 param>=2.1.1
