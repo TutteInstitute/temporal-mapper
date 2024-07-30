@@ -387,23 +387,26 @@ def centroid_datamap(
 
     return ax
 
-def write_edge_bundling_javascript(TG):
+def export_to_javascript(path, TM):
     """ write the javascript file for Roberta's edge bundling code."""
     try:
-        pos = nx.get_node_attributes(TG.G, "centroid")
+        pos = nx.get_node_attributes(TM.G, "centroid")
     except(AttributeError):
-        TG.populate_node_attrs()
-        pos = nx.get_node_attributes(TG.G, "centroid")
+        TM.populate_node_attrs()
+        pos = nx.get_node_attributes(TM.G, "centroid")
     node_indices = {node:i for i, node in enumerate(pos.keys())}
     file = "const sampleData = {\n\tnodes: [\n"
-    for node in TG.G.nodes():
+    for node in TM.G.nodes():
         x,y = pos[node]
         file += '\t{'+f'x: {x}, y:{y}'+'},\n'
     file += "],\n edges: [\n"
-    for src, dst, data in TG.G.edges(data=True):
+    for src, dst, data in TM.G.edges(data=True):
         w = data['weight']
         file += '\t{'+f'source_node_idx: {node_indices[src]}, target_node_idx: {node_indices[dst]}'+'},\n'
     file += "]\n}"
+    with open(path, 'w') as f:
+        f.write(file)
+        f.close()
     return file
             
 def write_edge_bundling_datashader(TG,pos):

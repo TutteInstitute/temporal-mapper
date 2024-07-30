@@ -2,6 +2,8 @@
 __pycache__/*
 mapperplayground.ipynb
 data/.ipynb_checkpoints/*
+temporal-mapper/tests/__pycache__/*
+temporal-mapper/tests/.ipynb_checkpoints/*
 temporal-mapper/__pycache__/*
 temporal-mapper/.ipynb_checkpoints/*
 holoviews-main/*
