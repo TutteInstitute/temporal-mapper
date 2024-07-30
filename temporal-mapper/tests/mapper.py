@@ -9,7 +9,6 @@ import temporal_mapper as tm
 import utilities_ as tmutils
 import weighted_clustering as tmwc
 
-sys.path.append("./../../fast_hdbscan")
 import fast_hdbscan
 
 
