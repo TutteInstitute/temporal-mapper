@@ -1,7 +1,7 @@
 cftime>=1.6.4
 colorcet>=3.1.0
 contourpy>=1.2.1
-cupy>=13.2.0
+#cupy>=13.2.0
 cuspatial>=0.0.1
 dash_core_components>=2.0.0
 dash_html_components>=2.0.0
