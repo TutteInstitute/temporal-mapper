@@ -1,7 +1,0 @@
-README.md
-pyproject.toml
-temporal_mapper.egg-info/PKG-INFO
-temporal_mapper.egg-info/SOURCES.txt
-temporal_mapper.egg-info/dependency_links.txt
-temporal_mapper.egg-info/requires.txt
-temporal_mapper.egg-info/top_level.txt
