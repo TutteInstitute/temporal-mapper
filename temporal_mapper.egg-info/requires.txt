@@ -1,0 +1,13 @@
+numpy
+matplotlib
+pandas
+tqdm
+sklearn
+scipy
+networkx
+numba
+
+[visualizations]
+datamapplot
+datashader
+vectorizers
