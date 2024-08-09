@@ -9,3 +9,4 @@ temporal-mapper/.ipynb_checkpoints/*
 holoviews-main/*
 fast_hdbscan/*
 tests.ipynb
+tests/.venv/*
