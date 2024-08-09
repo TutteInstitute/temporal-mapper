@@ -6,6 +6,7 @@ in pkgs.mkShell{
     python-pkgs.pip
     python-pkgs.setuptools
     python-pkgs.build
+    python-pkgs.sphinx
   ]))
  ];
  shellHook = ''
