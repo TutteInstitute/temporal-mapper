@@ -21,15 +21,14 @@ Centroid Plot             |  Temporal-Semantic Plot
 :-------------------------:|:-------------------------:
 ![](./doc/arxiv_centroids.png)  |  ![](./doc/arxiv_time.png)
 
-### Conda Env
-The environment.yml file contains a dump of my conda env when I tested this code. 
-Stack overflow tells me that you can make a copy of the environment by running 
-`conda env create -f environment.yml`
-Worst case scenario you can just manually install all the usual packages. Just don't install HDBSCAN to 
-avoid collisions.
+### Installation
+Clone the repo and install:
+`git clone https://github.com/TutteInstitute/temporal-mapper.git`
+`cd temporal-mapper.git && pip install .`
+
 
 ### Usage
-The file `DemoV0.2.x.ipynb` is a start-to-finish example of how to generate a Sankey diagram with this package.
+The file `doc/Demov0.x.x.ipynb` is a start-to-finish example of how to generate a Sankey diagram with this package.
 
 ### Parameters
 For a complete listing of the parameters, check the [repo's GitHub wiki](https://github.com/TutteInstitute/temporal-mapper/wiki/API-Reference). 
