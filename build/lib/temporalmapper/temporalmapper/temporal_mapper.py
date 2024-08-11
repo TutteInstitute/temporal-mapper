@@ -1,8 +1,13 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+<<<<<<< HEAD
 from temporalmapper.utilities_ import *
 from temporalmapper.weighted_clustering import *
+=======
+from utilities_ import *
+from weighted_clustering import *
+>>>>>>> main
 from tqdm import tqdm, trange
 from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import StandardScaler
@@ -10,6 +15,11 @@ from scipy.sparse import issparse
 from sklearn.neighbors import NearestNeighbors
 from sklearn.base import ClusterMixin
 from datamapplot.palette_handling import palette_from_datamap
+from typing import Callable
+<<<<<<< HEAD
+=======
+#type array = np.typing.NDArray[np.float64]
+>>>>>>> main
 
 '''TemporalMapper class 
 minimal usage example: 
@@ -53,6 +63,7 @@ class TemporalMapper():
     """
     
     def __init__(
+<<<<<<< HEAD
         self, time, data, clusterer,
         N_checkpoints = None,
         neighbours = 50,
@@ -66,6 +77,22 @@ class TemporalMapper():
         kernel_params = None,
         verbose = False,
     ):
+=======
+        #self, time: array, data: array, clusterer: ClusterMixin, 
+        self, time, data, clusterer,
+        N_checkpoints: int = None,
+        neighbours: int = 50,
+        overlap: float = 0.5,
+        clusters = None,
+        checkpoints: array = None,
+        show_outliers: bool = False,
+        slice_method: str = 'time',
+        rate_sensitivity: float = 1,
+        kernel: Callable = gaussian,
+        kernel_params: Any = None,
+        verbose: bool = False,
+    )-> None:
+>>>>>>> main
         """
         Parameters 
         ----------
