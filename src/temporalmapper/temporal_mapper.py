@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-from utilities_ import *
-from weighted_clustering import *
+from temporalmapper.utilities_ import *
+from temporalmapper.weighted_clustering import *
 from tqdm import tqdm, trange
 from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import StandardScaler

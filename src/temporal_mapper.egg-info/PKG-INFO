@@ -8,7 +8,7 @@ Requires-Dist: numpy
 Requires-Dist: matplotlib
 Requires-Dist: pandas
 Requires-Dist: tqdm
-Requires-Dist: sklearn
+Requires-Dist: scikit-learn
 Requires-Dist: scipy
 Requires-Dist: networkx
 Requires-Dist: numba

@@ -2,7 +2,7 @@ numpy
 matplotlib
 pandas
 tqdm
-sklearn
+scikit-learn
 scipy
 networkx
 numba
