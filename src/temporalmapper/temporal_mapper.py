@@ -146,6 +146,7 @@ class TemporalMapper():
         self.show_outliers = False
         self.k = neighbours
         self.distance = None
+        self.cbeta = None
 
     def _compute_checkpoints(self):
         """ Compute evenly spaced checkpoints at which to center the mapper slices. """
@@ -211,7 +212,7 @@ class TemporalMapper():
         )
         radius = self.distance[:,-1]
         density = self.k*np.ones(self.n_samples)#**(-self.n_components-1)
-        temporal_width = [max(self.time[idx])-min(self.time[idx]) for idx in self.dist_indices]
+        temporal_width = [max(np.abs(self.time[idx]-self.time[idx[0]])) for idx in self.dist_indices]
         density /= temporal_width
         
         # apply the smoothing window:
@@ -228,6 +229,20 @@ class TemporalMapper():
             self.density = density**self.sensitivity
         return self.density
 
+    def _compute_kernel_width(self):
+        """ Return the parameter c(beta) for the kernel width."""
+        if self.density is None:
+            self._compute_density()
+        sorting_index = np.argsort(self.density)
+        reverse_sort_dict = {sorting_index[i]:i for i in range(self.n_samples)}
+        reverse_sort_index = np.zeros(self.n_samples, dtype=int)
+        for s in sorting_index:
+            reverse_sort_index[s] = reverse_sort_dict[s]
+        cdf = reverse_sort_index/self.n_samples
+        # todo explain the magic 10 here
+        self.cbeta = cdf + 10*(1-cdf)
+        return self.cbeta
+
     def _cluster(self):
         """ At each checkpoint, use the clustering algorithm to cluster the points in the
             associated bin. A convention here is that a cluster of -1 means noise, and a 
@@ -237,13 +252,15 @@ class TemporalMapper():
             self._compute_checkpoints()
         if self.density is None:
             self._compute_density()
+        if self.cbeta is None:
+            self._compute_kernel_width()
         if self.verbose:
             print("Clustering at each time slice...")
         clusters, weights = weighted_clusters(
             self.data,
             self.time,
             self.checkpoints,
-            self.density/np.median(self.density),
+            1/self.cbeta,
             self.clusterer,
             self.kernel,
             self.g,
