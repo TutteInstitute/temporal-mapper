@@ -5,10 +5,9 @@ import pickle as pkl
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 
-sys.path.append(os.path.relpath("./../temporal-mapper"))
-import temporal_mapper as tm
-import utilities_ as tmutils
-import weighted_clustering as tmwc
+import temporalmapper as tm
+import temporalmapper.utilities_ as tmutils
+import temporalmapper.weighted_clustering as tmwc
 
 data_folder = 'data/'
 
