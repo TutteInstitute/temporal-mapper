@@ -408,7 +408,7 @@ def export_to_javascript(path, TM):
         f.write(file)
         f.close()
     return file
-            
+
 def write_edge_bundling_datashader(TG,pos):
     """ Use datashader to bundle edges from connected components together."""
     bundled_df = None
@@ -440,7 +440,4 @@ def write_edge_bundling_datashader(TG,pos):
                 print(bundled_df)
                 print(cpt_bundled_edges)
     return bundled_df
-
-
     
-    return bundled
