@@ -440,4 +440,13 @@ def write_edge_bundling_datashader(TG,pos):
                 print(bundled_df)
                 print(cpt_bundled_edges)
     return bundled_df
+
+def sliceograph(TG, ax = None):
+    if ax is None:
+        ax = plt.gca()
+    ax.set_ylim(0,1)
+    for i in range(TG.N_checkpoints):
+        slice_ = (TG.weights[i] >= 0.1).nonzero()[0]
+        ax.scatter(TG.time[slice_], (0.01)*(i%2)*np.ones(np.shape(slice_))+0.45, s=0.5, c='k')
+    return ax
     

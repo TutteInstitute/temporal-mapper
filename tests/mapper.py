@@ -13,14 +13,17 @@ data_folder = 'data/'
 
 def computeGraph(kwargs={}):
     """ Integration test from loading data to producing a graph. """
-    data_arr = np.load(data_folder+'arxivML_test_data.npy')
-    timestamps = data_arr[:,0]
-    map_data = data_arr[:,1:]
+    data_time = np.load(data_folder+"genus1_test.npy")
+    data_unsort = data_time[:,1].T
+    timestamps_unsort = data_time[:,0].T
+    sorted_indices = np.argsort(timestamps_unsort)
+    data = data_unsort[sorted_indices]
+    timestamps = timestamps_unsort[sorted_indices]
+    N_data = np.size(timestamps) 
     clusterer = DBSCAN()
-
     TM = tm.TemporalMapper(
         timestamps,
-        map_data,
+        data,
         clusterer,
         **kwargs,
     )
@@ -103,3 +106,4 @@ def test_genus1Correctness():
     for i in nx.cycle_basis(G):
         loops += 1
     assert loops == 1
+

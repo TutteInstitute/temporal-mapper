@@ -214,7 +214,6 @@ class TemporalMapper():
         radius = self.distance[:,-1]
         density = self.k*np.ones(self.n_samples)
         temporal_width = np.array([max(self.time[idx])-min(self.time[idx]) for idx in self.dist_indices])
-        #temporal_width = [max(np.abs(self.time[idx]-self.time[idx[0]])) for idx in self.dist_indices]
         density /= temporal_width
         
         # apply the smoothing window:
@@ -324,7 +323,6 @@ class TemporalMapper():
             clust1 = self.clusters[i]
             clust2 = self.clusters[i+1]
             
-            #int_idx = np.intersect1d(slices[i], slices[i+1])
             for j in slices[i]:
                 c1 = clust1[j]
                 c2 = clust2[j]
@@ -442,7 +440,6 @@ class TemporalMapper():
         cl_idx = self.G.nodes()[node]['cluster_no']
         vals_in_cl = (self.clusters[t_idx] == cl_idx).nonzero()
         return vals_in_cl[0]
-
     
     def get_dir_subvertices(self, v, threshold=0.1, backwards=True):
         vertices = [v]
