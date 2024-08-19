@@ -6,7 +6,7 @@ from vectorizers import NgramVectorizer
 from tqdm import tqdm, trange
 from matplotlib.colors import to_rgba, rgb_to_hsv, hsv_to_rgb
 from datashader.bundling import hammer_bundle
-from pandas import DataFrame
+from pandas import DataFrame, concat
 
 def std_sigmoid(x):
     mu = np.mean(x)
@@ -410,12 +410,37 @@ def export_to_javascript(path, TM):
     return file
             
 def write_edge_bundling_datashader(TG,pos):
-    edge_df = DataFrame()
-    node_df = DataFrame()
-    node_idx = {node:i for i, node in enumerate(pos.keys())}
-    node_df['name'] = pos.keys()
-    node_df['x'] = [val[0] for val in pos.values()]
-    node_df['y'] = [val[1] for val in pos.values()]
-    edge_df['source'] = [node_idx[src] for src,dst in TG.G.edges()]
-    edge_df['target'] = [node_idx[dst] for src,dst in TG.G.edges()]
-    return hammer_bundle(node_df, edge_df)
+    """ Use datashader to bundle edges from connected components together."""
+    bundled_df = None
+    for cpt in nx.connected_components(TG.G.to_undirected()):
+        if len(cpt) == 1:
+            continue
+        cpt_subgraph = TG.G.subgraph(cpt)
+        edge_df = DataFrame()
+        node_df = DataFrame()
+        cpt_pos = {node:pos[node] for node in cpt}
+        node_idx = {node:i for i, node in enumerate(cpt_pos.keys())}
+        node_df['name'] = cpt_pos.keys()
+        node_df['x'] = [val[0] for val in cpt_pos.values()]
+        node_df['y'] = [val[1] for val in cpt_pos.values()]
+        edge_df['source'] = [node_idx[src] for src,dst in cpt_subgraph.edges()]
+        edge_df['target'] = [node_idx[dst] for src,dst in cpt_subgraph.edges()]
+        try:
+            cpt_bundled_edges = hammer_bundle(node_df,edge_df)
+        except ValueError:
+            print(node_df)
+            print(edge_df)
+            print(cpt)
+        if bundled_df is None:
+            bundled_df = cpt_bundled_edges
+        else:
+            try:
+                bundled_df = concat([bundled_df, cpt_bundled_edges])
+            except ValueError:
+                print(bundled_df)
+                print(cpt_bundled_edges)
+    return bundled_df
+
+
+    
+    return bundled

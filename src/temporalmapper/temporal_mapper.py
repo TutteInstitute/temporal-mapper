@@ -158,10 +158,11 @@ class TemporalMapper():
             checkpoints = np.linspace(np.amin(self.time), np.amax(self.time), self.N_checkpoints+2)[1:-1]
         self.checkpoints = checkpoints
         if self.slice_method == 'morse':
+            print("Warning: Morse checkpoint selection is barely working.")
             self._compute_critical_points()
         return checkpoints
 
-    def _compute_critical_points():
+    def _compute_critical_points(self):
         if self.distance is None:
             self._compute_knn()
         if verbose:
@@ -211,8 +212,9 @@ class TemporalMapper():
              for k in range(self.data.shape[1])]     
         )
         radius = self.distance[:,-1]
-        density = self.k*np.ones(self.n_samples)#**(-self.n_components-1)
-        temporal_width = [max(np.abs(self.time[idx]-self.time[idx[0]])) for idx in self.dist_indices]
+        density = self.k*np.ones(self.n_samples)
+        temporal_width = np.array([max(self.time[idx])-min(self.time[idx]) for idx in self.dist_indices])
+        #temporal_width = [max(np.abs(self.time[idx]-self.time[idx[0]])) for idx in self.dist_indices]
         density /= temporal_width
         
         # apply the smoothing window:
@@ -221,16 +223,18 @@ class TemporalMapper():
             [np.average(density[idx], weights=cosine_window(self.distance[k], d_window))
              for k, idx in enumerate(self.dist_indices)]
         )
-        density = std_sigmoid(smoothed_densities)
+        smoothed_density = std_sigmoid(smoothed_densities)
 
         if self.sensitivity == -1:
-            self.density = 1/(1-np.log2(density))
+            self.density = 1/(1-np.log2(smoothed_densities))
         else:
-            self.density = density**self.sensitivity
+            self.density = smoothed_densities**self.sensitivity
         return self.density
 
     def _compute_kernel_width(self):
-        """ Return the parameter c(beta) for the kernel width."""
+        """ Return the parameter c(beta) for the kernel width.
+            Currently unused.
+        """
         if self.density is None:
             self._compute_density()
         sorting_index = np.argsort(self.density)
@@ -239,8 +243,8 @@ class TemporalMapper():
         for s in sorting_index:
             reverse_sort_index[s] = reverse_sort_dict[s]
         cdf = reverse_sort_index/self.n_samples
-        # todo explain the magic 10 here
-        self.cbeta = cdf + 10*(1-cdf)
+        c_max = 2 # todo magic number
+        self.cbeta = c_max*cdf+(1-cdf)
         return self.cbeta
 
     def _cluster(self):
@@ -260,7 +264,8 @@ class TemporalMapper():
             self.data,
             self.time,
             self.checkpoints,
-            1/self.cbeta,
+            #self.cbeta,
+            self.density/np.median(self.density),
             self.clusterer,
             self.kernel,
             self.g,

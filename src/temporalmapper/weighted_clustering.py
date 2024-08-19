@@ -12,9 +12,9 @@ def gaussian(t0, t, density, binwidth, epsilon = 0.1, params=None):
 
 def square(t0, t, density, binwidth, epsilon = 0.1, params=None):
     distance = (t-t0)
-    out = (np.abs(distance)<(np.sqrt(
-        binwidth/(4*density)
-    ))).astype(int)
+    out = (np.abs(distance)<(
+        np.sqrt(binwidth/(4*density))
+    )).astype(int)
     return out
    
 def cosine_window(distance, width=1):
