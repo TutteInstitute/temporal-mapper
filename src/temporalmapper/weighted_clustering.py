@@ -7,13 +7,13 @@ from tqdm import tqdm, trange
 from warnings import warn
 
 def gaussian(t0, t, density, binwidth, epsilon = 0.1, params=None):
-    K = -np.log(epsilon)/((binwidth/2)**2) 
-    return np.exp(-K*(density*(t-t0))**2)
+    K = -np.log(epsilon)/((binwidth)**2) 
+    return np.exp(-K*((t-t0)/density)**2)
 
 def square(t0, t, density, binwidth, epsilon = 0.1, params=None):
     distance = (t-t0)
     out = (np.abs(distance)<(
-        np.sqrt(binwidth/(4*density))
+        binwidth/density
     )).astype(int)
     return out
    
@@ -64,7 +64,7 @@ def weighted_clusters(
     cp_with_ends = [np.amin(time)]+list(checkpoints)+[np.amax(time)]
     for idx, t0 in enumerate(checkpoints):
         bin_width = (cp_with_ends[idx+2]-cp_with_ends[idx])/2
-        bin_width *= (1+overlap)
+        bin_width *= (1/(2-overlap))
         if kernel_params == None:
             for i in np.arange(np.size(time)):
                 weights[idx,i] = kernel(

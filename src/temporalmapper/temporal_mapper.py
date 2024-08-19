@@ -223,7 +223,7 @@ class TemporalMapper():
             [np.average(density[idx], weights=cosine_window(self.distance[k], d_window))
              for k, idx in enumerate(self.dist_indices)]
         )
-        smoothed_density = std_sigmoid(smoothed_densities)
+        smoothed_densities = std_sigmoid(smoothed_densities)
 
         if self.sensitivity == -1:
             self.density = 1/(1-np.log2(smoothed_densities))
@@ -264,7 +264,6 @@ class TemporalMapper():
             self.data,
             self.time,
             self.checkpoints,
-            #self.cbeta,
             self.density/np.median(self.density),
             self.clusterer,
             self.kernel,
