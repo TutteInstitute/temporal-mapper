@@ -76,7 +76,7 @@ def test_timeSemanticPlot():
     
 
 def test_genus1Correctness():
-    data_time = np.load("/work/home/kdrusci/mapper-experiments/data/genus1_test.npy")
+    data_time = np.load(data_folder+"genus1_test.npy")
     data_unsort = data_time[:,1].T
     timestamps_unsort = data_time[:,0].T
     sorted_indices = np.argsort(timestamps_unsort)
