@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+    <title>TemporalMapper API &#8212; Temporal Mapper 0.3.2 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Installation" href="installation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="temporalmapper-api">
+<h1>TemporalMapper API<a class="headerlink" href="#temporalmapper-api" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="temporalmapper.TemporalMapper">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">temporalmapper.</span></span><span class="sig-name descname"><span class="pre">TemporalMapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clusterer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N_checkpoints=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">neighbours=50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clusters=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoints=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_outliers=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slice_method='time'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate_sensitivity=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel=&lt;function</span> <span class="pre">gaussian&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kernel_params=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.TemporalMapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate and store a temporal graph - a 1D-mapper-style representation of temporal data.</p>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Permalink to this heading">¶</a></h2>
+<dl class="simple">
+<dt>G: networkx.classes.Digraph(Graph)</dt><dd><p>The temporal graph itself.</p>
+</dd>
+</dl>
+</section>
+<section id="methods">
+<h2>Methods<a class="headerlink" href="#methods" title="Permalink to this heading">¶</a></h2>
+<dl class="simple">
+<dt>fit():</dt><dd><p>Run the fuzzy mapper algorithm to construct the temporal graph.</p>
+</dd>
+<dt>get_vertex_data(str node):</dt><dd><p>Returns the index of elements of <code class="docutils literal notranslate"><span class="pre">data</span></code> which are in vertex <code class="docutils literal notranslate"><span class="pre">node</span></code>.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<span class="target" id="module-temporalmapper.utilities_"></span><dl class="py function">
+<dt class="sig sig-object py" id="temporalmapper.utilities_.centroid_datamap">
+<span class="sig-prename descclassname"><span class="pre">temporalmapper.utilities_.</span></span><span class="sig-name descname"><span class="pre">centroid_datamap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_edges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vertices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_colouring</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'desaturate'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.utilities_.centroid_datamap" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the temporal graph in 2d with vertices at their cluster centroids.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>TemporalGraph: temporal_mapper.TemporalGraph</dt><dd><p>The temporal graph object to plot.</p>
+</dd>
+<dt>ax: matplotlib.axes (optional, default=None)</dt><dd><p>Matplotlib axis to draw on</p>
+</dd>
+<dt>node_colouring: <code class="docutils literal notranslate"><span class="pre">'desaturate'</span></code> or <code class="docutils literal notranslate"><span class="pre">'override'</span></code> (optional, default=’desaturate’)</dt><dd><p>Determines how to incorporate temporal information in the color. 
+The desaturate option will take the semantic colouring from datamapplot and desaturate points that are further back in time.
+The override option will throw away the semantic colouring and colour points only based on their time value.</p>
+</dd>
+<dt>vertices: list (optional, default=None)</dt><dd><p>List of nodes in TG.G to include in the plot.</p>
+</dd>
+<dt>label_edges: bool (optional, default=False)</dt><dd><p>If true, include text labels of the edge weight on top of edges.</p>
+</dd>
+<dt>edge_scaling: float (optional, default = 1)</dt><dd><p>Scales the thickness of edges, larger is thicker.</p>
+</dd>
+<dt>bundle: bool (optional, default=True)</dt><dd><p>If true, bundle the edges of the graph using datashader’s hammer_bundle function.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>Returns: matplotlib.axes</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="temporalmapper.utilities_.time_semantic_plot">
+<span class="sig-prename descclassname"><span class="pre">temporalmapper.utilities_.</span></span><span class="sig-name descname"><span class="pre">time_semantic_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">semantic_axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vertices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_edges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.utilities_.time_semantic_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a time-semantic plot of the graph <code class="docutils literal notranslate"><span class="pre">TemporalGraph.G</span></code>.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>TemporalGraph: temporal_mapper.TemporalGraph</dt><dd><p>The temporal graph object to plot.</p>
+</dd>
+<dt>semantic_axis: ndarray</dt><dd><p>Array of shape <code class="docutils literal notranslate"><span class="pre">(n_samples,)</span></code> with the 1D semantic data to use in the plot.</p>
+</dd>
+<dt>ax: matplotlib.axes (optional, default=None)</dt><dd><p>Matplotlib axis to draw on</p>
+</dd>
+<dt>vertices: list (optional, default=None)</dt><dd><p>List of nodes in TG.G to include in the plot.</p>
+</dd>
+<dt>label_edges: bool (optional, default=False)</dt><dd><p>If true, include text labels of the edge weight on top of edges.</p>
+</dd>
+<dt>edge_scaling: float (optional, default = 1)</dt><dd><p>Scales the thickness of edges, larger is thicker.</p>
+</dd>
+<dt>bundle: bool (optional, default=True)</dt><dd><p>If true, bundle the edges of the graph using datashader’s hammer_bundle function.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>Returns: matplotlib.axes</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="temporalmapper.utilities_.sliceograph">
+<span class="sig-prename descclassname"><span class="pre">temporalmapper.utilities_.</span></span><span class="sig-name descname"><span class="pre">sliceograph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.utilities_.sliceograph" title="Permalink to this definition">¶</a></dt>
+<dd><p>Produce a sliceograph of a TemporalMapper</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>TemporalGraph: temporal_mapper.TemporalGraph</dt><dd><p>The temporal graph object to plot.</p>
+</dd>
+<dt>ax: matplotlib.axes (optional, default=None)</dt><dd><p>Matplotlib axis to draw on</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>Returns: matplotlib.axes</p>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Temporal Mapper</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">TemporalMapper API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.TemporalMapper"><code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.utilities_.centroid_datamap"><code class="docutils literal notranslate"><span class="pre">centroid_datamap()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.utilities_.time_semantic_plot"><code class="docutils literal notranslate"><span class="pre">time_semantic_plot()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.utilities_.sliceograph"><code class="docutils literal notranslate"><span class="pre">sliceograph()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="installation.html" title="previous chapter">Installation</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;1980, Kaleb D Ruscitti.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 0.7.16</a>
+      
+      |
+      <a href="_sources/api.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
