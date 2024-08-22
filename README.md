@@ -5,7 +5,7 @@ This is a library for using the Mapper for temporal topic modelling.
 Though things broadly work now, the edge cases have not been throughly 
 tested.
 
-Direct questions to Kaleb D. Ruscitti; (kaleb.ruscitti@uwaterloo.ca).
+Direct questions to Kaleb D. Ruscitti: kaleb.ruscitti at uwaterloo.ca .
 
 Complete documentation is under construction on [Read The Docs](
 https://temporal-mapper.readthedocs.io/en/latest/).
@@ -30,7 +30,7 @@ graph:
 
 Centroid Plot             |  Temporal-Semantic Plot
 :-------------------------:|:-------------------------:
-![](./doc/arxiv_centroids.png)  |  ![](./doc/arxiv_time.png)
+![](./docs/arxiv_centroids.png)  |  ![](./docs/arxiv_time.png)
 
 ### Installation
 Clone the repo and install: 
