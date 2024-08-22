@@ -18,11 +18,11 @@ Requires-Dist: datashader; extra == "visualizations"
 Requires-Dist: vectorizers; extra == "visualizations"
 
 ## Temporal/Fuzzy Mapper
-### V.0.3.1 - July 23 '24
+### V.0.4.0 - August 19 '24
 -----------------------------------------------
 This is a library for using the Mapper for temporal topic modelling. Though things broadly work now, the edge cases have not been throughly tested.
 
-Direct questions to Kaleb D. Ruscitti; (kaleb.ruscitti@cse-cst.gc.ca before Aug 23 2024, or kaleb.ruscitti@uwaterloo.ca after that).
+Direct questions to Kaleb D. Ruscitti; (kkaleb.ruscitti@uwaterloo.ca).
 
 ### Example:
 #### ArXiV Papers 
@@ -43,11 +43,11 @@ Centroid Plot             |  Temporal-Semantic Plot
 ### Installation
 Clone the repo and install:
 `git clone https://github.com/TutteInstitute/temporal-mapper.git`
-`cd temporal-mapper.git && pip install .`
+`cd temporal-mapper && pip install .`
 
 
 ### Usage
-The file `doc/Demov0.x.x.ipynb` is a start-to-finish example of how to generate a Sankey diagram with this package.
+The file `doc/DemoNotebook.ipynb` is a start-to-finish example of how to generate a Sankey diagram with this package.
 
 ### Parameters
 For a complete listing of the parameters, check the [repo's GitHub wiki](https://github.com/TutteInstitute/temporal-mapper/wiki/API-Reference). 
