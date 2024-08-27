@@ -26,7 +26,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="TemporalMapper API" href="api.html" />
+    <link rel="next" title="Visualizing Results of TemporalMapper" href="visualization.html" />
     <link rel="prev" title="Installation" href="installation.html" /> 
 </head>
 
@@ -54,8 +54,10 @@
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Understanding DBMapper</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Mapper">Mapper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#DBMapper">DBMapper</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualizing Results of TemporalMapper</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
 <ul>
@@ -102,10 +104,12 @@
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">temporalmapper</span> <span class="k">as</span> <span class="nn">tm</span>
 <span class="kn">import</span> <span class="nn">temporalmapper.utilities_</span> <span class="k">as</span> <span class="nn">tmutils</span>
+<span class="kn">import</span> <span class="nn">temporalmapper.weighted_clustering</span> <span class="k">as</span> <span class="nn">tmwc</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">requests</span><span class="o">,</span> <span class="nn">io</span>
 <span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="kn">import</span> <span class="n">DBSCAN</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="kn">import</span> <span class="n">make_axes_locatable</span>
 </pre></div>
 </div>
 </div>
@@ -172,7 +176,7 @@
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-&lt;temporalmapper.temporal_mapper.TemporalMapper at 0x7fbabc1c5a50&gt;
+&lt;temporalmapper.temporal_mapper.TemporalMapper at 0x7f8b74e05120&gt;
 </pre></div></div>
 </div>
 <p>Step 1 of the Mapper procedure is to split the image of <span class="math notranslate nohighlight">\(f\)</span> in <span class="math notranslate nohighlight">\(\mathbb{R}\)</span> into overlapping bins. Our samples have <span class="math notranslate nohighlight">\(f(x) \in [-3,3]\)</span>, and we initialized the <code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code> with <code class="docutils literal notranslate"><span class="pre">N_checkpoints=10</span></code> and <code class="docutils literal notranslate"><span class="pre">overlap=0.5</span></code>, so it splits <span class="math notranslate nohighlight">\([-3,3]\)</span> into 10 intervals that overlap by half of the maximum allowable amount.</p>
@@ -227,7 +231,7 @@
 <p>The points in bin 5 are partitioned into two clusters, so we will add two vertices <span class="math notranslate nohighlight">\(c^5_1\)</span> and <span class="math notranslate nohighlight">\(c^5_2\)</span> to the graph. The points in bin 6 are partitioned into three clusters, so we will add three vertices to the graph.</p>
 <p>Finally, step 4 of Mapper tells us to draw edges between these vertices with weights given by the number of points in the intersection of the vertices.</p>
 <p>From the figure above, we can see that the left-hand size yellow cluster intersects the right-hand-size yellow and green clusters. The purple cluster intersects the blue cluster.</p>
-<p>Once we add edges for each intersection <span class="math notranslate nohighlight">\(I_k \cap I_{k+1}\)</span> in the open cover, we can visualize the resulting graph <span class="math notranslate nohighlight">\(G\)</span> using one of the visualization options included in <code class="docutils literal notranslate"><span class="pre">temporalmapper.utilities</span></code>.</p>
+<p>Once we add edges for each intersection <span class="math notranslate nohighlight">\(I_k \cap I_{k+1}\)</span> in the open cover, we can visualize the resulting graph <span class="math notranslate nohighlight">\(G\)</span> using one of the visualization options included in <code class="docutils literal notranslate"><span class="pre">temporalmapper.utilities</span></code>. In this visualization, the vertices are positioned on the centroids of the data contained in the corresponding cluster.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
@@ -245,6 +249,224 @@
 <img alt="_images/dbmapper_theory_13_0.png" src="_images/dbmapper_theory_13_0.png" />
 </div>
 </div>
+<p>Comparing this graph to the data itself, one can see how Mapper captures a 1-dimensional representation of the manifold.</p>
+</section>
+<section id="DBMapper">
+<h2>DBMapper<a class="headerlink" href="#DBMapper" title="Permalink to this heading"></a></h2>
+<p>Now that we understand Mapper, we can explain DBMapper.</p>
+<p>DBMapper is built to address the fragility of Mapper’s results under change-of-parameters for data sampled from a manifold with non-uniform density. Mapper requires a choice of the number of intervals <span class="math notranslate nohighlight">\(N\)</span> and the percentage overlap <span class="math notranslate nohighlight">\(g\)</span> of the intervals. These parameters determine the <em>resolution</em> of topological features that one can detect. As <span class="math notranslate nohighlight">\(N\)</span> grows and <span class="math notranslate nohighlight">\(g\)</span> shrinks, one can detect smaller topological features.</p>
+<p>However, when one has finite samples from the manifold <span class="math notranslate nohighlight">\(X\)</span>, this imposes a limit on how large one can choose <span class="math notranslate nohighlight">\(N\)</span> and how small one can choose <span class="math notranslate nohighlight">\(g\)</span>. Mapper draws edges based on samples in the overlap of clusters. As the resolution is improved, the probability of having samples in the intersection decreases. Thus, Mapper will draw fewer and fewer edges, disconnecting the graph more and more.</p>
+<p>This means there is some optimal parameters for any given dataset, which can detect the most topological features, but without spurriously disconnecting the manifold. This optimal choice is not knowable unless one already knows the topology of the underlying manifold. It also varies for different regions in the manifold with different densities.</p>
+<p>To demonstrate this, let’s run Mapper on another synthetic dataset, this time with varying local density. The samples are taken from a 2d manifold with two components, with high sampling density from one and low from the other. The high density component has a genus-1 topological feature.</p>
+<p>We will use the <span class="math notranslate nohighlight">\(x\)</span>-axis as a Morse function, again labeled <code class="docutils literal notranslate"><span class="pre">time</span></code> in the code snippets.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">demo_data_file</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com/TutteInstitute/temporal-mapper/raw/docs/docs/data/genus1_demo.npy&quot;</span><span class="p">)</span>
+<span class="n">data_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">demo_data_file</span><span class="o">.</span><span class="n">content</span><span class="p">))</span>
+<span class="n">data_unsort</span> <span class="o">=</span> <span class="n">data_time</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+<span class="n">time_unsort</span> <span class="o">=</span> <span class="n">data_time</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+<span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">time_unsort</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">data_unsort</span><span class="p">[</span><span class="n">sorted_indices</span><span class="p">]</span>
+<span class="n">time</span> <span class="o">=</span> <span class="n">time_unsort</span><span class="p">[</span><span class="n">sorted_indices</span><span class="p">]</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Semantic space ($\mathbb</span><span class="si">{R}</span><span class="s2">^d$)&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;f(x)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/dbmapper_theory_17_0.png" src="_images/dbmapper_theory_17_0.png" />
+</div>
+</div>
+<p>Now let’s run Mapper on this dataset with a small range of parameters. The resolution improves as we move from the top left to the bottom right in the grid of figures.</p>
+<p>For the low resolution parameters, Mapper finds both components of the manifold and correctly connects them across the range of <span class="math notranslate nohighlight">\(x\)</span> values, but it doesn’t find the loop. For the high resolution parameters, Mapper finds the loop, but it disconnects the low resolution component. This is showing us how the optimal resolution of the high density region of the manifold is much better than the optimal resolution of the low density region.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">checkpoint_numbers</span> <span class="o">=</span> <span class="p">[</span><span class="mi">12</span><span class="p">,</span><span class="mi">18</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">30</span><span class="p">]</span>
+<span class="n">overlap_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.8</span><span class="p">,</span><span class="mf">0.6</span><span class="p">,</span><span class="mf">0.4</span><span class="p">,</span><span class="mf">0.2</span><span class="p">]</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mf">8.5</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">dpi</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">clusterer</span> <span class="o">=</span> <span class="n">DBSCAN</span><span class="p">()</span>
+<span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+    <span class="n">TM</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">TemporalMapper</span><span class="p">(</span>
+        <span class="n">time</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">clusterer</span><span class="p">,</span>
+        <span class="n">N_checkpoints</span> <span class="o">=</span> <span class="n">checkpoint_numbers</span><span class="p">[</span><span class="n">k</span><span class="o">%</span><span class="k">4</span>],
+        <span class="n">neighbours</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="n">overlap_parameters</span><span class="p">[</span><span class="n">j</span><span class="p">],</span>
+        <span class="n">rate_sensitivity</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">kernel</span><span class="o">=</span><span class="n">tmwc</span><span class="o">.</span><span class="n">square</span>
+    <span class="p">)</span>
+    <span class="n">TM</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+    <span class="n">tmutils</span><span class="o">.</span><span class="n">time_semantic_plot</span><span class="p">(</span><span class="n">TM</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+    <span class="n">xmin</span><span class="p">,</span><span class="n">xmax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+    <span class="n">ymin</span><span class="p">,</span><span class="n">ymax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">xmin</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span><span class="n">ymin</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span><span class="sa">fr</span><span class="s1">&#39;$n$=</span><span class="si">{</span><span class="n">TM</span><span class="o">.</span><span class="n">N_checkpoints</span><span class="si">}</span><span class="s1">, $g$=</span><span class="si">{</span><span class="n">TM</span><span class="o">.</span><span class="n">g</span><span class="si">}</span><span class="s1">, $k$=</span><span class="si">{</span><span class="mi">50</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">k</span><span class="o">%</span><span class="k">4</span>==3:
+        <span class="n">j</span><span class="o">+=</span><span class="mi">1</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">wspace</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/dbmapper_theory_19_0.png" src="_images/dbmapper_theory_19_0.png" />
+</div>
+</div>
+<p>Now let’s see how DBMapper solves this problem.</p>
+<p>Taking the 4-step description of Mapper above, DBMapper is exactly the same in steps 1, 3 and 4. Step 2 is changed to take the local density of the samples into account, as we will now describe.</p>
+<p>In Step 2, we took each interval <span class="math notranslate nohighlight">\(I_k\)</span> in the chosen cover of <span class="math notranslate nohighlight">\(f(X)\)</span>, found the set of points for which <span class="math notranslate nohighlight">\(f(X) \in I_k\)</span>, and clustered that set. If we let <span class="math notranslate nohighlight">\(\mathbb{X}_n\)</span> denote our set of samples from <span class="math notranslate nohighlight">\(X\)</span>, then the set we are clustering is</p>
+<div class="math notranslate nohighlight">
+\[U_k := f^{-1}(I_k) \cap \mathbb{X}_n.\]</div>
+<p>What density-based Mapper does is replace this pullback set <span class="math notranslate nohighlight">\(U_k\)</span>, with a <em>kerneled-pullback</em> set <span class="math notranslate nohighlight">\(V_k\)</span>, which is sensitive to the local density of <span class="math notranslate nohighlight">\(\mathbb{X}_n\)</span>.</p>
+<p>One way to define <span class="math notranslate nohighlight">\(U_k\)</span> is by thinking of putting a square kernel <span class="math notranslate nohighlight">\(K\)</span> on the set <span class="math notranslate nohighlight">\(f(X)\)</span>, with bounds defined by <span class="math notranslate nohighlight">\(I_k\)</span>. If we let <span class="math notranslate nohighlight">\(m_k\)</span> denote the midpoint of the interval <span class="math notranslate nohighlight">\(I_k\)</span>, and <span class="math notranslate nohighlight">\(w\)</span> the width of <span class="math notranslate nohighlight">\(I_k\)</span>, then we can define</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}K_k(x) = \begin{cases}
+   1 &amp; |f(x)-f(m_k)| &lt; w/2, \\
+   0 &amp; else
+  \end{cases}\end{split}\]</div>
+<p>Then <span class="math notranslate nohighlight">\(U_k = K_k^{-1}(1)\)</span>.</p>
+<p>Now suppose that we let <span class="math notranslate nohighlight">\(\lambda(x)\)</span> denote the local density of <span class="math notranslate nohighlight">\(\mathbb{X}_n\)</span> near <span class="math notranslate nohighlight">\(x\)</span>. We can imagine a square kernel whose width depends on the local density; <span class="math notranslate nohighlight">\(w(\lambda)\)</span>, and defining a density sensitive kernel:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}K_k(x) = \begin{cases}
+   1 &amp; |f(x)-f(m_k)| &lt; w(\lambda)/2, \\
+   0 &amp; else
+  \end{cases}\end{split}\]</div>
+<p>By choosing a good function <span class="math notranslate nohighlight">\(w(\lambda)\)</span>, we can refine the cover we use in Mapper in regions of high density, while keeping the cover coarse in regions of low density.</p>
+<p>Let’s initialize a new <code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code> object, this time with <code class="docutils literal notranslate"><span class="pre">rate_sensitivity=1</span></code> so that it will use these density sensitive kernels.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TM</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">TemporalMapper</span><span class="p">(</span>
+    <span class="n">time</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">clusterer</span><span class="p">,</span>
+    <span class="n">N_checkpoints</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+    <span class="n">neighbours</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="n">rate_sensitivity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">kernel</span><span class="o">=</span><span class="n">tmwc</span><span class="o">.</span><span class="n">square</span>
+<span class="p">)</span>
+<span class="n">TM</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;temporalmapper.temporal_mapper.TemporalMapper at 0x7f8b72cf56f0&gt;
+</pre></div></div>
+</div>
+<p>We can compare the sets <span class="math notranslate nohighlight">\(U_k\)</span> and <span class="math notranslate nohighlight">\(V_k\)</span> used in Mapper and DBMapper respectively:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">idx</span><span class="o">=</span><span class="mi">2</span>
+<span class="n">slice_</span> <span class="o">=</span> <span class="p">(</span><span class="n">TM</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+<span class="n">cp_with_ends</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">time</span><span class="p">)]</span><span class="o">+</span><span class="nb">list</span><span class="p">(</span><span class="n">TM</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">)</span><span class="o">+</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">time</span><span class="p">)]</span>
+<span class="n">bin_width</span> <span class="o">=</span> <span class="p">(</span><span class="n">cp_with_ends</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">cp_with_ends</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span><span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;$f$-Density&quot;</span><span class="p">)</span>
+<span class="n">sca</span><span class="o">=</span><span class="n">ax1</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="n">TM</span><span class="o">.</span><span class="n">density</span><span class="p">)</span>
+<span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax1</span><span class="p">)</span>
+<span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s1">&#39;5%&#39;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sca</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;vertical&#39;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;x-axis&quot;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;PCA to 1d&quot;</span><span class="p">)</span>
+
+
+<span class="n">tstr</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Pullback of $(</span><span class="si">{</span><span class="n">TM</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">-</span><span class="p">(</span><span class="n">bin_width</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">TM</span><span class="o">.</span><span class="n">g</span><span class="p">)</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">TM</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">+</span><span class="n">bin_width</span><span class="o">/</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">TM</span><span class="o">.</span><span class="n">g</span><span class="p">)</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">)$&#39;</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">tstr</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="n">slice_</span><span class="p">],</span><span class="n">data</span><span class="p">[</span><span class="n">slice_</span><span class="p">],</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;x-axis&quot;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">TM</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="n">bin_width</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">TM</span><span class="o">.</span><span class="n">g</span><span class="p">),</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">TM</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">-</span><span class="p">(</span><span class="n">bin_width</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">TM</span><span class="o">.</span><span class="n">g</span><span class="p">),</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/dbmapper_theory_23_0.png" src="_images/dbmapper_theory_23_0.png" />
+</div>
+</div>
+<p>The left-side plot shows the approximated local <span class="math notranslate nohighlight">\(f\)</span>-density of the samples and the right-side plot shows the set <span class="math notranslate nohighlight">\(V_{2}\)</span>. Points coloured red are in <span class="math notranslate nohighlight">\(V_{2}\)</span>, and the black lines show the extent of the interval <span class="math notranslate nohighlight">\(I_2\)</span>. Points between the black lines would be in <span class="math notranslate nohighlight">\(U_{2}\)</span> using regular Mapper. Comparing the two plots, we see that as the density decreases, the width of <span class="math notranslate nohighlight">\(V_{2}\)</span> increases. This has the effect of lowering the resolution of DBMapper in regions of the
+manifold with low density.</p>
+<p>Finally, we can run DBMapper over the same range of parameters that we ran Mapper above.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">checkpoint_numbers</span> <span class="o">=</span> <span class="p">[</span><span class="mi">12</span><span class="p">,</span><span class="mi">18</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">30</span><span class="p">]</span>
+<span class="n">overlap_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.8</span><span class="p">,</span><span class="mf">0.6</span><span class="p">,</span><span class="mf">0.4</span><span class="p">,</span><span class="mf">0.2</span><span class="p">]</span>
+
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mf">8.5</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">dpi</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">clusterer</span> <span class="o">=</span> <span class="n">DBSCAN</span><span class="p">()</span>
+<span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+    <span class="n">TM</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">TemporalMapper</span><span class="p">(</span>
+        <span class="n">time</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">clusterer</span><span class="p">,</span>
+        <span class="n">N_checkpoints</span> <span class="o">=</span> <span class="n">checkpoint_numbers</span><span class="p">[</span><span class="n">k</span><span class="o">%</span><span class="k">4</span>],
+        <span class="n">neighbours</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="n">overlap_parameters</span><span class="p">[</span><span class="n">j</span><span class="p">],</span>
+        <span class="n">rate_sensitivity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="c1">### Changing this from 0 -&gt; 1 activates DBMapper</span>
+        <span class="n">kernel</span><span class="o">=</span><span class="n">tmwc</span><span class="o">.</span><span class="n">square</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">TM</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+    <span class="n">tmutils</span><span class="o">.</span><span class="n">time_semantic_plot</span><span class="p">(</span><span class="n">TM</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+    <span class="n">xmin</span><span class="p">,</span><span class="n">xmax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+    <span class="n">ymin</span><span class="p">,</span><span class="n">ymax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">xmin</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span><span class="n">ymin</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span><span class="sa">fr</span><span class="s1">&#39;$n$=</span><span class="si">{</span><span class="n">TM</span><span class="o">.</span><span class="n">N_checkpoints</span><span class="si">}</span><span class="s1">, $g$=</span><span class="si">{</span><span class="n">TM</span><span class="o">.</span><span class="n">g</span><span class="si">}</span><span class="s1">, $k$=</span><span class="si">{</span><span class="mi">50</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">k</span><span class="o">%</span><span class="k">4</span>==3:
+        <span class="n">j</span><span class="o">+=</span><span class="mi">1</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">wspace</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/dbmapper_theory_26_0.png" src="_images/dbmapper_theory_26_0.png" />
+</div>
+</div>
+<p>With DBMapper there is a wider range of parameters which finds both components and the loop. One interesting effect of the choice to use centroids to position the vertices is that DBMapper pulls the vertices of sparser component closer together, uniformizing the density of points in the output graph. We suspect that DBMapper is equivalent to first uniformizing the local density using theoretical methods like those underlying UMAP, and then performing regular Mapper, but we don’t yet have a
+strong understanding of this.</p>
 </section>
 </section>
 
@@ -253,7 +475,7 @@
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="api.html" class="btn btn-neutral float-right" title="TemporalMapper API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="visualization.html" class="btn btn-neutral float-right" title="Visualizing Results of TemporalMapper" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
