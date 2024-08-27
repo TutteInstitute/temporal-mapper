@@ -275,7 +275,7 @@ def time_semantic_plot(
         if label_edges:
             edge_labels = nx.get_edge_attributes(G, "weight")
             nx.draw_networkx_edge_labels(G, pos, edge_labels)
-
+    
     return ax
 
 def hex_desaturate(c, pc):

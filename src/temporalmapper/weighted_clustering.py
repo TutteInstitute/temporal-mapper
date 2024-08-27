@@ -81,7 +81,7 @@ def weighted_clusters(
         if data[slice_].ndim == 1:
             data_slice = data_slice.reshape(-1,1)
 
-        if (weights != 1.).any():
+        if ((weights < 1)&(0<weights)).any():
             try:
                 cluster_labels = clusterer.fit(data_slice, sample_weight=weights[idx,slice_]).labels_
             except:
