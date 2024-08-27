@@ -81,10 +81,13 @@ def weighted_clusters(
         if data[slice_].ndim == 1:
             data_slice = data_slice.reshape(-1,1)
 
-        try:
-            cluster_labels = clusterer.fit(data_slice, sample_weight=weights[idx,slice_]).labels_
-        except:
-            print("Clusterer does not accept sample weights. Falling back to unweighted clustering.")
+        if (weights != 1.).any():
+            try:
+                cluster_labels = clusterer.fit(data_slice, sample_weight=weights[idx,slice_]).labels_
+            except:
+                print("Clusterer does not accept sample weights. Falling back to unweighted clustering.")
+                cluster_labels = clusterer.fit(data_slice).labels_
+        else:
             cluster_labels = clusterer.fit(data_slice).labels_
 
         clusters[idx, slice_] = cluster_labels
