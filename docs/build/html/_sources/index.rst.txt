@@ -9,6 +9,7 @@ which is built using the Density-Based Mapper algorithm.
     :caption: Contents:
 
     installation
+    dbmapper_theory
 
 .. toctree::
     :maxdepth: 2

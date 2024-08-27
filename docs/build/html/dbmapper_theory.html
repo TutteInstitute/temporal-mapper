@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Understanding DBMapper &mdash; Temporal Mapper 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="TemporalMapper API" href="api.html" />
+    <link rel="prev" title="Installation" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Temporal Mapper
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Understanding DBMapper</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Mapper">Mapper</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">TemporalMapper API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Temporal Mapper</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Understanding DBMapper</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/dbmapper_theory.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Understanding-DBMapper">
+<h1>Understanding DBMapper<a class="headerlink" href="#Understanding-DBMapper" title="Permalink to this heading"></a></h1>
+<p>DBMapper is an algorithm for learning a discrete approximation of the 1-dimensional topology of a manifold. It is a density-sensitive augmentation of the Mapper algorithm in topological data analysis (cite here).</p>
+<p>This article will provide a high-level overview of how DBMapper works, and how it differs from Mapper. In theory, DBMapper is founded on Morse theory and persistent homology, but in practice it can be understood without these mathematical tools.</p>
+<p>As DBMapper is mostly Mapper, we start with an explanation of Mapper itself.</p>
+<section id="Mapper">
+<h2>Mapper<a class="headerlink" href="#Mapper" title="Permalink to this heading"></a></h2>
+<p>Mapper helps us describe the topology of a manifold <span class="math notranslate nohighlight">\(X\)</span> using a set of samples from the manifold, by approximating the <em>Reeb graph</em> of the manifold with respect to some Morse-type function <span class="math notranslate nohighlight">\(f:X\to \mathbb{R}\)</span>. This Reeb graph is a 1-dimensional representation of <span class="math notranslate nohighlight">\(X\)</span>, which captures its <span class="math notranslate nohighlight">\(0\)</span>- and <span class="math notranslate nohighlight">\(1\)</span>- dimensional topological features; that is, connected components and holes respectively.</p>
+<p>To do this, it constructs a finite graph <span class="math notranslate nohighlight">\(G\)</span> as follows: 1. Split <span class="math notranslate nohighlight">\(f(X)\subset\mathbb{R}\)</span> into overlapping interval bins <span class="math notranslate nohighlight">\(I_1,...,I_N\)</span> 2. For each bin <span class="math notranslate nohighlight">\(I_k\)</span>, cluster all the samples <span class="math notranslate nohighlight">\(x\)</span> for which <span class="math notranslate nohighlight">\(f(x) \in I_k\)</span>. 3. Add a vertex <span class="math notranslate nohighlight">\(c^k_i\)</span> to <span class="math notranslate nohighlight">\(G\)</span> for each cluster <span class="math notranslate nohighlight">\(c_i\)</span> in <span class="math notranslate nohighlight">\(I_k\)</span>. 4. Add an edge between <span class="math notranslate nohighlight">\(c^k_i\)</span> and <span class="math notranslate nohighlight">\(c^{k+1}_j\)</span> with weight equal to the number of points their corresponding clusters share in common.</p>
+<p>Let us demonstrate this now with the <code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code> object.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">temporalmapper</span> <span class="k">as</span> <span class="nn">tm</span>
+<span class="kn">import</span> <span class="nn">temporalmapper.utilities_</span> <span class="k">as</span> <span class="nn">tmutils</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">requests</span><span class="o">,</span> <span class="nn">io</span>
+<span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="kn">import</span> <span class="n">DBSCAN</span>
+</pre></div>
+</div>
+</div>
+<p>For this demonstration, we will load a synthetic test file with points sampled from a <span class="math notranslate nohighlight">\(2\)</span>-dimensional manifold with fairly uniform density.</p>
+<p>We will use the <span class="math notranslate nohighlight">\(x\)</span>-axis as the Morse-type function <span class="math notranslate nohighlight">\(f\)</span>, called <code class="docutils literal notranslate"><span class="pre">time</span></code> in the code snippets below.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">demo_data_file</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com/TutteInstitute/temporal-mapper/raw/docs/docs/data/mapper_demo_data.npy&quot;</span><span class="p">)</span>
+<span class="n">data_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">demo_data_file</span><span class="o">.</span><span class="n">content</span><span class="p">))</span>
+<span class="n">data_unsort</span> <span class="o">=</span> <span class="n">data_time</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+<span class="n">time_unsort</span> <span class="o">=</span> <span class="n">data_time</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+<span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">time_unsort</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">data_unsort</span><span class="p">[</span><span class="n">sorted_indices</span><span class="p">]</span>
+<span class="n">time</span> <span class="o">=</span> <span class="n">time_unsort</span><span class="p">[</span><span class="n">sorted_indices</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mf">8.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Semantic space ($\mathbb</span><span class="si">{R}</span><span class="s2">^d$)&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;f(x)&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">dpi</span> <span class="o">=</span> <span class="mi">300</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/dbmapper_theory_5_0.png" src="_images/dbmapper_theory_5_0.png" />
+</div>
+</div>
+<p>By setting <code class="docutils literal notranslate"><span class="pre">rate_sensitivity=0</span></code>, we skip the density computation step completely, reducing DBMapper to Mapper.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">clusterer</span> <span class="o">=</span> <span class="n">DBSCAN</span><span class="p">(</span><span class="n">eps</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">N_checkpoints</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">TM</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">TemporalMapper</span><span class="p">(</span>
+    <span class="n">time</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">clusterer</span><span class="p">,</span>
+    <span class="n">N_checkpoints</span> <span class="o">=</span> <span class="n">N_checkpoints</span><span class="p">,</span>
+    <span class="n">overlap</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">rate_sensitivity</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">TM</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;temporalmapper.temporal_mapper.TemporalMapper at 0x7fbabc1c5a50&gt;
+</pre></div></div>
+</div>
+<p>Step 1 of the Mapper procedure is to split the image of <span class="math notranslate nohighlight">\(f\)</span> in <span class="math notranslate nohighlight">\(\mathbb{R}\)</span> into overlapping bins. Our samples have <span class="math notranslate nohighlight">\(f(x) \in [-3,3]\)</span>, and we initialized the <code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code> with <code class="docutils literal notranslate"><span class="pre">N_checkpoints=10</span></code> and <code class="docutils literal notranslate"><span class="pre">overlap=0.5</span></code>, so it splits <span class="math notranslate nohighlight">\([-3,3]\)</span> into 10 intervals that overlap by half of the maximum allowable amount.</p>
+<p>We can visualize this open cover of <span class="math notranslate nohighlight">\(f(X)\)</span> with a <em>sliceograph</em>, similar to a barcode diagram, where each bar in the graph shows the extent of one interval in the cover.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
+<span class="n">tmutils</span><span class="o">.</span><span class="n">sliceograph</span><span class="p">(</span><span class="n">TM</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Open Cover $U$ of [-3,3]&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/dbmapper_theory_9_0.png" src="_images/dbmapper_theory_9_0.png" />
+</div>
+</div>
+<p>Steps 2 and 3 of the Mapper procedure are to cluster the points whose <span class="math notranslate nohighlight">\(f\)</span> values lie within each interval, and then add one vertex to the output graph <span class="math notranslate nohighlight">\(G\)</span> for each cluster.</p>
+<p>In the next cell, we will look at the clustering results (using DBSCAN) for the 5th and 6th intervals:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">index_1</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">index_2</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">slice_1</span> <span class="o">=</span> <span class="p">(</span><span class="n">TM</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">index_1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+<span class="n">slice_2</span> <span class="o">=</span> <span class="p">(</span><span class="n">TM</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">index_2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span><span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Clustering $X$ in bin 5&quot;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">TM</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">slice_1</span><span class="p">],</span> <span class="n">TM</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_1</span><span class="p">],</span>
+            <span class="n">s</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">TM</span><span class="o">.</span><span class="n">clusters</span><span class="p">[</span><span class="n">index_1</span><span class="p">,</span><span class="n">slice_1</span><span class="p">])</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Clustering $X$ in bin 6&quot;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">TM</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">slice_2</span><span class="p">],</span> <span class="n">TM</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_2</span><span class="p">],</span>
+            <span class="n">s</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">TM</span><span class="o">.</span><span class="n">clusters</span><span class="p">[</span><span class="n">index_2</span><span class="p">,</span><span class="n">slice_2</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/dbmapper_theory_11_0.png" src="_images/dbmapper_theory_11_0.png" />
+</div>
+</div>
+<p>The points in bin 5 are partitioned into two clusters, so we will add two vertices <span class="math notranslate nohighlight">\(c^5_1\)</span> and <span class="math notranslate nohighlight">\(c^5_2\)</span> to the graph. The points in bin 6 are partitioned into three clusters, so we will add three vertices to the graph.</p>
+<p>Finally, step 4 of Mapper tells us to draw edges between these vertices with weights given by the number of points in the intersection of the vertices.</p>
+<p>From the figure above, we can see that the left-hand size yellow cluster intersects the right-hand-size yellow and green clusters. The purple cluster intersects the blue cluster.</p>
+<p>Once we add edges for each intersection <span class="math notranslate nohighlight">\(I_k \cap I_{k+1}\)</span> in the open cover, we can visualize the resulting graph <span class="math notranslate nohighlight">\(G\)</span> using one of the visualization options included in <code class="docutils literal notranslate"><span class="pre">temporalmapper.utilities</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tmutils</span><span class="o">.</span><span class="n">time_semantic_plot</span><span class="p">(</span><span class="n">TM</span><span class="p">,</span> <span class="n">TM</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Mapper graph output&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/dbmapper_theory_13_0.png" src="_images/dbmapper_theory_13_0.png" />
+</div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="TemporalMapper API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 1980, Kaleb D Ruscitti.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

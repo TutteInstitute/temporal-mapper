@@ -442,14 +442,17 @@ def write_edge_bundling_datashader(TG,pos):
                 print(cpt_bundled_edges)
     return bundled_df
 
-def sliceograph(TG, ax = None):
+def sliceograph(TM, ax = None, clrs=['r','g','b']):
     """ Produce a sliceograph of a TemporalMapper 
     
     Parameters:
-        TemporalGraph: temporal_mapper.TemporalGraph
-            The temporal graph object to plot.
+        TemporalMapper: temporalmapper.TemporalMapper
+            The temporal mapper object to plot.
         ax: matplotlib.axes (optional, default=None)
             Matplotlib axis to draw on
+        clrs: list(str) (optional, default=['r','g','b'])
+            A list of matplotlib colours, which will be cyclically to
+            colour the intervals in the graph.
 
     Returns: matplotlib.axes
 
@@ -457,8 +460,12 @@ def sliceograph(TG, ax = None):
     if ax is None:
         ax = plt.gca()
     ax.set_ylim(0,1)
-    for i in range(TG.N_checkpoints):
-        slice_ = (TG.weights[i] >= 0.1).nonzero()[0]
-        ax.scatter(TG.time[slice_], (0.01)*(i%2)*np.ones(np.shape(slice_))+0.45, s=0.5, c='k')
+    ax.tick_params(left=False, bottom=True, labelleft=False, labelbottom=True)
+    for i in range(TM.N_checkpoints):
+        offset = (0.01)*(i%2)+0.45
+        slice_ = (TM.weights[i] >= 0.1).nonzero()[0]
+        slice_max = max(TM.time[slice_])
+        slice_min = min(TM.time[slice_])
+        ax.plot([slice_min, slice_max], [offset,offset], c=clrs[i%len(clrs)])
     return ax
     
