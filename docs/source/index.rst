@@ -10,6 +10,7 @@ which is built using the Density-Based Mapper algorithm.
 
     installation
     dbmapper_theory
+    paramselection
     visualization
 
 .. toctree::
