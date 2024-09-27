@@ -19,16 +19,15 @@ def square(t0, t, density, binwidth, epsilon=0.1, params=None):
 
 def triangle(t0, t, density, binwidth, epsilon=0.1, params=None):
     distance = np.abs(t - t0)
-    # Calculate the effective width of the triangle which is half of the bin width
     effective_width = binwidth / (2 * density)
-    # Create a triangle window function
     out = np.where(distance < effective_width, 1 - distance / effective_width, 0)
     return out
 
-def cosine_window(distance, width=1):
-    mask = np.abs(distance) <= width
-    return (1 / 2) * (1 + np.cos(np.pi * distance / width)) * mask
-
+def cosine(t0, t, density, binwidth, epsilon=0.1, params=None):
+    distance = np.abs(t - t0)
+    effective_width = binwidth / (2 * density)
+    out = np.where(distance < effective_width, 0.5 + 0.5 * np.cos(np.pi * distance / effective_width), 0)
+    return out
 
 def compute_point_rates(data, time, distances, width):
     lambdas = np.zeros(np.size(time))
