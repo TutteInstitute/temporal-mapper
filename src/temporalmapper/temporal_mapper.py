@@ -66,7 +66,7 @@ class TemporalMapper:
         show_outliers=False,
         slice_method="time",
         rate_sensitivity=1,
-        kernel=gaussian,
+        kernel=square,
         kernel_params=None,
         verbose=False,
     ):

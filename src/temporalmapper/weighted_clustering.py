@@ -8,15 +8,22 @@ from warnings import warn
 
 
 def gaussian(t0, t, density, binwidth, epsilon=0.1, params=None):
+    distance  = t-t0
     K = -np.log(epsilon) / ((binwidth) ** 2)
-    return np.exp(-K * ((t - t0) / density) ** 2)
-
+    return np.exp(-K * (distance * density) ** 2)
 
 def square(t0, t, density, binwidth, epsilon=0.1, params=None):
     distance = t - t0
     out = (np.abs(distance) < (binwidth / density)).astype(int)
     return out
 
+def triangle(t0, t, density, binwidth, epsilon=0.1, params=None):
+    distance = np.abs(t - t0)
+    # Calculate the effective width of the triangle which is half of the bin width
+    effective_width = binwidth / (2 * density)
+    # Create a triangle window function
+    out = np.where(distance < effective_width, 1 - distance / effective_width, 0)
+    return out
 
 def cosine_window(distance, width=1):
     mask = np.abs(distance) <= width
