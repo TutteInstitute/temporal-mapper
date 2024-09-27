@@ -1,6 +1,7 @@
 .ipynb_checkpoints/*
 __pycache__/*
 mapperplayground.ipynb
+.venv/*
 data/.ipynb_checkpoints/*
 temporal-mapper/tests/__pycache__/*
 temporal-mapper/tests/.ipynb_checkpoints/*
@@ -11,4 +12,4 @@ src/temporalmapper/.ipynb_checkpoints/*
 holoviews-main/*
 fast_hdbscan/*
 tests.ipynb
-tests/.venv/*
+tests/__pycache__/*

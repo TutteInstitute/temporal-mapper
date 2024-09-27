@@ -7,6 +7,7 @@ in pkgs.mkShell{
    python-pkgs.setuptools
    python-pkgs.build
    python-pkgs.sphinx
+   python-pkgs.nbsphinx
    python-pkgs.pip
    python-pkgs.sphinx-rtd-theme
    ]))

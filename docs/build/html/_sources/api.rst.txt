@@ -3,7 +3,7 @@ TemporalMapper API
 
 .. autoclass:: temporalmapper.TemporalMapper
 
-.. automodule:: temporalmapper.utilities_
+.. automodule:: temporalmapper.utilities
    
     .. autofunction:: centroid_datamap
 

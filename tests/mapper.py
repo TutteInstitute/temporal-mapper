@@ -6,7 +6,7 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 
 import temporalmapper as tm
-import temporalmapper.utilities_ as tmutils
+import temporalmapper.utilities as tmutils
 import temporalmapper.weighted_clustering as tmwc
 
 data_folder = 'data/'

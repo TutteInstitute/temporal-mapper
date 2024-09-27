@@ -1,6 +1,8 @@
 Welcome to Temporal Mapper's documentation!
 ===========================================
 
+.. image:: mapper_goal.png
+
 Temporal Mapper is a library for performing *temporal topic modeling*
 which is built using the Density-Based Mapper algorithm.
 
@@ -10,6 +12,8 @@ which is built using the Density-Based Mapper algorithm.
 
     installation
     dbmapper_theory
+    paramselection
+    visualization
 
 .. toctree::
     :maxdepth: 2

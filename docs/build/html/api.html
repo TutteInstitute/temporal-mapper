@@ -23,7 +23,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Understanding DBMapper" href="dbmapper_theory.html" /> 
+    <link rel="prev" title="Visualizing TemporalMapper Graphs" href="visualization.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -49,14 +49,16 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dbmapper_theory.html">Understanding DBMapper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="paramselection.html">Parameter Selection for Temporal Mapper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization.html">Visualizing TemporalMapper Graphs</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">TemporalMapper API</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#temporalmapper.TemporalMapper"><code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.utilities_.centroid_datamap"><code class="docutils literal notranslate"><span class="pre">centroid_datamap()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.utilities_.time_semantic_plot"><code class="docutils literal notranslate"><span class="pre">time_semantic_plot()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.utilities_.sliceograph"><code class="docutils literal notranslate"><span class="pre">sliceograph()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.utilities.centroid_datamap"><code class="docutils literal notranslate"><span class="pre">centroid_datamap()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.utilities.time_semantic_plot"><code class="docutils literal notranslate"><span class="pre">time_semantic_plot()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.utilities.sliceograph"><code class="docutils literal notranslate"><span class="pre">sliceograph()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -109,9 +111,9 @@
 </section>
 </dd></dl>
 
-<span class="target" id="module-temporalmapper.utilities_"></span><dl class="py function">
-<dt class="sig sig-object py" id="temporalmapper.utilities_.centroid_datamap">
-<span class="sig-prename descclassname"><span class="pre">temporalmapper.utilities_.</span></span><span class="sig-name descname"><span class="pre">centroid_datamap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_edges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vertices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_colouring</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'desaturate'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.utilities_.centroid_datamap" title="Permalink to this definition"></a></dt>
+<span class="target" id="module-temporalmapper.utilities"></span><dl class="py function">
+<dt class="sig sig-object py" id="temporalmapper.utilities.centroid_datamap">
+<span class="sig-prename descclassname"><span class="pre">temporalmapper.utilities.</span></span><span class="sig-name descname"><span class="pre">centroid_datamap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_edges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vertices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_colouring</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'desaturate'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.utilities.centroid_datamap" title="Permalink to this definition"></a></dt>
 <dd><p>Plot the temporal graph in 2d with vertices at their cluster centroids.</p>
 <dl class="simple">
 <dt>Parameters:</dt><dd><dl class="simple">
@@ -138,8 +140,8 @@ The override option will throw away the semantic colouring and colour points onl
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="temporalmapper.utilities_.time_semantic_plot">
-<span class="sig-prename descclassname"><span class="pre">temporalmapper.utilities_.</span></span><span class="sig-name descname"><span class="pre">time_semantic_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">semantic_axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vertices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_edges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.utilities_.time_semantic_plot" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="temporalmapper.utilities.time_semantic_plot">
+<span class="sig-prename descclassname"><span class="pre">temporalmapper.utilities.</span></span><span class="sig-name descname"><span class="pre">time_semantic_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">semantic_axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vertices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_edges</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.utilities.time_semantic_plot" title="Permalink to this definition"></a></dt>
 <dd><p>Create a time-semantic plot of the graph <code class="docutils literal notranslate"><span class="pre">TemporalGraph.G</span></code>.</p>
 <dl class="simple">
 <dt>Parameters:</dt><dd><dl class="simple">
@@ -164,8 +166,8 @@ The override option will throw away the semantic colouring and colour points onl
 </dd></dl>
 
 <dl class="py function">
-<dt class="sig sig-object py" id="temporalmapper.utilities_.sliceograph">
-<span class="sig-prename descclassname"><span class="pre">temporalmapper.utilities_.</span></span><span class="sig-name descname"><span class="pre">sliceograph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TM</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['r',</span> <span class="pre">'g',</span> <span class="pre">'b']</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.utilities_.sliceograph" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="temporalmapper.utilities.sliceograph">
+<span class="sig-prename descclassname"><span class="pre">temporalmapper.utilities.</span></span><span class="sig-name descname"><span class="pre">sliceograph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TM</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['r',</span> <span class="pre">'g',</span> <span class="pre">'b']</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.utilities.sliceograph" title="Permalink to this definition"></a></dt>
 <dd><p>Produce a sliceograph of a TemporalMapper</p>
 <dl class="simple">
 <dt>Parameters:</dt><dd><dl class="simple">
@@ -188,7 +190,7 @@ colour the intervals in the graph.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="dbmapper_theory.html" class="btn btn-neutral float-left" title="Understanding DBMapper" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="visualization.html" class="btn btn-neutral float-left" title="Visualizing TemporalMapper Graphs" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
