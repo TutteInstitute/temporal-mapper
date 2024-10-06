@@ -7,8 +7,9 @@ name = "temporal-mapper"
 authors = [
     {name = "Kaleb D Ruscitti", email="kaleb.ruscitti@uwaterloo.ca"},
 ]
-version = "0.4.1"
+version = "1.0.0"
 readme = "README.md"
+license = {file = "LICENSE"}
 keywords = ["Mapper", "TDA", "Morse Theory", "Temporal Topic Modeling"]
 dependencies = [
     "numpy",
