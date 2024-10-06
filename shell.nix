@@ -10,6 +10,7 @@ in pkgs.mkShell{
    python-pkgs.nbsphinx
    python-pkgs.pip
    python-pkgs.sphinx-rtd-theme
+   python-pkgs.twine
    ]))
   ];
   LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib";

@@ -1,5 +1,5 @@
 <img
-align="left" width="100" height="60" 
+align="left" width="200" height="120" 
 src="./docs/icon.png" alt="Temporal Mapper Logo">
 ## Temporal Mapper
 
