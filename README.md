@@ -1,4 +1,8 @@
+<img
+align="left" width="200" height="120" 
+src="./docs/icon.png" alt="Temporal Mapper Logo">
 ## Temporal Mapper
+
 ### V.0.4.0 - August 19 '24
 -----------------------------------------------
 This is a library for using the Mapper for temporal topic modelling.
