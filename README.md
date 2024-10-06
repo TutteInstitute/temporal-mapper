@@ -37,6 +37,9 @@ Centroid Plot             |  Temporal-Semantic Plot
 ![](./docs/arxiv_centroids.png)  |  ![](./docs/arxiv_time.png)
 
 ### Installation
-Clone the repo and install: 
+Install from PyPI:
+`pip install temporal-mapper`
+
+Or, clone the repo and install: 
 `git clone https://github.com/TutteInstitute/temporal-mapper.git`
 `cd temporal-mapper && pip install .`
