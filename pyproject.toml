@@ -9,7 +9,7 @@ authors = [
 ]
 version = "1.0.0"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = {text = "BSD-3-Clause license"}
 keywords = ["Mapper", "TDA", "Morse Theory", "Temporal Topic Modeling"]
 dependencies = [
     "numpy",
