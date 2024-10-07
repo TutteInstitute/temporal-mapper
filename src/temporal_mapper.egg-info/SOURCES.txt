@@ -1,3 +1,4 @@
+LICENSE
 README.md
 pyproject.toml
 src/temporal_mapper.egg-info/PKG-INFO
