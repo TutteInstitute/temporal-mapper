@@ -23,7 +23,7 @@ Using [DataMapPlot](https://github.com/tutteinstitute/datamapplot) and
 [TopicNaming](https://github.com/tutteinstitute/topicnaming) we can
 produce a static plot of this data:
 
-![A DataMapPlot of ArXiV papers](./doc/arxiv_static.png 
+![A DataMapPlot of ArXiV papers](./docs/arxiv_static.png 
 "A DataMapPlot of ArXiV Papers")
 
 Now, using this repository we can additionally analyse the temporal
