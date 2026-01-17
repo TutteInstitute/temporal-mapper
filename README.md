@@ -3,7 +3,7 @@ align="left" width="200" height="120"
 src="./docs/icon.png" alt="Temporal Mapper Logo">
 ## Temporal Mapper
 
-### V.1.0.0 - October 06 '24
+### V.1.0.2 - January 17th '26
 -----------------------------------------------
 This is a library for using the Mapper for temporal topic modelling.
 Though things broadly work now, the edge cases have not been throughly 
@@ -41,5 +41,26 @@ Install from PyPI:
 `pip install temporal-mapper`
 
 Or, clone the repo and install: 
+
 `git clone https://github.com/TutteInstitute/temporal-mapper.git`
+
 `cd temporal-mapper && pip install .`
+
+### Development Instructions
+#### Getting set up
+(Mostly for my future self...)
+
+Clone the repo:
+`git clone https://github.com/TutteInstitute/temporal-mapper.git`
+
+Then make a virtual environment and install the package and pytest.
+
+`cd temporal-mapper && python -m venv .venv`
+
+`source .venv/bin/activate`
+
+`pip install -r requirements.txt && pip install -e .`
+
+Before making any changes, check that the tests run successfully:
+
+`cd tests && python -m pytest mapper.py`

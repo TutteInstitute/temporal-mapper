@@ -186,7 +186,7 @@ def time_semantic_plot(
     semantic_axis,
     ax=None,
     vertices=None,
-    label_edges=False,
+    edge_labels=None,
     bundle=False,
     edge_scaling=1,
     node_kwargs={},
@@ -204,12 +204,16 @@ def time_semantic_plot(
             Matplotlib axis to draw on
         vertices: list (optional, default=None)
             List of nodes in TG.G to include in the plot.
-        label_edges: bool (optional, default=False)
-            If true, include text labels of the edge weight on top of edges.
+        edge_labels: dict (optional, default=None)
+            Dictionary of labels with edge_labels[e] a string to label edge e.
         edge_scaling: float (optional, default = 1)
             Scales the thickness of edges, larger is thicker.
         bundle: bool (optional, default=True)
             If true, bundle the edges of the graph using datashader's hammer_bundle function.
+        node_kwargs: dict (optional, default={})
+            Keyword arguments passed to networkx.draw_networkx_nodes()
+        edge_kwargs: dict (optional, default={})
+            Keyword arguments passed to networkx.draw_networkx_edges()
     Returns: matplotlib.axes
 
     """
@@ -268,7 +272,7 @@ def time_semantic_plot(
         x = bundles["x"].to_numpy()
         y = bundles["y"].to_numpy()
         ax.plot(x, y, c=c, lw=0.5 * edge_scaling, **edge_kwargs)
-        if label_edges:
+        if edge_labels is not None:
             print(
                 "Warning: edge labels are not supported with bundling, consider passing bundle=False"
             )
@@ -288,9 +292,9 @@ def time_semantic_plot(
             edge_color=c,
             **edge_kwargs,
         )
-        if label_edges:
-            edge_labels = nx.get_edge_attributes(G, "weight")
-            nx.draw_networkx_edge_labels(G, pos, edge_labels)
+        if edge_labels is not None:
+            nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax)
+
 
     return ax
 
@@ -307,7 +311,7 @@ def hex_desaturate(c, pc):
 def centroid_datamap(
     TG,
     ax=None,
-    label_edges=False,
+    edge_labels=None,
     vertices=None,
     edge_scaling=1,
     node_colouring="desaturate",
@@ -328,12 +332,16 @@ def centroid_datamap(
             The override option will throw away the semantic colouring and colour points only based on their time value.
         vertices: list (optional, default=None)
             List of nodes in TG.G to include in the plot.
-        label_edges: bool (optional, default=False)
-            If true, include text labels of the edge weight on top of edges.
+        edge_labels: dict (optional, default=None)
+            Dictionary of labels with edge_labels[e] a string to label edge e.
         edge_scaling: float (optional, default = 1)
             Scales the thickness of edges, larger is thicker.
         bundle: bool (optional, default=True)
             If true, bundle the edges of the graph using datashader's hammer_bundle function.
+        node_kwargs: dict (optional, default={})
+            Keyword arguments passed to networkx.draw_networkx_nodes()
+        edge_kwargs: dict (optional, default={})
+            Keyword arguments passed to networkx.draw_networkx_edges()
     Returns: matplotlib.axes
 
     """
@@ -360,7 +368,7 @@ def centroid_datamap(
         pc = [(slice_no[node] + 1) / TG.N_checkpoints for node in vertices]
         node_clr = [
             hex_desaturate(colour_dict[node], pc[i])
-            for i, node in enumerate(colour_dict.keys())
+            for i, node in enumerate(vertices)
         ]
     else:
         print("Accepted values of node_colouring are 'desaturate' and 'override'.")
@@ -410,9 +418,7 @@ def centroid_datamap(
             edge_color=c,
             **edge_kwargs,
         )
-        if label_edges:
-            tmp_dict = nx.get_edge_attributes(TG.G, "weight")
-            edge_labels = {k: "{:.2f}".format(tmp_dict[k]) for k in tmp_dict}
+        if edge_labels is not None:
             nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax)
 
     return ax
