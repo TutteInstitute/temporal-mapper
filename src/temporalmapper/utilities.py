@@ -186,7 +186,7 @@ def time_semantic_plot(
     semantic_axis,
     ax=None,
     vertices=None,
-    label_edges=False,
+    edge_labels=None,
     bundle=False,
     edge_scaling=1,
     node_kwargs={},
@@ -204,8 +204,8 @@ def time_semantic_plot(
             Matplotlib axis to draw on
         vertices: list (optional, default=None)
             List of nodes in TG.G to include in the plot.
-        label_edges: bool (optional, default=False)
-            If true, include text labels of the edge weight on top of edges.
+        edge_labels: dict (optional, default=None)
+            Dictionary of labels with edge_labels[e] a string to label edge e.
         edge_scaling: float (optional, default = 1)
             Scales the thickness of edges, larger is thicker.
         bundle: bool (optional, default=True)
@@ -272,7 +272,7 @@ def time_semantic_plot(
         x = bundles["x"].to_numpy()
         y = bundles["y"].to_numpy()
         ax.plot(x, y, c=c, lw=0.5 * edge_scaling, **edge_kwargs)
-        if label_edges:
+        if edge_labels is not None:
             print(
                 "Warning: edge labels are not supported with bundling, consider passing bundle=False"
             )
@@ -293,9 +293,7 @@ def time_semantic_plot(
             **edge_kwargs,
         )
         if edge_labels is not None:
-            # avoiding KeyError when some nodes don't have labels
-            edge_labels_robust = {edge_labels.get(node, "") for node in vertices}
-            nx.draw_networkx_edge_labels(G, pos, edge_labels_robust, ax=ax)
+            nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax)
 
 
     return ax
@@ -421,11 +419,7 @@ def centroid_datamap(
             **edge_kwargs,
         )
         if edge_labels is not None:
-            #tmp_dict = nx.get_edge_attributes(TG.G, "weight")
-            #edge_labels = {k: "{:.2f}".format(tmp_dict[k]) for k in tmp_dict}
-            # avoiding KeyError when some nodes don't have labels
-            edge_labels_robust = {edge_labels.get(node, "") for node in vertices}
-            nx.draw_networkx_edge_labels(G, pos, edge_labels_robust, ax=ax)
+            nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax)
 
     return ax
 
