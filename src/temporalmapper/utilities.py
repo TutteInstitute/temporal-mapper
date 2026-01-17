@@ -360,7 +360,7 @@ def centroid_datamap(
         pc = [(slice_no[node] + 1) / TG.N_checkpoints for node in vertices]
         node_clr = [
             hex_desaturate(colour_dict[node], pc[i])
-            for i, node in enumerate(colour_dict.keys())
+            for i, node in enumerate(vertices)
         ]
     else:
         print("Accepted values of node_colouring are 'desaturate' and 'override'.")
