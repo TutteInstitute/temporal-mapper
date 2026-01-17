@@ -41,7 +41,9 @@ Install from PyPI:
 `pip install temporal-mapper`
 
 Or, clone the repo and install: 
+
 `git clone https://github.com/TutteInstitute/temporal-mapper.git`
+
 `cd temporal-mapper && pip install .`
 
 ### Development Instructions
@@ -52,9 +54,13 @@ Clone the repo:
 `git clone https://github.com/TutteInstitute/temporal-mapper.git`
 
 Then make a virtual environment and install the package and pytest.
+
 `cd temporal-mapper && python -m venv .venv`
+
 `source .venv/bin/activate`
+
 `pip install -r requirements.txt && pip install -e .`
 
 Before making any changes, check that the tests run successfully:
+
 `cd tests && python -m pytest mapper.py`
