@@ -180,10 +180,16 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
     nx.set_node_attributes(TG.G, label_attrs, "label")
     return TG
 
+def squarify_text(text):
+    """Replace every 2nd space with a newline using regex"""
+    words = text.split()
+    result = '\n'.join([' '.join(words[i:i+2]) for i in range(0, len(words), 2)])
+    return result
 
 def time_semantic_plot(
     TG,
     semantic_axis,
+    edge_optimization='barycenter',
     ax=None,
     vertices=None,
     edge_labels=None,
@@ -200,6 +206,8 @@ def time_semantic_plot(
             The temporal graph object to plot.
         semantic_axis: ndarray
             Array of shape ``(n_samples,)`` with the 1D semantic data to use in the plot.
+        edge_optimization: string (optional, default='barycenter')
+            Optimization method used to reduced edge-crossings: one of None, "none", "force-directed" or "barycenter"
         ax: matplotlib.axes (optional, default=None)
             Matplotlib axis to draw on
         vertices: list (optional, default=None)
@@ -223,16 +231,26 @@ def time_semantic_plot(
         vertices = TG.G.nodes()
     G = TG.G.subgraph(vertices)
 
-    pos = {}
+    """ Compute node positions """
+    x_pos = {}
+    y_pos = {}
     slice_no = nx.get_node_attributes(TG.G, "slice_no")
     semantic_axis = np.squeeze(semantic_axis)
     for node in vertices:
         t = slice_no[node]
         pt_idx = TG.get_vertex_data(node)
         w = TG.weights[t, pt_idx]
-        node_ypos = np.average(semantic_axis[pt_idx], weights=w)
-        node_xpos = np.average(TG.time[pt_idx], weights=w)
-        pos[node] = (node_xpos, node_ypos)
+        y_pos[node] = np.average(semantic_axis[pt_idx], weights=w)
+        x_pos[node] = np.average(TG.time[pt_idx], weights=w)
+        
+    if edge_optimization == "force-directed":
+        y_init = [y_pos[node] for node in vertices]
+        y_pos = force_directed_y_layout(TG.G.subgraph(vertices), x_pos, y_init=y_init)
+    if edge_optimization == "barycenter":
+        y_pos = temporal_barycenter_layout(TG.G.subgraph(vertices), x_pos, y_positions=y_pos)
+        
+    pos = {node: (x_pos[node], y_pos[node]) for node in vertices}
+    nx.set_node_attributes(TG.G, pos, name="ts_pos")
 
     """ Plot nodes of graph. """
     node_size = [5 * np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
@@ -262,11 +280,14 @@ def time_semantic_plot(
     ax.tick_params(axis="x", labelrotation=90)
 
     """ Plot edges of graph. """
+    # by default colour edges by their source, but allow user override
     c = "k"
     if "c" in edge_kwargs.keys():
         c = edge_kwargs.pop("c")
     if "color" in edge_kwargs.keys():
         c = edge_kwargs.pop("color")
+    if "edge_color" in edge_kwargs.keys():
+        c = edge_kwargs.pop("edge_color")
     if bundle == True:
         bundles = write_edge_bundling_datashader(TG, pos)
         x = bundles["x"].to_numpy()
@@ -279,9 +300,13 @@ def time_semantic_plot(
     else:
         edge_width = np.array([np.log(d["weight"]) for (u, v, d) in G.edges(data=True)])
         edge_width /= np.amax(edge_width)
-        elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
+        threshold = 0
+        if "threshold" in edge_kwargs:
+            threshold = edge_kwargs.pop("threshold")
+        elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d['weight'] > threshold]
         if "arrows" in edge_kwargs:
             arrows = edge_kwargs.pop("arrows")
+        edge_kwargs['edge_color'] = c
         nx.draw_networkx_edges(
             G,
             pos,
@@ -289,7 +314,6 @@ def time_semantic_plot(
             edgelist=elarge,
             width=edge_scaling * 2.5 * edge_width,
             arrows=False,
-            edge_color=c,
             **edge_kwargs,
         )
         if edge_labels is not None:
@@ -379,13 +403,17 @@ def centroid_datamap(
         alpha = 0.4
     if "alpha" in node_kwargs.keys():
         alpha = node_kwargs.pop("alpha")
+    if "node_size" in node_kwargs.keys():
+        node_size = node_kwargs.pop("node_size")
+    if "node_color" in node_kwargs.keys():
+        node_clr = node_kwargs.pop("node_color")
+    node_kwargs['alpha'] = alpha
+    node_kwargs['node_color'] = node_clr
+    node_kwargs['node_size'] = node_size
     nx.draw_networkx_nodes(
         G,
         pos,
         ax=ax,
-        node_size=node_size,
-        node_color=node_clr,
-        alpha=alpha,
         **node_kwargs,
     )
 
@@ -407,6 +435,7 @@ def centroid_datamap(
         elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
         if "arrows" in edge_kwargs:
             arrows = edge_kwargs.pop("arrows")
+        edge_kwargs['edge_color']=c,
         nx.draw_networkx_edges(
             G,
             pos,
@@ -415,7 +444,6 @@ def centroid_datamap(
             width=edge_scaling * 2.5 * edge_width,
             arrows=False,
             node_size=node_size,
-            edge_color=c,
             **edge_kwargs,
         )
         if edge_labels is not None:
@@ -510,3 +538,108 @@ def sliceograph(TM, ax=None, clrs=["r", "g", "b"]):
         slice_min = min(TM.time[slice_])
         ax.plot([slice_min, slice_max], [offset, offset], c=clrs[i % len(clrs)])
     return ax
+
+from scipy.optimize import minimize
+def force_directed_y_layout(G, x_positions, y_init=None, iterations=1000, edge_weight=1.0, repulsion_weight=0.1):
+    """
+    Use force-directed algorithm to find y-positions that minimize crossings
+    X-positions are fixed (time), optimize only y-positions
+    """
+    nodes = list(G.nodes())
+    n = len(nodes)
+    node_to_idx = {node: i for i, node in enumerate(nodes)}
+    
+    # Initialize y-positions randomly
+    if y_init is None:
+        y_init = np.random.random(n)
+    
+    # Callback for progress tracking
+    iteration_count = [0]
+    pbar = tqdm(total=iterations, desc="Optimizing layout")
+    
+    def callback(xk):
+        iteration_count[0] += 1
+        pbar.update(1)
+    
+    def energy(y_positions):
+        """
+        Energy function to minimize:
+        - Edge length (keep connected nodes close in y)
+        - Node repulsion (spread nodes apart to avoid overlap)
+        """
+        energy = 0
+        
+        # Edge attraction: minimize vertical distance between connected nodes
+        for u, v in G.edges():
+            i, j = node_to_idx[u], node_to_idx[v]
+            y_diff = y_positions[i] - y_positions[j]
+            x_diff = x_positions[u] - x_positions[v]
+            # Penalize y-distance, weighted by x-distance
+            energy += edge_weight * y_diff**2 / (abs(x_diff) + 0.1)
+        
+        # Node repulsion: keep nodes separated
+        for i in range(n):
+            for j in range(i+1, n):
+                y_diff = y_positions[i] - y_positions[j]
+                x_diff = x_positions[nodes[i]] - x_positions[nodes[j]]
+                dist = np.sqrt(x_diff**2 + y_diff**2)
+                if dist > 0:
+                    energy -= repulsion_weight / dist
+        
+        return energy
+    
+    # Optimize with callback
+    result = minimize(energy, y_init, method='L-BFGS-B', 
+                     callback=callback,
+                     options={'maxiter': iterations})
+    
+    pbar.close()
+    
+    y_positions = {node: result.x[i] for i, node in enumerate(nodes)}
+    return y_positions
+
+def temporal_barycenter_layout(G, x_positions, y_positions=None, iterations=50, learning_rate=0.5):
+    """
+    Iteratively adjust y-positions using weighted barycenter
+    Faster than optimization for larger graphs
+    """
+    nodes = list(G.nodes())
+    
+    if y_positions is None:
+        y_positions = {node: np.random.uniform(-1, 1) for node in nodes}
+    
+    for iteration in range(iterations):
+        new_y = {}
+        
+        for node in nodes:
+            neighbors = list(G.neighbors(node))
+            
+            if not neighbors:
+                new_y[node] = y_positions[node]
+                continue
+            
+            # Weighted average by temporal distance (closer in time = more influence)
+            weighted_sum = 0
+            weight_total = 0
+            
+            for neighbor in neighbors:
+                time_diff = abs(x_positions[node] - x_positions[neighbor])
+                weight = 1.0 / (time_diff + 0.1)  # Avoid division by zero
+                weighted_sum += weight * y_positions[neighbor]
+                weight_total += weight
+            
+            target_y = weighted_sum / weight_total
+            
+            # Smooth update
+            new_y[node] = (1 - learning_rate) * y_positions[node] + learning_rate * target_y
+        
+        y_positions = new_y
+        
+        # Normalize to prevent drift
+        y_values = list(y_positions.values())
+        y_mean = np.mean(y_values)
+        y_std = np.std(y_values)
+        if y_std > 0:
+            y_positions = {node: (y - y_mean) / y_std for node, y in y_positions.items()}
+    
+    return y_positions
