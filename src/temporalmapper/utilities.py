@@ -342,6 +342,7 @@ def centroid_datamap(
     bundle=True,
     node_kwargs={},
     edge_kwargs={},
+    bundle_kwargs={},
 ):
     """Plot the temporal graph in 2d with vertices at their cluster centroids.
 
@@ -366,6 +367,8 @@ def centroid_datamap(
             Keyword arguments passed to networkx.draw_networkx_nodes()
         edge_kwargs: dict (optional, default={})
             Keyword arguments passed to networkx.draw_networkx_edges()
+        bundle_kwargs: dict (optional, default={})
+            Keyword arguments passed to ax.plot for bundled edges.
     Returns: matplotlib.axes
 
     """
@@ -427,8 +430,7 @@ def centroid_datamap(
         bundles = write_edge_bundling_datashader(TG, pos)
         x = bundles["x"].to_numpy()
         y = bundles["y"].to_numpy()
-
-        ax.plot(x, y, c=c, lw=0.5 * edge_scaling, **edge_kwargs)
+        ax.plot(x, y, c=c, lw=0.5 * edge_scaling, **bundle_kwargs)
     else:
         edge_width = np.array([np.log(d["weight"]) for (u, v, d) in G.edges(data=True)])
         edge_width /= np.amax(edge_width)
