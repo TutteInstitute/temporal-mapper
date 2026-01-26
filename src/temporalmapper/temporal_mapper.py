@@ -337,7 +337,6 @@ class TemporalMapper:
         return self
 
     def build_adj_matrix(self):
-        """ Compute the adjacency matrix of the Mapper graph """
         verts = self.G.nodes()
         n_verts = len(verts)
         verts = np.array(verts)
@@ -346,9 +345,6 @@ class TemporalMapper:
         time_centers = np.zeros(len(slices))
         bin_width = np.zeros(len(slices))
         for k, slice_ in enumerate(slices):
-            if np.size(slice_)==0:
-                print(f"Warning! Slice {k} has no clusters!")
-                continue
             time_centers[k] = np.median(self.time[slice_])
             bin_width[k] = np.max(self.time[slice_]) - np.min(self.time[slice_])
 
