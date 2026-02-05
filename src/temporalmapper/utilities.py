@@ -189,12 +189,16 @@ def squarify_text(text):
 def time_semantic_plot(
     TG,
     semantic_axis,
-    edge_optimization='barycenter',
     ax=None,
     vertices=None,
     edge_labels=None,
     bundle=False,
+    layout_optimization='barycenter',
     edge_scaling=1,
+    node_scaling=1,
+    minimum_node_size: float = 5,
+    minimum_edge_weight: float = 2,
+    node_size_scale='linear',
     node_kwargs={},
     edge_kwargs={},
 ):
@@ -206,7 +210,7 @@ def time_semantic_plot(
             The temporal graph object to plot.
         semantic_axis: ndarray
             Array of shape ``(n_samples,)`` with the 1D semantic data to use in the plot.
-        edge_optimization: string (optional, default='barycenter')
+        layout_optimization: string (optional, default='barycenter')
             Optimization method used to reduced edge-crossings: one of None, "none", "force-directed" or "barycenter"
         ax: matplotlib.axes (optional, default=None)
             Matplotlib axis to draw on
@@ -216,7 +220,11 @@ def time_semantic_plot(
             Dictionary of labels with edge_labels[e] a string to label edge e.
         edge_scaling: float (optional, default = 1)
             Scales the thickness of edges, larger is thicker.
-        bundle: bool (optional, default=True)
+        node_scaling: float (optional, default = 10)
+            Scales the size of vertices
+        node_size_scale: string (optional, default='linear')
+            Specifies linear or logarithmic scaling for node sizes
+        bundle: bool (optional, default=False)
             If true, bundle the edges of the graph using datashader's hammer_bundle function.
         node_kwargs: dict (optional, default={})
             Keyword arguments passed to networkx.draw_networkx_nodes()
@@ -243,17 +251,25 @@ def time_semantic_plot(
         y_pos[node] = np.average(semantic_axis[pt_idx], weights=w)
         x_pos[node] = np.average(TG.time[pt_idx], weights=w)
         
-    if edge_optimization == "force-directed":
+    if layout_optimization == "force-directed":
         y_init = [y_pos[node] for node in vertices]
-        y_pos = force_directed_y_layout(TG.G.subgraph(vertices), x_pos, y_init=y_init)
-    if edge_optimization == "barycenter":
-        y_pos = temporal_barycenter_layout(TG.G.subgraph(vertices), x_pos, y_positions=y_pos)
+        y_pos = force_directed_y_layout(G, x_pos, y_init=y_init)
+    if layout_optimization == "barycenter":
+        y_pos = temporal_barycenter_layout(G, x_pos,) #y_positions=y_pos)
         
     pos = {node: (x_pos[node], y_pos[node]) for node in vertices}
     nx.set_node_attributes(TG.G, pos, name="ts_pos")
 
     """ Plot nodes of graph. """
-    node_size = [5 * np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
+    if node_size_scale == 'logarithmic':
+        node_size = [node_scaling * np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
+    elif node_size_scale == 'linear':
+        node_size = np.array([np.size(TG.get_vertex_data(node)) for node in vertices], dtype=np.float64)
+        node_size = node_size*node_scaling
+    else:
+        raise ValueError("node_size_scale keyword argument must be 'linear' or 'logarithmic'.")
+    node_size = [max([s,minimum_node_size]) for s in node_size]
+        
     if TG.n_components != 2:
         cval_dict = nx.get_node_attributes(TG.G, "cluster_no")
         node_clr = node_clr = [cval_dict[node] for node in vertices]
@@ -300,6 +316,7 @@ def time_semantic_plot(
     else:
         edge_width = np.array([np.log(d["weight"]) for (u, v, d) in G.edges(data=True)])
         edge_width /= np.amax(edge_width)
+        edge_width = np.array([max([w,minimum_edge_weight]) for w in edge_width])
         threshold = 0
         if "threshold" in edge_kwargs:
             threshold = edge_kwargs.pop("threshold")
@@ -600,48 +617,101 @@ def force_directed_y_layout(G, x_positions, y_init=None, iterations=1000, edge_w
     y_positions = {node: result.x[i] for i, node in enumerate(nodes)}
     return y_positions
 
-def temporal_barycenter_layout(G, x_positions, y_positions=None, iterations=50, learning_rate=0.5):
+def temporal_barycenter_layout(
+    G,
+    x_positions,
+    y_positions=None,
+    iterations=1000,
+    lr_init=0.8,
+    lr_min=0.05,
+    lr_max=1.0,
+    momentum=0.8,
+    tol=1e-4,
+    decay=0.005,
+    eps=1e-6,
+):
     """
-    Iteratively adjust y-positions using weighted barycenter
-    Faster than optimization for larger graphs
+    Barycenter-based layout for edge-crossing minimization with:
+    - adaptive learning rate
+    - momentum
+    - normalization
+    - early stopping
     """
+
     nodes = list(G.nodes())
-    
+
+    # --- Initialize y positions ---
     if y_positions is None:
-        y_positions = {node: np.random.uniform(-1, 1) for node in nodes}
-    
-    for iteration in range(iterations):
+        y_positions = {n: np.random.uniform(-1, 1) for n in nodes}
+    else:
+        y_positions = dict(y_positions)
+
+    # --- Velocity for momentum ---
+    velocity = {n: 0.0 for n in nodes}
+    prev_avg_delta = None
+
+    # --- Sanity check ---
+    if not set(nodes).issubset(x_positions):
+        raise ValueError("x_positions must contain all nodes")
+
+    for it in range(iterations):
         new_y = {}
-        
+        total_delta = 0.0
+
+        # --- Base learning rate ---
+        lr = lr_init * np.exp(-decay * it)
+        lr = np.clip(lr, lr_min, lr_max)
+
+        # --- Compute barycenter attraction ---
         for node in nodes:
+            yi = y_positions[node]
+            xi = x_positions[node]
+
             neighbors = list(G.neighbors(node))
-            
-            if not neighbors:
-                new_y[node] = y_positions[node]
-                continue
-            
-            # Weighted average by temporal distance (closer in time = more influence)
-            weighted_sum = 0
-            weight_total = 0
-            
-            for neighbor in neighbors:
-                time_diff = abs(x_positions[node] - x_positions[neighbor])
-                weight = 1.0 / (time_diff + 0.1)  # Avoid division by zero
-                weighted_sum += weight * y_positions[neighbor]
-                weight_total += weight
-            
-            target_y = weighted_sum / weight_total
-            
-            # Smooth update
-            new_y[node] = (1 - learning_rate) * y_positions[node] + learning_rate * target_y
-        
+            attraction = 0.0
+
+            if neighbors:
+                weighted_sum = 0.0
+                weight_total = 0.0
+
+                for nbr in neighbors:
+                    dx = abs(xi - x_positions[nbr])
+                    w = 1.0 / (dx + eps)
+                    weighted_sum += w * y_positions[nbr]
+                    weight_total += w
+
+                target = weighted_sum / weight_total
+                attraction = target - yi
+
+            # --- Momentum update ---
+            v = momentum * velocity[node] + lr * attraction
+            velocity[node] = v
+
+            new_y[node] = yi + v
+            total_delta += abs(v)
+
+        # --- Normalize to prevent drift ---
+        vals = np.array(list(new_y.values()))
+        std = vals.std()
+        if std > 0:
+            mean = vals.mean()
+            new_y = {n: (y - mean) / std for n, y in new_y.items()}
+
+        avg_delta = total_delta / len(nodes)
+
+        # --- Adaptive LR correction ---
+        if prev_avg_delta is not None:
+            if avg_delta > prev_avg_delta:
+                lr_init *= 0.7
+            else:
+                lr_init *= 1.05
+            lr_init = np.clip(lr_init, lr_min, lr_max)
+
         y_positions = new_y
-        
-        # Normalize to prevent drift
-        y_values = list(y_positions.values())
-        y_mean = np.mean(y_values)
-        y_std = np.std(y_values)
-        if y_std > 0:
-            y_positions = {node: (y - y_mean) / y_std for node, y in y_positions.items()}
-    
+        prev_avg_delta = avg_delta
+
+        # --- Early stopping ---
+        if avg_delta < tol:
+            break
+
     return y_positions

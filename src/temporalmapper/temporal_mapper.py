@@ -10,6 +10,7 @@ from scipy.sparse import issparse
 from sklearn.neighbors import NearestNeighbors
 from sklearn.base import ClusterMixin
 from datamapplot.palette_handling import palette_from_datamap
+import matplotlib as mpl
 
 """TemporalMapper class 
 minimal usage example: 
@@ -507,3 +508,76 @@ class TemporalMapper:
     def get_subgraph_data(self, vertices):
         vals = [self.get_vertex_data(v) for v in vertices]
         return np.concatenate(vals, axis=1)
+
+    def temporal_plot(
+        self,
+        ax: mpl.axes = None,
+        title: str = None,
+        cluster_labels: dict = None,
+        cluster_label_kwargs: dict = None,
+        vertices: list[str] = None,
+        bundle: bool = False,
+        edge_labels: dict = None,
+        node_kwargs: dict = {},
+        edge_kwargs: dict = {},
+        edge_scaling: float = 1,
+        node_scaling: float = 1,
+        minimum_node_size: float = 5,
+        minimum_edge_weight: float = 0.1,
+        node_size_scale: str = 'linear',
+        layout_optimization: str = "barycenter",
+        layout_optimization_kwargs: dict = None,
+    ):
+        y_initial_pos = np.arctan2(self.data[:,1], self.data[:,0])
+
+        if ax is None:
+           fig, ax = mpl.pyplot.subplots(figsize=(12,8))
+        if vertices is None:
+            vertices = self.G.nodes()
+        G = self.G.subgraph(vertices)
+            
+        if cluster_labels is None:
+            cluster_labels = {node:str(node) for node in vertices}
+        if cluster_label_kwargs is None:
+            cluster_label_kwargs = {node:{} for node in vertices}
+        
+        ax = time_semantic_plot(
+            self,
+            y_initial_pos,
+            ax = ax,
+            vertices=vertices,
+            bundle=bundle,
+            edge_labels = edge_labels,
+            layout_optimization = layout_optimization,
+            node_kwargs = node_kwargs,
+            edge_kwargs = edge_kwargs,
+            edge_scaling = edge_scaling,
+            node_scaling = node_scaling,
+            minimum_node_size = minimum_node_size,
+            minimum_edge_weight = minimum_edge_weight,
+            node_size_scale = node_size_scale
+        )
+
+        # vertex labels
+        vertex_positions = nx.get_node_attributes(G, 'ts_pos')
+        texts = []
+        from adjustText import adjust_text
+        for node in vertices:
+            x,y = vertex_positions[node]
+            texts.append(
+                ax.text(x, y, cluster_labels[node], **cluster_label_kwargs[node])
+            )
+        texts, patches = adjust_text(
+            texts,
+            arrowprops=dict(arrowstyle="-",color='k', alpha=0.25),
+            ax=ax,
+            min_arrow_len=1,
+            avoid_self=False,
+            expand_axes=True,
+            time_lim = 5,
+        )
+        if title is not None:
+            ax.set_title(title)
+        return ax
+        
+            
