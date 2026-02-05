@@ -402,13 +402,13 @@ def centroid_datamap(
     if ax is None:
         ax = plt.gca()
     try:
-        pos = nx.get_node_attributes(TG.G, "centroid")
+        pos = nx.get_node_attributes(G, "centroid")
     except AttributeError:
         TG.populate_node_attrs()
-        pos = nx.get_node_attributes(TG.G, "centroid")
+        pos = nx.get_node_attributes(G, "centroid")
 
     """ Plot nodes of graph """
-    node_size = [5 * np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
+    node_size = np.array([5 * np.log2(np.size(TG.get_vertex_data(node))) for node in vertices])
     slice_no = nx.get_node_attributes(TG.G, "slice_no")
     if node_colouring == "override":
         # Override cluster semantic colouring with time information
@@ -451,11 +451,12 @@ def centroid_datamap(
     if "color" in edge_kwargs.keys():
         c = edge_kwargs.pop("color")
     if bundle == True:
-        bundles = write_edge_bundling_datashader(TG, pos)
+        bundles = write_edge_bundling_datashader(TG, pos, vertices=vertices)
         x = bundles["x"].to_numpy()
         y = bundles["y"].to_numpy()
-
-        ax.plot(x, y, c=c, lw=0.5 * edge_scaling, **edge_kwargs)
+        if len(edge_kwargs.keys()) > 0:
+            print("Warning! You have passed edge_kwargs with bundle=True, which is not supported.")
+        ax.plot(x, y, c=c, lw=0.5 * edge_scaling)
     else:
         edge_width = np.array([np.log(d["weight"]) for (u, v, d) in G.edges(data=True)])
         edge_width /= np.amax(edge_width)
@@ -506,13 +507,16 @@ def export_to_javascript(path, TM):
     return file
 
 
-def write_edge_bundling_datashader(TG, pos):
+def write_edge_bundling_datashader(TG, pos, vertices=None):
     """Use datashader to bundle edges from connected components together."""
+    if vertices is None:
+        vertices = TG.G.nodes()
+    G = TG.G.subgraph(vertices)
     bundled_df = None
-    for cpt in nx.connected_components(TG.G.to_undirected()):
+    for cpt in nx.connected_components(G.to_undirected()):
         if len(cpt) == 1:
             continue
-        cpt_subgraph = TG.G.subgraph(cpt)
+        cpt_subgraph = G.subgraph(cpt)
         edge_df = DataFrame()
         node_df = DataFrame()
         cpt_pos = {node: pos[node] for node in cpt}
