@@ -639,6 +639,7 @@ def temporal_barycenter_layout(
     """
 
     nodes = list(G.nodes())
+    edge_weights = nx.get_edge_attributes(G, "weight")
 
     # --- Initialize y positions ---
     if y_positions is None:
@@ -666,27 +667,34 @@ def temporal_barycenter_layout(
         for node in nodes:
             yi = y_positions[node]
             xi = x_positions[node]
-
+        
             neighbors = list(G.neighbors(node))
             attraction = 0.0
-
+        
             if neighbors:
                 weighted_sum = 0.0
                 weight_total = 0.0
-
+        
                 for nbr in neighbors:
                     dx = abs(xi - x_positions[nbr])
-                    w = 1.0 / (dx + eps)
+        
+                    # --- Edge weight (default = 1.0 if missing) ---
+                    ew = edge_weights.get((node, nbr),
+                         edge_weights.get((nbr, node), 1.0))
+        
+                    # --- Combined weight: spatial + edge importance ---
+                    w = ew / (dx + eps)
+        
                     weighted_sum += w * y_positions[nbr]
                     weight_total += w
-
+        
                 target = weighted_sum / weight_total
                 attraction = target - yi
-
+        
             # --- Momentum update ---
             v = momentum * velocity[node] + lr * attraction
             velocity[node] = v
-
+        
             new_y[node] = yi + v
             total_delta += abs(v)
 
