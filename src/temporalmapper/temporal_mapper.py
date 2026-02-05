@@ -11,6 +11,7 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.base import ClusterMixin
 from datamapplot.palette_handling import palette_from_datamap
 import matplotlib as mpl
+import plotly.graph_objects as go
 
 """TemporalMapper class 
 minimal usage example: 
@@ -526,8 +527,56 @@ class TemporalMapper:
         minimum_edge_weight: float = 0.1,
         node_size_scale: str = 'linear',
         layout_optimization: str = "barycenter",
-        layout_optimization_kwargs: dict = None,
+        layout_optimization_kwargs: dict = {},
     ):
+        """    
+        Generate a temporal plot of the Mapper graph on a specified matplotlib axis
+    
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes, optional
+            Matplotlib Axes to draw the plot on. If None, a new figure and axes
+            are created.
+        title : str, optional
+            Title of the plot.
+        cluster_labels : dict, optional
+            Mapping from node to label text. Defaults to string representations
+            of the node identifiers.
+        cluster_label_kwargs : dict, optional
+            Mapping from node to keyword arguments passed to `ax.text` when drawing
+            labels (e.g., fontsize, color).
+        vertices : list of str, optional
+            Subset of graph nodes to include in the plot. If None, all nodes in
+            `self.G` are used.
+        bundle : bool, default False
+            Whether to apply edge bundling in the visualization.
+        edge_labels : dict, optional
+            Mapping from edge to label text.
+        node_kwargs : dict, default {}
+            Keyword arguments controlling node appearance.
+        edge_kwargs : dict, default {}
+            Keyword arguments controlling edge appearance.
+        edge_scaling : float, default 1
+            Scaling factor applied to edge weights or widths.
+        node_scaling : float, default 1
+            Scaling factor applied to node sizes.
+        minimum_node_size : float, default 5
+            Minimum size for nodes after scaling.
+        minimum_edge_weight : float, default 0.1
+            Minimum edge weight for rendering.
+        node_size_scale : {'linear', 'log'}, default 'linear'
+            Scaling mode used for node sizes.
+        layout_optimization : str, default 'barycenter'
+            Layout optimization method passed to `time_semantic_plot`.
+        layout_optimization_kwargs : dict, optional
+            Additional keyword arguments for the layout optimization routine.
+    
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The Axes object containing the temporal plot.
+
+        """
         y_initial_pos = np.arctan2(self.data[:,1], self.data[:,0])
 
         if ax is None:
@@ -579,5 +628,56 @@ class TemporalMapper:
         if title is not None:
             ax.set_title(title)
         return ax
+                
+    def interactive_temporal_plot(
+        self,
+        cluster_labels: dict = {},
+        vertices = None,
+        hover_text = {},
+        graph_layout: go.Layout = None,
+        layout_optimization: str = "barycenter",
+        layout_optimization_kwargs: dict = {},
+    ):
+        if vertices is None:
+            vertices = self.G.nodes()
+        G = self.G.subgraph(vertices)
+
+        if len(hover_text.keys())==0:
+            # construct some default hover text.
+            for node in vertices:
+                idx = self.get_vertex_data(node)
+                median_time = np.median(self.time[idx])
+                if cluster_labels.get(node,'') != '':
+                    label_str = cluster_labels[node]+"<br>"
+                else:
+                    label_str = ''
+                label_str += f'Node {node}<br>Time: {median_time}'
+                hover_text[node] = label_str
+
+        y_initial_pos = np.arctan2(self.data[:,1], self.data[:,0])
+        compute_time_semantic_positions(
+            self,
+            y_initial_pos,
+            layout_optimization = layout_optimization,
+            layout_optimization_kwargs = layout_optimization_kwargs
+        )
+        positions = nx.get_node_attributes(self.G,'ts_pos')
+        edge_trace, node_trace = prepare_plotly_graph_objects(
+            self,
+            positions,
+            hover_text = hover_text,
+        )
+        if graph_layout is None:
+            graph_layout = go.Layout(
+                hovermode = 'closest',
+                showlegend = False,
+                margin=dict(b=20,l=5,r=5,t=40),
+                xaxis=dict(showgrid=False, zeroline=False),
+                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+            )
         
-            
+        fig = go.Figure(
+            data=[edge_trace, node_trace],
+            layout = graph_layout,
+        )
+        return fig

@@ -7,6 +7,7 @@ from tqdm import tqdm, trange
 from matplotlib.colors import to_rgba, rgb_to_hsv, hsv_to_rgb
 from datashader.bundling import hammer_bundle
 from pandas import DataFrame, concat
+import plotly.graph_objects as go
 
 def std_sigmoid(x):
     mu = np.mean(x)
@@ -186,6 +187,34 @@ def squarify_text(text):
     result = '\n'.join([' '.join(words[i:i+2]) for i in range(0, len(words), 2)])
     return result
 
+def compute_time_semantic_positions(
+    TG,
+    semantic_axis,
+    layout_optimization='barycenter',
+    layout_optimization_kwargs = {},
+):
+    """ Compute node positions """
+    x_pos = {}
+    y_pos = {}
+    slice_no = nx.get_node_attributes(TG.G, "slice_no")
+    semantic_axis = np.squeeze(semantic_axis)
+    for node in TG.G.nodes():
+        t = slice_no[node]
+        pt_idx = TG.get_vertex_data(node)
+        w = TG.weights[t, pt_idx]
+        y_pos[node] = np.average(semantic_axis[pt_idx], weights=w)
+        x_pos[node] = np.average(TG.time[pt_idx], weights=w)
+        
+    if layout_optimization == "force-directed":
+        y_init = [y_pos[node] for node in TG.G.nodes()]
+        y_pos = force_directed_y_layout(TG.G, x_pos, y_init=y_init, **layout_optimization_kwargs)
+    if layout_optimization == "barycenter":
+        y_pos = temporal_barycenter_layout(TG.G, x_pos, **layout_optimization_kwargs) 
+        
+    pos = {node: (x_pos[node], y_pos[node]) for node in TG.G.nodes()}
+    nx.set_node_attributes(TG.G, pos, name="ts_pos")
+
+
 def time_semantic_plot(
     TG,
     semantic_axis,
@@ -238,27 +267,8 @@ def time_semantic_plot(
     if vertices is None:
         vertices = TG.G.nodes()
     G = TG.G.subgraph(vertices)
-
-    """ Compute node positions """
-    x_pos = {}
-    y_pos = {}
-    slice_no = nx.get_node_attributes(TG.G, "slice_no")
-    semantic_axis = np.squeeze(semantic_axis)
-    for node in vertices:
-        t = slice_no[node]
-        pt_idx = TG.get_vertex_data(node)
-        w = TG.weights[t, pt_idx]
-        y_pos[node] = np.average(semantic_axis[pt_idx], weights=w)
-        x_pos[node] = np.average(TG.time[pt_idx], weights=w)
-        
-    if layout_optimization == "force-directed":
-        y_init = [y_pos[node] for node in vertices]
-        y_pos = force_directed_y_layout(G, x_pos, y_init=y_init)
-    if layout_optimization == "barycenter":
-        y_pos = temporal_barycenter_layout(G, x_pos,) #y_positions=y_pos)
-        
-    pos = {node: (x_pos[node], y_pos[node]) for node in vertices}
-    nx.set_node_attributes(TG.G, pos, name="ts_pos")
+    compute_time_semantic_positions(TG, semantic_axis, layout_optimization = layout_optimization)
+    pos = nx.get_node_attributes(TG.G,'ts_pos')
 
     """ Plot nodes of graph. """
     if node_size_scale == 'logarithmic':
@@ -359,7 +369,6 @@ def centroid_datamap(
     bundle=True,
     node_kwargs={},
     edge_kwargs={},
-    bundle_kwargs={},
 ):
     """Plot the temporal graph in 2d with vertices at their cluster centroids.
 
@@ -384,8 +393,6 @@ def centroid_datamap(
             Keyword arguments passed to networkx.draw_networkx_nodes()
         edge_kwargs: dict (optional, default={})
             Keyword arguments passed to networkx.draw_networkx_edges()
-        bundle_kwargs: dict (optional, default={})
-            Keyword arguments passed to ax.plot for bundled edges.
     Returns: matplotlib.axes
 
     """
@@ -447,7 +454,8 @@ def centroid_datamap(
         bundles = write_edge_bundling_datashader(TG, pos)
         x = bundles["x"].to_numpy()
         y = bundles["y"].to_numpy()
-        ax.plot(x, y, c=c, lw=0.5 * edge_scaling, **bundle_kwargs)
+
+        ax.plot(x, y, c=c, lw=0.5 * edge_scaling, **edge_kwargs)
     else:
         edge_width = np.array([np.log(d["weight"]) for (u, v, d) in G.edges(data=True)])
         edge_width /= np.amax(edge_width)
@@ -723,3 +731,53 @@ def temporal_barycenter_layout(
             break
 
     return y_positions
+
+def prepare_plotly_graph_objects(
+    mapper,
+    positions,
+    hover_text = {},
+):
+    # https://plotly.com/python/network-graphs/
+    edge_x = []
+    edge_y = []
+    G = mapper.G
+    for edge in G.edges():
+        x0,y0 = positions[edge[0]]
+        x1,y1 = positions[edge[1]]
+        edge_x.append(x0)
+        edge_x.append(x1)
+        edge_x.append(None)
+        edge_y.append(y0)
+        edge_y.append(y1)
+        edge_y.append(None)
+
+    edge_trace = go.Scatter(
+        x=edge_x, y=edge_y,
+        line=dict(width=0.5, color='#888'),
+        hoverinfo='none',
+        mode='lines'
+    )
+
+    node_x = []
+    node_y = []
+    colours = []
+    labels = []
+    for node in G.nodes():
+        x,y = positions[node]
+        node_x.append(x)
+        node_y.append(y)
+        label_str = hover_text[node]
+        labels.append(label_str)
+        colours.append(G.nodes[node]['colour'])
+    
+    node_trace = go.Scatter(
+        x=node_x, y=node_y,
+        mode='markers',
+        hoverinfo='text',
+        marker=dict(
+            showscale=True,
+            color=colours
+        ),
+        text=labels
+    )
+    return edge_trace, node_trace
