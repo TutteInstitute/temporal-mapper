@@ -215,18 +215,45 @@ def compute_time_semantic_positions(
     nx.set_node_attributes(TG.G, pos, name="ts_pos")
 
 
+def plot_text_labels(
+    axis,
+    vertices,
+    vertex_positions,
+    vertex_labels,
+    vertex_label_kwargs,
+):
+    texts = []
+    from adjustText import adjust_text
+    for node in vertices:
+        x,y = vertex_positions[node]
+        texts.append(
+            axis.text(x, y, vertex_labels.get(node,''), **vertex_label_kwargs)
+        )
+    texts, patches = adjust_text(
+        texts,
+        arrowprops=dict(arrowstyle="-",color='k', alpha=0.25),
+        ax=axis,
+        min_arrow_len=1,
+        avoid_self=False,
+        expand_axes=True,
+        time_lim = 5,
+    )
+    return axis
+
 def time_semantic_plot(
     TG,
     semantic_axis,
     ax=None,
     vertices=None,
+    cluster_labels={},
+    cluster_label_kwargs={},
     edge_labels=None,
     bundle=False,
     layout_optimization='barycenter',
     edge_scaling=1,
     node_scaling=1,
-    minimum_node_size: float = 5,
-    minimum_edge_weight: float = 2,
+    node_size_bounds: tuple[float] = (5,25),
+    edge_weight_bounds: tuple[float] = (5,25),
     node_size_scale='linear',
     node_kwargs={},
     edge_kwargs={},
@@ -239,14 +266,20 @@ def time_semantic_plot(
             The temporal graph object to plot.
         semantic_axis: ndarray
             Array of shape ``(n_samples,)`` with the 1D semantic data to use in the plot.
-        layout_optimization: string (optional, default='barycenter')
-            Optimization method used to reduced edge-crossings: one of None, "none", "force-directed" or "barycenter"
         ax: matplotlib.axes (optional, default=None)
             Matplotlib axis to draw on
         vertices: list (optional, default=None)
             List of nodes in TG.G to include in the plot.
+        cluster_labels: dict (optional, default={})
+            Dictionary of labels with `cluster_labels[node]` a string to label vertex `node`.
+        cluster_label_kwargs: dict (optional, default={})
+            Keyword arguments for `matplotlib.axis.text` used when plotting cluster labels.
         edge_labels: dict (optional, default=None)
-            Dictionary of labels with edge_labels[e] a string to label edge e.
+            Dictionary of labels with `edge_labels[e]` a string to label edge `e`.
+        bundle: bool (optional, default=False)
+            If true, uses the edge-bundling algorithm from datashader to plot edges.
+        layout_optimization: string (optional, default='barycenter')
+            Optimization method used to reduce edge-crossings: one of None, "none", "force-directed" or "barycenter"
         edge_scaling: float (optional, default = 1)
             Scales the thickness of edges, larger is thicker.
         node_scaling: float (optional, default = 10)
@@ -271,14 +304,13 @@ def time_semantic_plot(
     pos = nx.get_node_attributes(TG.G,'ts_pos')
 
     """ Plot nodes of graph. """
-    if node_size_scale == 'logarithmic':
-        node_size = [node_scaling * np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
-    elif node_size_scale == 'linear':
-        node_size = np.array([np.size(TG.get_vertex_data(node)) for node in vertices], dtype=np.float64)
-        node_size = node_size*node_scaling
-    else:
-        raise ValueError("node_size_scale keyword argument must be 'linear' or 'logarithmic'.")
-    node_size = [max([s,minimum_node_size]) for s in node_size]
+    node_size = compute_node_size(
+        TG,
+        G,
+        node_scaling,
+        node_size_scale,
+        node_size_bounds
+    )
         
     if TG.n_components != 2:
         cval_dict = nx.get_node_attributes(TG.G, "cluster_no")
@@ -326,7 +358,6 @@ def time_semantic_plot(
     else:
         edge_width = np.array([np.log(d["weight"]) for (u, v, d) in G.edges(data=True)])
         edge_width /= np.amax(edge_width)
-        edge_width = np.array([max([w,minimum_edge_weight]) for w in edge_width])
         threshold = 0
         if "threshold" in edge_kwargs:
             threshold = edge_kwargs.pop("threshold")
@@ -346,7 +377,14 @@ def time_semantic_plot(
         if edge_labels is not None:
             nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax)
 
-
+    plot_text_labels(
+        axis = ax,
+        vertices = vertices,
+        vertex_positions = pos,
+        vertex_labels = cluster_labels,
+        vertex_label_kwargs = cluster_label_kwargs,
+    )
+    
     return ax
 
 
@@ -736,36 +774,83 @@ def temporal_barycenter_layout(
 
     return y_positions
 
+def compute_node_size(
+    mapper,
+    G,
+    node_scaling,
+    node_size_scale,
+    node_size_bounds,
+):
+    smin,smax = node_size_bounds
+    if node_size_scale == 'logarithmic':
+        node_size = [node_scaling * np.log2(np.size(mapper.get_vertex_data(node))) for node in G.nodes()]
+    elif node_size_scale == 'linear':
+        node_size = np.array([np.size(mapper.get_vertex_data(node)) for node in G.nodes()], dtype=np.float64)
+        node_size = node_size*node_scaling
+    elif node_size_scale == 'sigmoid':
+        raw = np.array(
+            [node_scaling*np.size(mapper.get_vertex_data(node)) for node in G.nodes()],
+            dtype=np.float64
+        )
+        mu = raw.mean()
+        sigma = raw.std() if raw.std() > 0 else 1.0
+        z = (raw - mu) / sigma
+        sig = 1.0 / (1.0 + np.exp(-z))
+        node_size = smin + (smax - smin) * sig
+    else:
+        raise ValueError("node_size_scale keyword argument must be 'linear' or 'logarithmic'.")
+    node_size = [np.clip(s,smin,smax) for s in node_size]
+    return node_size
+
+
 def prepare_plotly_graph_objects(
     mapper,
     positions,
     hover_text = {},
+    edge_scaling: float = 1,
+    node_scaling: float = 1,
+    node_size_bounds: tuple[float] = (5,25),
+    edge_weight_bounds: tuple[float] = (5,25),
+    node_size_scale: str = 'linear',
 ):
     # https://plotly.com/python/network-graphs/
-    edge_x = []
-    edge_y = []
+    edge_traces = []
     G = mapper.G
-    for edge in G.edges():
-        x0,y0 = positions[edge[0]]
-        x1,y1 = positions[edge[1]]
-        edge_x.append(x0)
-        edge_x.append(x1)
-        edge_x.append(None)
-        edge_y.append(y0)
-        edge_y.append(y1)
-        edge_y.append(None)
-
-    edge_trace = go.Scatter(
-        x=edge_x, y=edge_y,
-        line=dict(width=0.5, color='#888'),
-        hoverinfo='none',
-        mode='lines'
-    )
-
+    clr_dict = nx.get_node_attributes(G, "colour")
+    weight = nx.get_edge_attributes(G, "weight")
+    wmin, wmax = edge_weight_bounds
+    edge_size_dict = {
+        e:edge_scaling*np.clip(weight[e],wmin,wmax) for e in G.edges()
+    }
+    for (u, v) in G.edges():
+        x0, y0 = positions[u]
+        x1, y1 = positions[v]
+    
+        edge_traces.append(
+            go.Scatter(
+                x=[x0, x1, None],
+                y=[y0, y1, None],
+                mode="lines",
+                hoverinfo="none",
+                line=dict(
+                    width=edge_size_dict[(u,v)],
+                    color=clr_dict[u],
+                )
+            )
+        )
+        
     node_x = []
     node_y = []
     colours = []
     labels = []
+
+    node_size = compute_node_size(
+        mapper,
+        G,
+        node_scaling,
+        node_size_scale,
+        node_size_bounds
+    )
     for node in G.nodes():
         x,y = positions[node]
         node_x.append(x)
@@ -780,8 +865,10 @@ def prepare_plotly_graph_objects(
         hoverinfo='text',
         marker=dict(
             showscale=True,
+            size=node_size,
+            sizemode='area',
             color=colours
         ),
         text=labels
     )
-    return edge_trace, node_trace
+    return edge_traces, node_trace
