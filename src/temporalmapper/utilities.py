@@ -343,7 +343,7 @@ def time_semantic_plot(
         bundles = write_edge_bundling_datashader(TG, pos)
         x = bundles["x"].to_numpy()
         y = bundles["y"].to_numpy()
-        ax.plot(x, y, c=c, lw=0.5 * edge_scaling, **edge_kwargs)
+        ax.plot(x, y, lw=0.5 * edge_scaling, **edge_kwargs)
         if edge_labels is not None:
             print(
                 "Warning: edge labels are not supported with bundling, consider passing bundle=False"
