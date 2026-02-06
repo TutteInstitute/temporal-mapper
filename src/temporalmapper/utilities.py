@@ -181,11 +181,6 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
     nx.set_node_attributes(TG.G, label_attrs, "label")
     return TG
 
-def squarify_text(text):
-    """Replace every 2nd space with a newline using regex"""
-    words = text.split()
-    result = '\n'.join([' '.join(words[i:i+2]) for i in range(0, len(words), 2)])
-    return result
 
 def compute_time_semantic_positions(
     TG,
@@ -338,14 +333,11 @@ def time_semantic_plot(
     ax.tick_params(axis="x", labelrotation=90)
 
     """ Plot edges of graph. """
-    # by default colour edges by their source, but allow user override
     c = "k"
     if "c" in edge_kwargs.keys():
         c = edge_kwargs.pop("c")
     if "color" in edge_kwargs.keys():
         c = edge_kwargs.pop("color")
-    if "edge_color" in edge_kwargs.keys():
-        c = edge_kwargs.pop("edge_color")
     if bundle == True:
         bundles = write_edge_bundling_datashader(TG, pos)
         x = bundles["x"].to_numpy()
@@ -358,13 +350,9 @@ def time_semantic_plot(
     else:
         edge_width = np.array([np.log(d["weight"]) for (u, v, d) in G.edges(data=True)])
         edge_width /= np.amax(edge_width)
-        threshold = 0
-        if "threshold" in edge_kwargs:
-            threshold = edge_kwargs.pop("threshold")
-        elarge = [(u, v) for (u, v, d) in G.edges(data=True) if d['weight'] > threshold]
+        elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
         if "arrows" in edge_kwargs:
             arrows = edge_kwargs.pop("arrows")
-        edge_kwargs['edge_color'] = c
         nx.draw_networkx_edges(
             G,
             pos,
@@ -372,6 +360,7 @@ def time_semantic_plot(
             edgelist=elarge,
             width=edge_scaling * 2.5 * edge_width,
             arrows=False,
+            edge_color=c,
             **edge_kwargs,
         )
         if edge_labels is not None:
@@ -468,17 +457,13 @@ def centroid_datamap(
         alpha = 0.4
     if "alpha" in node_kwargs.keys():
         alpha = node_kwargs.pop("alpha")
-    if "node_size" in node_kwargs.keys():
-        node_size = node_kwargs.pop("node_size")
-    if "node_color" in node_kwargs.keys():
-        node_clr = node_kwargs.pop("node_color")
-    node_kwargs['alpha'] = alpha
-    node_kwargs['node_color'] = node_clr
-    node_kwargs['node_size'] = node_size
     nx.draw_networkx_nodes(
         G,
         pos,
         ax=ax,
+        node_size=node_size,
+        node_color=node_clr,
+        alpha=alpha,
         **node_kwargs,
     )
 
@@ -501,7 +486,6 @@ def centroid_datamap(
         elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
         if "arrows" in edge_kwargs:
             arrows = edge_kwargs.pop("arrows")
-        edge_kwargs['edge_color']=c,
         nx.draw_networkx_edges(
             G,
             pos,
@@ -510,6 +494,7 @@ def centroid_datamap(
             width=edge_scaling * 2.5 * edge_width,
             arrows=False,
             node_size=node_size,
+            edge_color=c,
             **edge_kwargs,
         )
         if edge_labels is not None:
