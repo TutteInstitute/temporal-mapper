@@ -13,7 +13,8 @@ which is built using the Density-Based Mapper algorithm.
     installation
     dbmapper_theory
     paramselection
-    visualization
+    temporal-plot
+    centroid-datamap
 
 .. toctree::
     :maxdepth: 2

@@ -50,10 +50,13 @@ class TemporalMapper:
     Methods
     -------
     fit():
-        Run the fuzzy mapper algorithm to construct the temporal graph.
+        Run the density-based mapper algorithm to construct the temporal graph.
     get_vertex_data(str node):
         Returns the index of elements of ``data`` which are in vertex ``node``.
-
+    temporal_plot():
+        Returns a matplotlib axis containing a temporal plot
+    interactive_temporal_plot():
+        Returns a Plotly figure containing an interactive temporal plot
     """
 
     def __init__(
@@ -594,7 +597,7 @@ class TemporalMapper:
         if cluster_labels is None:
             cluster_labels = {node:str(node) for node in vertices}
         if cluster_label_kwargs is None:
-            cluster_label_kwargs = {node:{} for node in vertices}
+            cluster_label_kwargs = {}
 
         clr_dict = nx.get_node_attributes(G, "colour")
         edge_color_list = [
@@ -678,16 +681,13 @@ class TemporalMapper:
             vertices = self.G.nodes()
         G = self.G.subgraph(vertices)
         
-        if len(hover_text.keys())==0:
+        if len(hover_text)==0:
             # construct some default hover text.
             for node in vertices:
                 idx = self.get_vertex_data(node)
                 median_time = np.median(self.time[idx])
-                if cluster_labels.get(node,'') != '':
-                    label_str = cluster_labels[node]+"<br>"
-                else:
-                    label_str = ''
-                label_str += f'Node {node}<br>Time: {median_time}'
+                node_name = cluster_labels.get(node,'')
+                label_str = f"{node_name}<br>Node {node}<br>Time: {median_time}"
                 hover_text[node] = label_str
 
         y_initial_pos = np.arctan2(self.data[:,1], self.data[:,0])
@@ -722,4 +722,5 @@ class TemporalMapper:
             data=traces,
             layout = graph_layout,
         )
+        fig.update_traces(marker_showscale=False)
         return fig
