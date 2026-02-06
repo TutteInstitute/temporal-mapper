@@ -1,28 +1,25 @@
+
+
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Visualizing TemporalMapper Graphs &mdash; Temporal Mapper 0.3.2 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
 
   
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
-  
-        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-        <script src="_static/jquery.js"></script>
-        <script src="_static/underscore.js"></script>
-        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script src="_static/doctools.js"></script>
-        <script src="_static/sphinx_highlight.js"></script>
-        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -90,7 +87,7 @@
            <div itemprop="articleBody">
              
   <section id="Visualizing-TemporalMapper-Graphs">
-<h1>Visualizing TemporalMapper Graphs<a class="headerlink" href="#Visualizing-TemporalMapper-Graphs" title="Permalink to this heading"></a></h1>
+<h1>Visualizing TemporalMapper Graphs<a class="headerlink" href="#Visualizing-TemporalMapper-Graphs" title="Link to this heading"></a></h1>
 <p>Temporal Mapper constructs a graph, which does not have an inherent visualization. Moreover, if your data has <span class="math notranslate nohighlight">\(d\)</span> semantic dimensions, then the graph ‘naturally’ lives in <span class="math notranslate nohighlight">\(d+1\)</span> dimensions when including time.</p>
 <p>Finding a sensible visualization of these graphs has proven challenging, but we’ve provided some built-in plotting utilities as a starting point for understanding the output of <code class="docutils literal notranslate"><span class="pre">temporalmapper.TemporalMapper</span></code>.</p>
 <p>To demonstrate these utilities, we will fit a <code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code> to a small dataset of 10,000 arXiv machine learning papers. The paper’s titles and abstracts were concatenated and embedded using the sentence transformer <a class="reference external" href="https://huggingface.co/sentence-transformers/all-mpnet-base-v2">all-mpnet-base-v2</a>, and then reduced to 2D with UMAP.</p>
@@ -98,16 +95,16 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">temporalmapper</span> <span class="k">as</span> <span class="nn">tm</span>
-<span class="kn">import</span> <span class="nn">temporalmapper.utilities_</span> <span class="k">as</span> <span class="nn">tmutils</span>
-<span class="kn">import</span> <span class="nn">temporalmapper.weighted_clustering</span> <span class="k">as</span> <span class="nn">tmwc</span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
-<span class="kn">import</span> <span class="nn">requests</span><span class="o">,</span> <span class="nn">io</span>
-<span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="kn">import</span> <span class="n">DBSCAN</span>
-<span class="kn">from</span> <span class="nn">hdbscan</span> <span class="kn">import</span> <span class="n">HDBSCAN</span>
-<span class="kn">import</span> <span class="nn">datamapplot</span> <span class="k">as</span> <span class="nn">dmp</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import temporalmapper as tm
+import temporalmapper.utilities_ as tmutils
+import temporalmapper.weighted_clustering as tmwc
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import requests, io
+from sklearn.cluster import DBSCAN
+from hdbscan import HDBSCAN
+import datamapplot as dmp
 </pre></div>
 </div>
 </div>
@@ -115,10 +112,10 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">map_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;../data/ai_arxiv_coordinates.npy&#39;</span><span class="p">)</span>
-<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_feather</span><span class="p">(</span><span class="s1">&#39;../data/ai_arxiv_data.feather&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">map_data</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>map_data = np.load(&#39;../data/ai_arxiv_coordinates.npy&#39;)
+df = pd.read_feather(&#39;../data/ai_arxiv_data.feather&#39;)
+print(map_data.shape)
+df.head()
 </pre></div>
 </div>
 </div>
@@ -221,17 +218,17 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compute a time column T which is the number of days since Jan 01, 2018.</span>
-<span class="k">def</span> <span class="nf">date_to_T</span><span class="p">(</span><span class="n">date</span><span class="p">):</span>
-    <span class="n">d0</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2018-01-01&#39;</span><span class="p">)</span>
-    <span class="n">delta</span> <span class="o">=</span> <span class="n">date</span><span class="o">-</span><span class="n">d0</span>
-    <span class="k">return</span> <span class="n">delta</span><span class="o">.</span><span class="n">days</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Compute a time column T which is the number of days since Jan 01, 2018.
+def date_to_T(date):
+    d0 = pd.Timestamp(&#39;2018-01-01&#39;)
+    delta = date-d0
+    return delta.days
 
-<span class="n">df</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;created&quot;</span><span class="p">])</span>
-<span class="n">df</span><span class="p">[</span><span class="s2">&quot;T&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
-    <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">date_to_T</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-<span class="p">)</span>
-<span class="n">time</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;T&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
+df[&quot;date&quot;] = pd.to_datetime(df[&quot;created&quot;])
+df[&quot;T&quot;] = df[&quot;date&quot;].apply(
+    lambda x: date_to_T(x)
+)
+time = df[&quot;T&quot;].to_numpy()
 </pre></div>
 </div>
 </div>
@@ -239,15 +236,15 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">clusterer</span> <span class="o">=</span> <span class="n">HDBSCAN</span><span class="p">(</span><span class="n">cluster_selection_method</span><span class="o">=</span><span class="s1">&#39;leaf&#39;</span><span class="p">)</span>
-<span class="n">TM</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">TemporalMapper</span><span class="p">(</span>
-    <span class="n">time</span><span class="p">,</span>
-    <span class="n">map_data</span><span class="p">,</span>
-    <span class="n">clusterer</span><span class="p">,</span>
-    <span class="n">N_checkpoints</span> <span class="o">=</span> <span class="mi">14</span><span class="p">,</span>
-    <span class="n">kernel</span><span class="o">=</span><span class="n">tmwc</span><span class="o">.</span><span class="n">square</span>
-<span class="p">)</span>
-<span class="n">TM</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>clusterer = HDBSCAN(cluster_selection_method=&#39;leaf&#39;)
+TM = tm.TemporalMapper(
+    time,
+    map_data,
+    clusterer,
+    N_checkpoints = 14,
+    kernel=tmwc.square
+)
+TM.fit()
 </pre></div>
 </div>
 </div>
@@ -261,15 +258,15 @@
 </pre></div></div>
 </div>
 <section id="Time-Semantic-Plot">
-<h2>Time Semantic Plot<a class="headerlink" href="#Time-Semantic-Plot" title="Permalink to this heading"></a></h2>
+<h2>Time Semantic Plot<a class="headerlink" href="#Time-Semantic-Plot" title="Link to this heading"></a></h2>
 <p>A <em>time-semantic-plot</em> is named for its axes; with time on the <span class="math notranslate nohighlight">\(x\)</span>-axis and one semantic component on the <span class="math notranslate nohighlight">\(y\)</span>-axis, this plot sacrifices clarity in semantic distance to explicitly plot the graph with a time axis.</p>
 <p>Compute any 1D reduction of your data, and then call <code class="docutils literal notranslate"><span class="pre">temporalmapper.utilities.time_semantic_plot</span></code>, with the <code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code> object and your reduction as arguments:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">map_data</span><span class="p">[:,</span><span class="mi">1</span><span class="p">],</span> <span class="n">map_data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
-<span class="n">tmutils</span><span class="o">.</span><span class="n">time_semantic_plot</span><span class="p">(</span><span class="n">TM</span><span class="p">,</span> <span class="n">angle</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>angle = np.arctan2(map_data[:,1], map_data[:,0])
+tmutils.time_semantic_plot(TM, angle)
 </pre></div>
 </div>
 </div>
@@ -294,26 +291,26 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>
-<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from sklearn.decomposition import PCA
+from datetime import datetime, timedelta
 
-<span class="n">y_axis</span> <span class="o">=</span>  <span class="n">PCA</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">TM</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+y_axis =  PCA(n_components=1).fit_transform(TM.data)
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
-<span class="n">tmutils</span><span class="o">.</span><span class="n">time_semantic_plot</span><span class="p">(</span><span class="n">TM</span><span class="p">,</span> <span class="n">y_axis</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
-<span class="n">label_times</span> <span class="o">=</span> <span class="n">TM</span><span class="o">.</span><span class="n">checkpoints</span>
-<span class="n">label_dates</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;2018-01-01&#39;</span><span class="p">)</span><span class="o">+</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y-%m&#39;</span><span class="p">)</span>
-     <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">label_times</span>
-<span class="p">]</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">(</span><span class="n">label_times</span><span class="p">,</span><span class="n">labels</span><span class="o">=</span><span class="n">label_dates</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="n">labelrotation</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Topics in ar$\chi$iv AI papers, 2018-2019&quot;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;PCA 1d&quot;</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">bottom</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">labelbottom</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+fig, ax = plt.subplots(1,1)
+tmutils.time_semantic_plot(TM, y_axis, ax=ax)
+label_times = TM.checkpoints
+label_dates = [
+    (pd.Timestamp(&#39;2018-01-01&#39;)+timedelta(days=int(x))).strftime(&#39;%Y-%m&#39;)
+     for x in label_times
+]
+ax.set_xticks(label_times,labels=label_dates)
+ax.tick_params(axis=&#39;x&#39;, labelrotation=90)
+fig.set_figwidth(10)
+fig.set_figheight(8)
+ax.set_title(&quot;Topics in ar$\chi$iv AI papers, 2018-2019&quot;)
+ax.set_ylabel(&quot;PCA 1d&quot;)
+ax.tick_params(bottom=True, labelbottom=True)
+plt.show()
 </pre></div>
 </div>
 </div>
@@ -330,7 +327,7 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TM</span><span class="o">.</span><span class="n">vertex_subgraph</span><span class="p">(</span><span class="s1">&#39;3:12&#39;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>TM.vertex_subgraph(&#39;3:12&#39;)
 </pre></div>
 </div>
 </div>
@@ -350,25 +347,25 @@ array([&#39;10:24&#39;, &#39;10:25&#39;, &#39;11:15&#39;, &#39;11:16&#39;, &#39;
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn.decomposition</span> <span class="kn">import</span> <span class="n">PCA</span>
-<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>from sklearn.decomposition import PCA
+from datetime import datetime, timedelta
 
-<span class="n">y_axis</span> <span class="o">=</span>  <span class="n">PCA</span><span class="p">(</span><span class="n">n_components</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">TM</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+y_axis =  PCA(n_components=1).fit_transform(TM.data)
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+fig, ax = plt.subplots(1,1)
 
 
-<span class="n">tmutils</span><span class="o">.</span><span class="n">time_semantic_plot</span><span class="p">(</span>
-    <span class="n">TM</span><span class="p">,</span>
-    <span class="n">y_axis</span><span class="p">,</span>
-    <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
-    <span class="n">vertices</span> <span class="o">=</span> <span class="n">TM</span><span class="o">.</span><span class="n">vertex_subgraph</span><span class="p">(</span><span class="s1">&#39;3:12&#39;</span><span class="p">)</span>
-<span class="p">)</span>
+tmutils.time_semantic_plot(
+    TM,
+    y_axis,
+    ax=ax,
+    vertices = TM.vertex_subgraph(&#39;3:12&#39;)
+)
 
-<span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">bottom</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">labelbottom</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+ax.tick_params(bottom=True, labelbottom=True)
+fig.set_figwidth(10)
+fig.set_figheight(8)
+plt.show()
 </pre></div>
 </div>
 </div>
@@ -382,13 +379,13 @@ array([&#39;10:24&#39;, &#39;10:25&#39;, &#39;11:15&#39;, &#39;11:16&#39;, &#39;
 <p>The <code class="docutils literal notranslate"><span class="pre">time_semantic_plot</span></code> uses <code class="docutils literal notranslate"><span class="pre">networkx</span></code>’s plotting functions, <code class="docutils literal notranslate"><span class="pre">draw_networkx_nodes</span></code> and <code class="docutils literal notranslate"><span class="pre">draw_networkx_edges</span></code>. If you want to further customize the look of the plot, you can pass dictionaries <code class="docutils literal notranslate"><span class="pre">node_kwargs</span></code> and <code class="docutils literal notranslate"><span class="pre">edge_kwargs</span></code> that will be passed along to these functions.</p>
 </section>
 <section id="Centroid-Datamap">
-<h2>Centroid Datamap<a class="headerlink" href="#Centroid-Datamap" title="Permalink to this heading"></a></h2>
+<h2>Centroid Datamap<a class="headerlink" href="#Centroid-Datamap" title="Link to this heading"></a></h2>
 <p>The centroid datamap forgoes the time axis to preserve the semantic information in 2 dimensions. Each vertex of the graph is positioned at the semantic centroid of the points in the cluster it represents, leaving the edges to convey the time information.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tmutils</span><span class="o">.</span><span class="n">centroid_datamap</span><span class="p">(</span><span class="n">TM</span><span class="p">,</span> <span class="n">bundle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>tmutils.centroid_datamap(TM, bundle=False)
 </pre></div>
 </div>
 </div>
@@ -413,18 +410,18 @@ array([&#39;10:24&#39;, &#39;10:25&#39;, &#39;11:15&#39;, &#39;11:16&#39;, &#39;
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">datamapplot</span> <span class="k">as</span> <span class="nn">dmp</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import datamapplot as dmp
 
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">dmp</span><span class="o">.</span><span class="n">create_plot</span><span class="p">(</span>
-    <span class="n">TM</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;arxiv&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to_list</span><span class="p">(),</span>
-    <span class="n">label_over_points</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">tmutils</span><span class="o">.</span><span class="n">centroid_datamap</span><span class="p">(</span><span class="n">TM</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">bundle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Topics in ar$\chi$iv AI papers, 2018-2019&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+fig, ax = dmp.create_plot(
+    TM.data,
+    df[&#39;arxiv&#39;].to_list(),
+    label_over_points=True,
+)
+tmutils.centroid_datamap(TM, ax=ax, bundle=False)
+fig.set_figwidth(10)
+fig.set_figheight(8)
+ax.set_title(&quot;Topics in ar$\chi$iv AI papers, 2018-2019&quot;)
+plt.show()
 </pre></div>
 </div>
 </div>
@@ -455,25 +452,25 @@ to light as you move from the beginning to end of the time range.</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fig, (ax1, ax2) = plt.subplots(1,2)
 
-<span class="n">tmutils</span><span class="o">.</span><span class="n">centroid_datamap</span><span class="p">(</span>
-    <span class="n">TM</span><span class="p">,</span>
-    <span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">,</span>
-    <span class="n">node_colouring</span> <span class="o">=</span> <span class="s1">&#39;desaturate&#39;</span><span class="p">,</span>
-    <span class="n">bundle</span><span class="o">=</span><span class="kc">False</span>
-<span class="p">)</span>
-<span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Default node colouring&quot;</span><span class="p">)</span>
-<span class="n">tmutils</span><span class="o">.</span><span class="n">centroid_datamap</span><span class="p">(</span>
-    <span class="n">TM</span><span class="p">,</span>
-    <span class="n">ax</span><span class="o">=</span><span class="n">ax2</span><span class="p">,</span>
-    <span class="n">node_colouring</span> <span class="o">=</span> <span class="s1">&#39;override&#39;</span><span class="p">,</span>
-    <span class="n">bundle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;node_colouring = &#39;override&#39;&quot;</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+tmutils.centroid_datamap(
+    TM,
+    ax=ax1,
+    node_colouring = &#39;desaturate&#39;,
+    bundle=False
+)
+ax1.set_title(&quot;Default node colouring&quot;)
+tmutils.centroid_datamap(
+    TM,
+    ax=ax2,
+    node_colouring = &#39;override&#39;,
+    bundle=False,
+)
+ax2.set_title(&quot;node_colouring = &#39;override&#39;&quot;)
+fig.set_figwidth(10)
+fig.set_figheight(5)
+plt.show()
 </pre></div>
 </div>
 </div>
@@ -498,7 +495,7 @@ to light as you move from the beginning to end of the time range.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 1980, Kaleb D Ruscitti.</p>
+    <p>&#169; Copyright 2024, Kaleb D Ruscitti.</p>
   </div>
 
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a

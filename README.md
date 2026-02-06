@@ -3,7 +3,7 @@ align="left" width="200" height="120"
 src="./docs/icon.png" alt="Temporal Mapper Logo">
 ## Temporal Mapper
 
-### V.1.0.2 - January 17th '26
+### V.1.1.0 - February 02 2026
 -----------------------------------------------
 This is a library for using the Mapper for temporal topic modelling.
 Though things broadly work now, the edge cases have not been throughly 

@@ -1,0 +1,371 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Centroid Datamap &mdash; Temporal Mapper 0.3.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="TemporalMapper API" href="api.html" />
+    <link rel="prev" title="Temporal Plots" href="temporal-plot.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Temporal Mapper
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dbmapper_theory.html">Understanding DBMapper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="paramselection.html">Parameter Selection for Temporal Mapper</a></li>
+<li class="toctree-l1"><a class="reference internal" href="temporal-plot.html">Temporal Plots</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Centroid Datamap</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">TemporalMapper API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Temporal Mapper</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Centroid Datamap</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/centroid-datamap.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="Centroid-Datamap">
+<h1>Centroid Datamap<a class="headerlink" href="#Centroid-Datamap" title="Link to this heading"></a></h1>
+<p>Temporal Mapper constructs a graph which does not have an inherent visualization. Moreover, if your data has <span class="math notranslate nohighlight">\(d\)</span> semantic dimensions, then the graph ‘naturally’ lives in <span class="math notranslate nohighlight">\(d+1\)</span> dimensions when including time.</p>
+<p>A centroid datamap of a <code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code> is a 2d plot where each vertex is plotted on the centroid of its constituent points.</p>
+<p>Let’s demonstrate a centroid datamap by fitting a <code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code> to a small dataset of 10,000 arXiv machine learning papers. The paper’s titles and abstracts were concatenated and embedded using the sentence transformer <a class="reference external" href="https://huggingface.co/sentence-transformers/all-mpnet-base-v2">all-mpnet-base-v2</a>, and then reduced to 2D with UMAP.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import temporalmapper as tm
+import temporalmapper.utilities as tmutils
+import temporalmapper.weighted_clustering as tmwc
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import requests, io
+from sklearn.cluster import DBSCAN
+from fast_hdbscan import HDBSCAN
+import datamapplot as dmp
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>map_data = np.load(&#39;../data/ai_arxiv_coordinates.npy&#39;)
+df = pd.read_feather(&#39;../data/ai_arxiv_data.feather&#39;)
+df.head()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="output_area rendered_html docutils container">
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>title</th>
+      <th>abstract</th>
+      <th>id</th>
+      <th>created</th>
+      <th>authors</th>
+      <th>arxiv</th>
+      <th>doi</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>automated rating of recorded classroom present...</td>
+      <td>effective presentation skills can help to succ...</td>
+      <td>1801.00453</td>
+      <td>2018-01-01</td>
+      <td>[akzharkyn izbassarova, aidana irmanova, a. p....</td>
+      <td>cs.ai</td>
+      <td>10.1109/icacci.2017.8125872</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>accelerating deep learning with memcomputing</td>
+      <td>restricted boltzmann machines (rbms) and their...</td>
+      <td>1801.00512</td>
+      <td>2018-01-01</td>
+      <td>[haik manukian, fabio l. traversa, massimilian...</td>
+      <td>cs.ai</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>accelerating deep learning with memcomputing</td>
+      <td>restricted boltzmann machines (rbms) and their...</td>
+      <td>1801.00512</td>
+      <td>2018-01-01</td>
+      <td>[haik manukian, fabio l. traversa, massimilian...</td>
+      <td>cs.lg</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>accurate reconstruction of image stimuli from ...</td>
+      <td>in neuroscience, all kinds of computation mode...</td>
+      <td>1801.00602</td>
+      <td>2018-01-02</td>
+      <td>[kai qiao, chi zhang, linyuan wang, bin yan, j...</td>
+      <td>cs.ai</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>deep learning: a critical appraisal</td>
+      <td>although deep learning has historical roots go...</td>
+      <td>1801.00631</td>
+      <td>2018-01-02</td>
+      <td>[gary marcus]</td>
+      <td>cs.lg</td>
+      <td></td>
+    </tr>
+  </tbody>
+</table>
+</div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span># Compute a time column T which is the number of days since Jan 01, 2018.
+def date_to_T(date):
+    d0 = pd.Timestamp(&#39;2018-01-01&#39;)
+    delta = date-d0
+    return delta.days
+
+df[&quot;date&quot;] = pd.to_datetime(df[&quot;created&quot;])
+df[&quot;T&quot;] = df[&quot;date&quot;].apply(
+    lambda x: date_to_T(x)
+)
+time = df[&quot;T&quot;].to_numpy()
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>clusterer = HDBSCAN(
+    cluster_selection_method=&#39;eom&#39;,
+    min_cluster_size=20,
+)
+mapper = tm.TemporalMapper(
+    time,
+    map_data,
+    clusterer,
+    slice_method = &#39;data&#39;,
+    N_checkpoints = 8,
+    kernel=tmwc.square
+)
+mapper.fit()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;temporalmapper.temporal_mapper.TemporalMapper at 0x79332351b5b0&gt;
+</pre></div></div>
+</div>
+<p>Now that we’ve fit a temporal Mapper, we can use <code class="docutils literal notranslate"><span class="pre">centroid_datamap</span></code> from <code class="docutils literal notranslate"><span class="pre">temporal_mapper.utilities</span></code></p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>tmutils.centroid_datamap(mapper)
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;Axes: &gt;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/centroid-datamap_7_1.png" src="_images/centroid-datamap_7_1.png" />
+</div>
+</div>
+<p>The optional <code class="docutils literal notranslate"><span class="pre">ax</span></code> parameter can be passed to add a centroid datamap to an existing matplotlib axis. In particular, the centroid_datamap is designed to be added on top of a DataMapPlot plot of the cluster points, if one so desires:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import datamapplot as dmp
+
+fig, ax = dmp.create_plot(
+    mapper.data,
+    df[&#39;arxiv&#39;].to_list(),
+)
+tmutils.centroid_datamap(mapper, ax=ax, bundle=False)
+fig.set_figwidth(10)
+fig.set_figheight(8)
+ax.set_title(&quot;Topics in ar$\chi$iv AI papers, 2018-2019&quot;)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/centroid-datamap_9_0.png" src="_images/centroid-datamap_9_0.png" />
+</div>
+</div>
+<p>By default, the centroid datamap matches colours with the temporal plot, to make it easier to relate the plots when viewing them side-by-side. To help convey the time information, vertices which correspond to earlier slices in the graph have their colour desaturated. This is a very subtle effect, so if you want to make the order of the vertices more obvious you can pass the option <code class="docutils literal notranslate"><span class="pre">node_colouring</span> <span class="pre">=</span> <span class="pre">'override'</span></code>. This overrides the datamapplot colours, instead colouring vertices from dark to
+light as you move from the beginning to end of the time range.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fig, (ax1, ax2) = plt.subplots(1,2)
+
+tmutils.centroid_datamap(
+    mapper,
+    ax=ax1,
+    node_colouring = &#39;desaturate&#39;,
+    bundle=False
+)
+ax1.set_title(&quot;Default node colouring&quot;)
+tmutils.centroid_datamap(
+    mapper,
+    ax=ax2,
+    node_colouring = &#39;override&#39;,
+    bundle=False,
+)
+ax2.set_title(&quot;node_colouring = &#39;override&#39;&quot;)
+fig.set_figwidth(10)
+fig.set_figheight(5)
+plt.show()
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/centroid-datamap_11_0.png" src="_images/centroid-datamap_11_0.png" />
+</div>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="temporal-plot.html" class="btn btn-neutral float-left" title="Temporal Plots" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="TemporalMapper API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Kaleb D Ruscitti.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

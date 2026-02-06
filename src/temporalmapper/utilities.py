@@ -8,6 +8,7 @@ from matplotlib.colors import to_rgba, rgb_to_hsv, hsv_to_rgb
 from datashader.bundling import hammer_bundle
 from pandas import DataFrame, concat
 import plotly.graph_objects as go
+import io, contextlib
 
 def std_sigmoid(x):
     mu = np.mean(x)
@@ -136,7 +137,7 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
     ## Building cluster labels (crudely)
     IWT = InformationWeightTransformer()
     keywords = []
-    for i in trange(len(TG.slices)):
+    for i in trange(len(TG.slices), desc='Generating keywords'):
         # build a vector for each cluster by summing the vectors of its constituent data
         cluster_vectors = []
         for cl in np.unique(TG.clusters[i]):
@@ -177,9 +178,8 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
         s += word[-1]
         label_attrs[node] = s
 
-    print("Complete.        ")
     nx.set_node_attributes(TG.G, label_attrs, "label")
-    return TG
+    return label_attrs
 
 
 def compute_time_semantic_positions(
@@ -224,15 +224,17 @@ def plot_text_labels(
         texts.append(
             axis.text(x, y, vertex_labels.get(node,''), **vertex_label_kwargs)
         )
-    texts, patches = adjust_text(
-        texts,
-        arrowprops=dict(arrowstyle="-",color='k', alpha=0.25),
-        ax=axis,
-        min_arrow_len=1,
-        avoid_self=False,
-        expand_axes=True,
-        time_lim = 5,
-    )
+    with contextlib.redirect_stdout(io.StringIO()):
+        # For some reason, adjust_text keeps printing stuff
+        texts, patches = adjust_text(
+            texts,
+            arrowprops=dict(arrowstyle="-",color='k', alpha=0.25),
+            ax=axis,
+            min_arrow_len=1,
+            avoid_self=False,
+            expand_axes=True,
+            time_lim = 5,
+        )
     return axis
 
 def time_semantic_plot(
@@ -256,7 +258,8 @@ def time_semantic_plot(
     """
     Create a time-semantic plot of the graph ``TemporalGraph.G``.
 
-    Parameters:
+        Parameters
+        ----------
         TemporalGraph: temporal_mapper.TemporalGraph
             The temporal graph object to plot.
         semantic_axis: ndarray
@@ -287,7 +290,11 @@ def time_semantic_plot(
             Keyword arguments passed to networkx.draw_networkx_nodes()
         edge_kwargs: dict (optional, default={})
             Keyword arguments passed to networkx.draw_networkx_edges()
-    Returns: matplotlib.axes
+            
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The Axes object containing the temporal plot.
 
     """
     if ax is None:
@@ -297,7 +304,6 @@ def time_semantic_plot(
     G = TG.G.subgraph(vertices)
     compute_time_semantic_positions(TG, semantic_axis, layout_optimization = layout_optimization)
     pos = nx.get_node_attributes(TG.G,'ts_pos')
-
     """ Plot nodes of graph. """
     node_size = compute_node_size(
         TG,
@@ -333,23 +339,19 @@ def time_semantic_plot(
     ax.tick_params(axis="x", labelrotation=90)
 
     """ Plot edges of graph. """
-    c = "k"
-    if "c" in edge_kwargs.keys():
-        c = edge_kwargs.pop("c")
-    if "color" in edge_kwargs.keys():
-        c = edge_kwargs.pop("color")
     if bundle == True:
         bundles = write_edge_bundling_datashader(TG, pos)
         x = bundles["x"].to_numpy()
         y = bundles["y"].to_numpy()
-        ax.plot(x, y, c=c, lw=0.5 * edge_scaling, **edge_kwargs)
+        ax.plot(x, y, lw=0.5 * edge_scaling, **edge_kwargs)
         if edge_labels is not None:
             print(
                 "Warning: edge labels are not supported with bundling, consider passing bundle=False"
             )
     else:
         edge_width = np.array([np.log(d["weight"]) for (u, v, d) in G.edges(data=True)])
-        edge_width /= np.amax(edge_width)
+        if len(edge_width)>0:
+            edge_width /= np.amax(edge_width)
         elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
         if "arrows" in edge_kwargs:
             arrows = edge_kwargs.pop("arrows")
@@ -360,20 +362,18 @@ def time_semantic_plot(
             edgelist=elarge,
             width=edge_scaling * 2.5 * edge_width,
             arrows=False,
-            edge_color=c,
             **edge_kwargs,
         )
         if edge_labels is not None:
             nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax)
-
-    plot_text_labels(
-        axis = ax,
-        vertices = vertices,
-        vertex_positions = pos,
-        vertex_labels = cluster_labels,
-        vertex_label_kwargs = cluster_label_kwargs,
-    )
-    
+    if len(cluster_labels)>0:
+        ax = plot_text_labels(
+            axis = ax,
+            vertices = vertices,
+            vertex_positions = pos,
+            vertex_labels = cluster_labels,
+            vertex_label_kwargs = cluster_label_kwargs,
+        )
     return ax
 
 
@@ -399,7 +399,8 @@ def centroid_datamap(
 ):
     """Plot the temporal graph in 2d with vertices at their cluster centroids.
 
-    Parameters:
+        Parameters
+        ----------
         TemporalGraph: temporal_mapper.TemporalGraph
             The temporal graph object to plot.
         ax: matplotlib.axes (optional, default=None)
@@ -420,7 +421,11 @@ def centroid_datamap(
             Keyword arguments passed to networkx.draw_networkx_nodes()
         edge_kwargs: dict (optional, default={})
             Keyword arguments passed to networkx.draw_networkx_edges()
-    Returns: matplotlib.axes
+            
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The Axes object containing the centroid datamap.
 
     """
     if vertices is None:
