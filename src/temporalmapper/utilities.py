@@ -16,7 +16,6 @@ def std_sigmoid(x):
     transform = (x - mu) / (std)
     return 1 / (1 + np.exp(-1 * transform))
 
-
 def cluster_avg_1D(cluster_data, y_data):
     """Average out the y_data in each cluster,
     to use as y-axis positions for the graph visualization"""

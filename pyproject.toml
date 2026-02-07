@@ -12,6 +12,7 @@ readme = "README.md"
 license = {text = "BSD-3-Clause license"}
 keywords = ["Mapper", "TDA", "Morse Theory", "Temporal Topic Modeling"]
 dependencies = [
+    "adjustText",
     "numpy",
     "matplotlib",
     "pandas",
@@ -20,10 +21,6 @@ dependencies = [
     "scikit-learn",
     "scipy",
     "networkx",
-    "numba",
-]
-[project.optional-dependencies]
-visualizations = [
     "datamapplot",
     "datashader",
     "vectorizers",

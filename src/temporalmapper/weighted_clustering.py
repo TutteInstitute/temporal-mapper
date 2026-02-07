@@ -1,11 +1,5 @@
-import sys
 import numpy as np
-import pandas as pd
-import math
-import numba
-from tqdm import tqdm, trange
-from warnings import warn
-
+from tqdm import tqdm
 
 def gaussian(t0, t, density, binwidth, epsilon=0.1, params=None):
     """ Returns weights for samples at times t for a Gaussian kernel centered at t0 """
