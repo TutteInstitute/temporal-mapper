@@ -823,8 +823,8 @@ def prepare_plotly_graph_objects(
                 mode="lines",
                 hoverinfo="none",
                 line=dict(
-                    width=edge_size_dict[(u,v)],
-                    color=clr_dict[u],
+                    width=edge_size_dict.get((u,v),'0.5'),
+                    color=clr_dict.get(u,'black'),
                 )
             )
         )

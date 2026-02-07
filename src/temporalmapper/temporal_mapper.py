@@ -6,6 +6,7 @@ from temporalmapper.weighted_clustering import *
 from tqdm import tqdm, trange
 from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from scipy.sparse import issparse
 from sklearn.neighbors import NearestNeighbors
 from sklearn.base import ClusterMixin
@@ -463,6 +464,7 @@ class TemporalMapper:
         if self.n_components != 2:
             if self.verbose:
                 print("Warning: Cluster colours are only implemented for 2d data.")
+            clr_dict = {node: "#000000" for node in self.G.nodes()}
         else:
             if self.verbose:
                 print("Computing cluster colours...")
@@ -473,7 +475,7 @@ class TemporalMapper:
             colours = np.array(palette_from_datamap(self.data, cluster_positions))
             clr_dict = {node: colours[k] for k, node in enumerate(centroids.keys())}
 
-            nx.set_node_attributes(self.G, clr_dict, "colour")
+        nx.set_node_attributes(self.G, clr_dict, "colour")
         return 0
 
     def get_vertex_data(self, node):
@@ -518,6 +520,17 @@ class TemporalMapper:
         G_prime = deepcopy(self.G)
         G_prime.remove_edges_from(edges_to_remove)
         return G_prime
+    
+    def initial_y_position(self):
+        """ Compute initial positions for the y-axis of temporal plot """
+        if self.n_components == 1:
+            y_initial_pos = self.data[:,0]
+        if self.n_components == 2:
+            y_initial_pos = np.arctan2(self.data[:,1], self.data[:,0])
+        else:
+            pca = PCA(n_components=1)
+            y_initial_pos = pca.fit_transform(self.data)
+        return y_initial_pos
 
     def temporal_plot(
         self,
@@ -586,8 +599,6 @@ class TemporalMapper:
             The Axes object containing the temporal plot.
 
         """
-        y_initial_pos = np.arctan2(self.data[:,1], self.data[:,0])
-
         if ax is None:
            fig, ax = mpl.pyplot.subplots(figsize=(12,8))
         if vertices is None:
@@ -601,14 +612,14 @@ class TemporalMapper:
 
         clr_dict = nx.get_node_attributes(G, "colour")
         edge_color_list = [
-            clr_dict[u]
+            clr_dict.get(u, 'k')
             for u, v in G.edges()
         ]
         edge_kwargs = {'edge_color':edge_color_list}
         
         ax = time_semantic_plot(
             self,
-            y_initial_pos,
+            self.initial_y_position(),
             ax = ax,
             vertices = vertices,
             bundle = bundle,
@@ -690,10 +701,9 @@ class TemporalMapper:
                 label_str = f"{node_name}<br>Node {node}<br>Time: {median_time}"
                 hover_text[node] = label_str
 
-        y_initial_pos = np.arctan2(self.data[:,1], self.data[:,0])
         compute_time_semantic_positions(
             self,
-            y_initial_pos,
+            self.initial_y_position(),
             layout_optimization = layout_optimization,
             layout_optimization_kwargs = layout_optimization_kwargs
         )

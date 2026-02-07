@@ -1,6 +1,7 @@
 numpy
 matplotlib
 pandas
+plotly
 tqdm
 scikit-learn
 scipy

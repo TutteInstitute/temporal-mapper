@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: temporal-mapper
-Version: 1.0.2
+Version: 1.1.0
 Author-email: Kaleb D Ruscitti <kaleb.ruscitti@uwaterloo.ca>
 License: BSD-3-Clause license
 Keywords: Mapper,TDA,Morse Theory,Temporal Topic Modeling
@@ -9,6 +9,7 @@ License-File: LICENSE
 Requires-Dist: numpy
 Requires-Dist: matplotlib
 Requires-Dist: pandas
+Requires-Dist: plotly
 Requires-Dist: tqdm
 Requires-Dist: scikit-learn
 Requires-Dist: scipy
@@ -25,7 +26,7 @@ align="left" width="200" height="120"
 src="./docs/icon.png" alt="Temporal Mapper Logo">
 ## Temporal Mapper
 
-### V.1.0.2 - January 17th '26
+### V.1.1.0 - February 02 2026
 -----------------------------------------------
 This is a library for using the Mapper for temporal topic modelling.
 Though things broadly work now, the edge cases have not been throughly 
