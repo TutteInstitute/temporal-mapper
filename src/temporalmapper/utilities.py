@@ -16,7 +16,6 @@ def std_sigmoid(x):
     transform = (x - mu) / (std)
     return 1 / (1 + np.exp(-1 * transform))
 
-
 def cluster_avg_1D(cluster_data, y_data):
     """Average out the y_data in each cluster,
     to use as y-axis positions for the graph visualization"""
@@ -66,56 +65,6 @@ def epsilon_balls(data, epsilon):
         distances.append(dist)
         indices.append(idx)
     return distances, indices
-
-
-def graph_to_holoviews(G, dataset_func=None):
-    """Take TemporalGraph.G and output the required HoloViews objects for a modified Sankey diagram."""
-    nxNodes = G.nodes()
-    nodes = nxNodes  # lol
-    cnt = 0
-    orphans = []
-    idx = 0
-    for node in nxNodes:
-        if G.degree(node) == 0:
-            cnt += 1
-            orphans.append(node)
-            continue
-        G.nodes()[node]["index"] = idx
-        idx += 1
-
-    for node in orphans:
-        G.remove_node(node)
-    nxNodes = G.nodes()
-    if cnt != 0:
-        print(f"Warning: removed {cnt} orphan nodes from the graph.")
-    nodes_ = {"index": [], "size": [], "label": [], "colour": [], "column": []}
-    for i, node in enumerate(nxNodes):
-        nodes_["index"].append(i)
-        nodes_["size"].append(nodes[node]["count"])
-        try:
-            nodes_["label"].append(nodes[node]["label"])
-        except KeyError:
-            nodes_["label"].append(nodes[node]["index"])
-        nodes_["colour"].append("#ffffff")
-        nodes_["column"].append(nodes[node]["slice_no"])
-
-    cmap = {nodes[node]["index"]: nodes[node]["colour"] for node in nodes}
-    try:
-        nodes = hv.Dataset(nodes_, "index", ["size", "label", "colour", "column"])
-    except NameError:
-        nodes = dataset_func(nodes_, "index", ["size", "label", "colour", "column"])
-
-    edges = []
-
-    for u, v, d in G.edges(data=True):
-        uidx = nxNodes[u]["index"]
-        vidx = nxNodes[v]["index"]
-        u_size = nxNodes[u]["count"]
-        v_size = nxNodes[v]["count"]
-        edges.append((uidx, vidx, (u_size * d["src_weight"], v_size * d["dst_weight"])))
-
-    return nodes, edges, cmap
-
 
 def compute_cluster_yaxis(clusters, semantic_dist, func=cluster_avg_1D):
     y_data = []

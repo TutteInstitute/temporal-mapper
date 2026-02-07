@@ -4,14 +4,24 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "temporal-mapper"
+version = "1.1.0"
 authors = [
     {name = "Kaleb D Ruscitti", email="kaleb.ruscitti@uwaterloo.ca"},
 ]
-version = "1.1.0"
+description = "Implementation of density-based Mapper for temporal topic modelling."
 readme = "README.md"
-license = {text = "BSD-3-Clause license"}
-keywords = ["Mapper", "TDA", "Morse Theory", "Temporal Topic Modeling"]
+license = {text = "BSD-3-Clause"}
+keywords = ["mapper", "tda", "morse theory", "temporal topic modeling"]
+
+classifiers = [
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+]
+
 dependencies = [
+    "adjustText",
     "numpy",
     "matplotlib",
     "pandas",
@@ -20,11 +30,12 @@ dependencies = [
     "scikit-learn",
     "scipy",
     "networkx",
-    "numba",
-]
-[project.optional-dependencies]
-visualizations = [
     "datamapplot",
     "datashader",
     "vectorizers",
 ]
+
+[project.urls]
+Homepage = "https://github.com/TutteInstitute/temporal-mapper"
+Repository = "https://github.com/TutteInstitute/temporal-mapper"
+Documentation = "https://temporal-mapper.readthedocs.io"
