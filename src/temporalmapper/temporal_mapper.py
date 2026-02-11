@@ -21,6 +21,9 @@ from temporalmapper.weighted_clustering import (
     cosine_window,
     weighted_clusters,
 )
+from temporalmapper.analytics import (
+    compute_growth,
+)
 
 """TemporalMapper class 
 minimal usage example: 
@@ -446,6 +449,7 @@ class TemporalMapper:
             ]
         nx.set_node_attributes(self.G, centroids, "centroid")
         nx.set_node_attributes(self.G, size_list, "count")
+        nx.set_node_attributes(self.G, compute_growth(self.G), "growth")
 
         # Compute cluster colours that correspond to datamapplot colours.
         if self.n_components != 2:

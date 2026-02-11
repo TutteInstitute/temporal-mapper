@@ -7,8 +7,41 @@ from tqdm import tqdm, trange
 from matplotlib.colors import to_rgba, rgb_to_hsv, hsv_to_rgb
 from datashader.bundling import hammer_bundle
 from pandas import DataFrame, concat
+from temporalmapper.layout import (
+    temporal_barycenter_layout,
+    component_ordered_layout,
+    force_directed_y_layout
+)
 import plotly.graph_objects as go
 import io, contextlib
+
+def squarify_text(text):
+    """Make a string more square by adding newlines"""
+    words = text.split()
+    if not words:
+        return ""
+
+    total_chars = sum(len(w) for w in words) + len(words) - 1
+    target_width = np.ceil(np.sqrt(total_chars))
+
+    lines = []
+    current_line = []
+
+    for word in words:
+        # length if we add this word to the current line
+        projected_len = sum(len(w) for w in current_line) + len(current_line) + len(word)
+
+        if projected_len <= target_width:
+            current_line.append(word)
+        else:
+            lines.append(" ".join(current_line))
+            current_line = [word]
+
+    if current_line:
+        lines.append(" ".join(current_line))
+
+    return "\n".join(lines)
+
 
 def std_sigmoid(x):
     mu = np.mean(x)
@@ -74,7 +107,6 @@ def compute_cluster_yaxis(clusters, semantic_dist, func=cluster_avg_1D):
 
     return y_data
 
-
 def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep=" "):
     """Using a bag of words corresponding to each data point, get highly informative
     keywords for each cluster"""
@@ -134,7 +166,7 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
 def compute_time_semantic_positions(
     TG,
     semantic_axis,
-    layout_optimization='barycenter',
+    layout_optimization='ordered',
     layout_optimization_kwargs = {},
 ):
     """ Compute node positions """
@@ -154,6 +186,9 @@ def compute_time_semantic_positions(
         y_pos = force_directed_y_layout(TG.G, x_pos, y_init=y_init, **layout_optimization_kwargs)
     if layout_optimization == "barycenter":
         y_pos = temporal_barycenter_layout(TG.G, x_pos, **layout_optimization_kwargs) 
+    if layout_optimization == "ordered":
+        y_pos = component_ordered_layout(TG.G, x_pos, **layout_optimization_kwargs)
+        
         
     pos = {node: (x_pos[node], y_pos[node]) for node in TG.G.nodes()}
     nx.set_node_attributes(TG.G, pos, name="ts_pos")
@@ -196,6 +231,7 @@ def time_semantic_plot(
     edge_labels=None,
     bundle=False,
     layout_optimization='barycenter',
+    layout_optimization_kwargs={},
     edge_scaling=1,
     node_scaling=1,
     node_size_bounds: tuple[float] = (5,25),
@@ -251,7 +287,15 @@ def time_semantic_plot(
     if vertices is None:
         vertices = TG.G.nodes()
     G = TG.G.subgraph(vertices)
-    compute_time_semantic_positions(TG, semantic_axis, layout_optimization = layout_optimization)
+    if (layout_optimization == 'barycenter') and ('spacing' not in layout_optimization_kwargs.keys()):
+        layout_optimization_kwargs['spacing']=np.sqrt(node_scaling)
+    
+    compute_time_semantic_positions(
+        TG,
+        semantic_axis,
+        layout_optimization = layout_optimization,
+        layout_optimization_kwargs=layout_optimization_kwargs,
+    )
     pos = nx.get_node_attributes(TG.G,'ts_pos')
     """ Plot nodes of graph. """
     node_size = compute_node_size(
@@ -520,6 +564,32 @@ def write_edge_bundling_datashader(TG, pos, vertices=None):
     return bundled_df
 
 
+def treemap(mapper, idx=None):
+    if idx is None:
+        dfs = []
+        for idx in range(mapper.N_checkpoints):
+            dfs.append(slice_df(mapper, idx))
+        dataframe = pd.concat(dfs, ignore_index=True) 
+        path = ['slice', 'node']
+    else:
+        dataframe = slice_df(mapper, idx)
+        path = ['node']
+
+    fig = px.treemap(
+        dataframe,
+        path=path,
+        values='count',
+        color='growth',
+        color_continuous_scale='RdYlGn',
+        color_continuous_midpoint=0,
+    )
+
+    fig.update_traces(
+        hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Growth: %{color:.2f}'
+    )
+
+    return fig
+
 def sliceograph(TM, ax=None, clrs=["r", "g", "b"]):
     """Produce a sliceograph of a TemporalMapper
 
@@ -547,171 +617,6 @@ def sliceograph(TM, ax=None, clrs=["r", "g", "b"]):
         ax.plot([slice_min, slice_max], [offset, offset], c=clrs[i % len(clrs)])
     return ax
 
-from scipy.optimize import minimize
-def force_directed_y_layout(G, x_positions, y_init=None, iterations=1000, edge_weight=1.0, repulsion_weight=0.1):
-    """
-    Use force-directed algorithm to find y-positions that minimize crossings
-    X-positions are fixed (time), optimize only y-positions
-    """
-    nodes = list(G.nodes())
-    n = len(nodes)
-    node_to_idx = {node: i for i, node in enumerate(nodes)}
-    
-    # Initialize y-positions randomly
-    if y_init is None:
-        y_init = np.random.random(n)
-    
-    # Callback for progress tracking
-    iteration_count = [0]
-    pbar = tqdm(total=iterations, desc="Optimizing layout")
-    
-    def callback(xk):
-        iteration_count[0] += 1
-        pbar.update(1)
-    
-    def energy(y_positions):
-        """
-        Energy function to minimize:
-        - Edge length (keep connected nodes close in y)
-        - Node repulsion (spread nodes apart to avoid overlap)
-        """
-        energy = 0
-        
-        # Edge attraction: minimize vertical distance between connected nodes
-        for u, v in G.edges():
-            i, j = node_to_idx[u], node_to_idx[v]
-            y_diff = y_positions[i] - y_positions[j]
-            x_diff = x_positions[u] - x_positions[v]
-            # Penalize y-distance, weighted by x-distance
-            energy += edge_weight * y_diff**2 / (abs(x_diff) + 0.1)
-        
-        # Node repulsion: keep nodes separated
-        for i in range(n):
-            for j in range(i+1, n):
-                y_diff = y_positions[i] - y_positions[j]
-                x_diff = x_positions[nodes[i]] - x_positions[nodes[j]]
-                dist = np.sqrt(x_diff**2 + y_diff**2)
-                if dist > 0:
-                    energy -= repulsion_weight / dist
-        
-        return energy
-    
-    # Optimize with callback
-    result = minimize(energy, y_init, method='L-BFGS-B', 
-                     callback=callback,
-                     options={'maxiter': iterations})
-    
-    pbar.close()
-    
-    y_positions = {node: result.x[i] for i, node in enumerate(nodes)}
-    return y_positions
-
-def temporal_barycenter_layout(
-    G,
-    x_positions,
-    y_positions=None,
-    iterations=1000,
-    lr_init=0.8,
-    lr_min=0.05,
-    lr_max=1.0,
-    momentum=0.8,
-    tol=1e-4,
-    decay=0.005,
-    eps=1e-6,
-):
-    """
-    Barycenter-based layout for edge-crossing minimization with:
-    - adaptive learning rate
-    - momentum
-    - normalization
-    - early stopping
-    """
-
-    nodes = list(G.nodes())
-    edge_weights = nx.get_edge_attributes(G, "weight")
-
-    # --- Initialize y positions ---
-    if y_positions is None:
-        y_positions = {n: np.random.uniform(-1, 1) for n in nodes}
-    else:
-        y_positions = dict(y_positions)
-
-    # --- Velocity for momentum ---
-    velocity = {n: 0.0 for n in nodes}
-    prev_avg_delta = None
-
-    # --- Sanity check ---
-    if not set(nodes).issubset(x_positions):
-        raise ValueError("x_positions must contain all nodes")
-
-    for it in range(iterations):
-        new_y = {}
-        total_delta = 0.0
-
-        # --- Base learning rate ---
-        lr = lr_init * np.exp(-decay * it)
-        lr = np.clip(lr, lr_min, lr_max)
-
-        # --- Compute barycenter attraction ---
-        for node in nodes:
-            yi = y_positions[node]
-            xi = x_positions[node]
-        
-            neighbors = list(G.neighbors(node))
-            attraction = 0.0
-        
-            if neighbors:
-                weighted_sum = 0.0
-                weight_total = 0.0
-        
-                for nbr in neighbors:
-                    dx = abs(xi - x_positions[nbr])
-        
-                    # --- Edge weight (default = 1.0 if missing) ---
-                    ew = edge_weights.get((node, nbr),
-                         edge_weights.get((nbr, node), 1.0))
-        
-                    # --- Combined weight: spatial + edge importance ---
-                    w = ew / (dx + eps)
-        
-                    weighted_sum += w * y_positions[nbr]
-                    weight_total += w
-        
-                target = weighted_sum / weight_total
-                attraction = target - yi
-        
-            # --- Momentum update ---
-            v = momentum * velocity[node] + lr * attraction
-            velocity[node] = v
-        
-            new_y[node] = yi + v
-            total_delta += abs(v)
-
-        # --- Normalize to prevent drift ---
-        vals = np.array(list(new_y.values()))
-        std = vals.std()
-        if std > 0:
-            mean = vals.mean()
-            new_y = {n: (y - mean) / std for n, y in new_y.items()}
-
-        avg_delta = total_delta / len(nodes)
-
-        # --- Adaptive LR correction ---
-        if prev_avg_delta is not None:
-            if avg_delta > prev_avg_delta:
-                lr_init *= 0.7
-            else:
-                lr_init *= 1.05
-            lr_init = np.clip(lr_init, lr_min, lr_max)
-
-        y_positions = new_y
-        prev_avg_delta = avg_delta
-
-        # --- Early stopping ---
-        if avg_delta < tol:
-            break
-
-    return y_positions
 
 def compute_node_size(
     mapper,
