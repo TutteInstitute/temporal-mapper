@@ -1,4 +1,3 @@
-adjustText
 numpy
 matplotlib
 pandas
@@ -7,6 +6,9 @@ tqdm
 scikit-learn
 scipy
 networkx
+numba
+
+[visualizations]
 datamapplot
 datashader
 vectorizers

@@ -1,20 +1,11 @@
 Metadata-Version: 2.4
 Name: temporal-mapper
 Version: 1.1.0
-Summary: Implementation of density-based Mapper for temporal topic modelling.
 Author-email: Kaleb D Ruscitti <kaleb.ruscitti@uwaterloo.ca>
-License: BSD-3-Clause
-Project-URL: Homepage, https://github.com/TutteInstitute/temporal-mapper
-Project-URL: Repository, https://github.com/TutteInstitute/temporal-mapper
-Project-URL: Documentation, https://temporal-mapper.readthedocs.io
-Keywords: mapper,tda,morse theory,temporal topic modeling
-Classifier: License :: OSI Approved :: BSD License
-Classifier: Programming Language :: Python :: 3
-Classifier: Development Status :: 4 - Beta
-Classifier: Intended Audience :: Science/Research
+License: BSD-3-Clause license
+Keywords: Mapper,TDA,Morse Theory,Temporal Topic Modeling
 Description-Content-Type: text/markdown
 License-File: LICENSE
-Requires-Dist: adjustText
 Requires-Dist: numpy
 Requires-Dist: matplotlib
 Requires-Dist: pandas
@@ -23,9 +14,11 @@ Requires-Dist: tqdm
 Requires-Dist: scikit-learn
 Requires-Dist: scipy
 Requires-Dist: networkx
-Requires-Dist: datamapplot
-Requires-Dist: datashader
-Requires-Dist: vectorizers
+Requires-Dist: numba
+Provides-Extra: visualizations
+Requires-Dist: datamapplot; extra == "visualizations"
+Requires-Dist: datashader; extra == "visualizations"
+Requires-Dist: vectorizers; extra == "visualizations"
 Dynamic: license-file
 
 <img
