@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
-from temporalmapper.utilities import *
-from temporalmapper.weighted_clustering import *
+
 from tqdm import tqdm, trange
 from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import StandardScaler
@@ -11,6 +10,13 @@ from sklearn.neighbors import NearestNeighbors
 from sklearn.base import ClusterMixin
 from datamapplot.palette_handling import palette_from_datamap
 
+from temporalmapper.plotting import *
+from temporalmapper.kernels import square 
+from temporalmapper.utilities import (
+    cosine_window,
+    std_sigmoid,
+    weighted_clusters
+)
 """TemporalMapper class 
 minimal usage example: 
 
@@ -178,29 +184,6 @@ class TemporalMapper:
             self._compute_critical_points()
         return checkpoints
 
-    def _compute_critical_points(self):
-        if self.distance is None:
-            self._compute_knn()
-        if verbose:
-            print("Computing morse critical points...")
-
-        std_time = np.copy(self.time)
-        std_time = self.scaler.fit_transform(std_time.reshape(-1, 1))
-        temporal_delta = [
-            np.mean(std_time[indx] - std_time[indx[0]]) for indx in TG.dist_indices
-        ]
-        temporal_delta = np.squeeze(np.vstack(temporal_delta))
-        event_strength = temporal_delta / self.distance[:, -1]
-        ## smooth it out a bit
-        smooth_strength = np.zeros(self.n_samples)
-        for k in trange(self.time, disable=self.disable):
-            smooth_strength += (
-                tmwc.square(self.time[k], self.time, 1, 0.05) * event_strength[k]
-            )
-        ## find peaks & troughs
-        peaks = find_peaks(smooth_vals, prominence=0.8, height=0.5)[0]
-        troughs = find_peaks(-smooth_vals, prominence=0.8, height=0.5)[0]
-        critical_points = np.hstack((peaks, troughs))
 
     def _compute_knn(self):
         """Run sklearn NearestNeighbours to compute knns."""

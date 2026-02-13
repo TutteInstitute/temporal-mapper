@@ -3,10 +3,6 @@ from math import isnan
 import pandas as pd
 import numpy as np
 import json 
-from temporalmapper.utilities import (
-    prepare_plotly_graph_objects,
-    compute_time_semantic_positions
-)
 
 def sources_and_sinks(G):
     source_nodes = [
@@ -110,17 +106,6 @@ def top_shifts(mapper, topN=10):
     top = df.reindex(df['shift'].abs().nlargest(topN).index)
     return top
 
-def initial_y_position(self):
-    """ Compute initial positions for the y-axis of temporal plot """
-    if self.n_components == 1:
-        y_initial_pos = self.data[:,0]
-    if self.n_components == 2:
-        y_initial_pos = np.arctan2(self.data[:,1], self.data[:,0])
-    else:
-        pca = PCA(n_components=1)
-        y_initial_pos = pca.fit_transform(self.data)
-    return y_initial_pos
-
 def get_previous_node(G,node):
     in_nodes = [u for (u,v) in G.in_edges(node)]
     if len(in_nodes)!=1:
@@ -187,62 +172,4 @@ def static_topic_summary(mapper, topic):
         'nodes':[str(s) for s in topic],
     }
     return topic_summary
-
-def export_chronoscope(mapper, filepath='chronoscope_data.json'):
-    growth_data = pd.concat([
-        slice_df(mapper, idx) for idx in range(mapper.N_checkpoints)
-    ]).to_dict(orient='records')
-    shifts = top_shifts(mapper).to_dict(orient='records')
-    
-    slice_labels = {idx:int(label) for idx,label in enumerate(mapper.checkpoints)}
-
-    positions = nx.get_node_attributes(mapper.G,'ts_pos')
-    if len(positions)==0:
-        positions = compute_time_semantic_positions(
-            mapper,
-            initial_y_position(mapper),
-            layout_optimization = 'barycenter',
-        )
-
-    cluster_labels = {}
-    hover_text = {}
-    if len(hover_text)==0:
-        # construct some default hover text.
-        for node in mapper.G.nodes():
-            idx = mapper.get_vertex_data(node)
-            median_time = np.median(mapper.time[idx])
-            node_name = cluster_labels.get(node,'')
-            label_str = f"{node_name}<br>Node {node}<br>Time: {median_time}"
-            hover_text[node] = label_str
-    
-    edge_trace, node_trace = prepare_plotly_graph_objects(
-        mapper,
-        positions,
-        hover_text=hover_text,
-        edge_scaling = 1,
-        node_scaling = 1,
-        node_size_bounds = (5,50),
-        edge_weight_bounds = (0.1,1),
-        node_size_scale = 'sigmoid',
-    )
-    # Convert traces to JSON separately
-    edge_json = [trace.to_plotly_json() for trace in edge_trace]
-    node_json = node_trace.to_plotly_json()
-
-    # Topic summaries
-    static_topics = static_topics(mapper)
-    topic_summaries = {key:static_topic_summary(mapper, topic) for key,topic in static_topics(mapper).items()}
-    
-    config = {
-        "slice_labels": slice_labels
-    }
-    
-    json_data = {
-        'config':config,
-        'growth_data':growth_data,
-        'shifts':shifts,
-        'network-traces':{'node':node_json, 'edge':edge_json}
-    }
-    with open(filepath, "w") as f:
-        json.dump(json_data, f, indent=2)
 

@@ -10,17 +10,17 @@ import matplotlib as mpl
 from copy import deepcopy
 import plotly.graph_objects as go
 
-from temporalmapper.utilities import (
+from temporalmapper.utilities import(
     std_sigmoid,
-    time_semantic_plot,
-    compute_time_semantic_positions,
-    prepare_plotly_graph_objects,
-)
-from temporalmapper.weighted_clustering import (
-    square,
     cosine_window,
     weighted_clusters,
 )
+from temporalmapper.plotting import (
+    time_semantic_plot,
+    prepare_plotly_graph_objects,
+)
+from temporalmapper.layout import compute_time_semantic_positions
+from temporalmapper.kernels import square
 from temporalmapper.analytics import (
     compute_growth,
 )

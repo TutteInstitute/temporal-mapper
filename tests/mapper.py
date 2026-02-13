@@ -6,8 +6,7 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 
 import temporalmapper as tm
-import temporalmapper.utilities as tmutils
-import temporalmapper.weighted_clustering as tmwc
+import temporalmapper.plotting as tmplot
 
 data_folder = 'data/'
 
@@ -35,7 +34,7 @@ def centroidDatamap(kwargs={}):
     with open(data_folder+'TMTest.pkl', 'rb') as f:
         TM = pkl.load(f)
         f.close()
-    tmutils.centroid_datamap(
+    tmplot.centroid_datamap(
         TM, **kwargs
     )
     return 0
@@ -46,7 +45,7 @@ def timeSemanticPlot(kwargs={}):
         TM = pkl.load(f)
         f.close()
     semantic_data = PCA(n_components=1).fit_transform(TM.data)
-    tmutils.time_semantic_plot(
+    tmplot.time_semantic_plot(
         TM, semantic_data, **kwargs,
     )
     return 0
@@ -58,12 +57,12 @@ def plotSubgraph(kwargs={}):
         f.close()
     vertices = TM.vertex_subgraph('0:0')
     semantic_data = PCA(n_components=1).fit_transform(TM.data)
-    tmutils.time_semantic_plot(
+    tmplot.time_semantic_plot(
         TM, semantic_data, vertices=vertices, **kwargs,
     )
     """ When I copy this test into a new file and run it, it passes.
     I can't figure out why it doesn't pass here... """
-    # tmutils.centroid_datamap(
+    # tmplot.centroid_datamap(
     #     TM, **kwargs, vertices=vertices
     # )
     return 0
@@ -76,10 +75,10 @@ def plotWithEdges(kwargs={}):
     tmp_dict = nx.get_edge_attributes(TM.G, "weight")
     edge_labels = {k: "{:.2f}".format(tmp_dict[k]) for k in tmp_dict}
     semantic_data = PCA(n_components=1).fit_transform(TM.data)
-    tmutils.time_semantic_plot(
+    tmplot.time_semantic_plot(
         TM, semantic_data, edge_labels=edge_labels, **kwargs,
     )
-    tmutils.centroid_datamap(
+    tmplot.centroid_datamap(
         TM, **kwargs, edge_labels=edge_labels
     )
     return 0
@@ -89,7 +88,7 @@ def test_computeGraph():
     parameters = [
         {'N_checkpoints':8, 'slice_method':'time'},
         {'N_checkpoints':8, 'slice_method':'data'},
-        {'N_checkpoints':8, 'kernel':tmwc.square, 'rate_sensitivity':0} # vanilla mapper
+        {'N_checkpoints':8, 'kernel':tm.kernels.square, 'rate_sensitivity':0} # vanilla mapper
     ]
     for i in range(len(parameters)):
         assert computeGraph(kwargs=parameters[i]) == 0
@@ -144,7 +143,7 @@ def test_genus1Correctness():
         slice_method='time',
         overlap = 0.5,
         rate_sensitivity=1,
-        kernel=tmwc.square,
+        kernel=tm.kernels.square,
     )
     TM.build()
     G = TM.G.to_undirected()

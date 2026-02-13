@@ -7,127 +7,41 @@ from tqdm import tqdm, trange
 from matplotlib.colors import to_rgba, rgb_to_hsv, hsv_to_rgb
 from datashader.bundling import hammer_bundle
 from pandas import DataFrame, concat
+from temporalmapper.layout import (
+    temporal_barycenter_layout,
+    component_ordered_layout,
+    force_directed_y_layout,
+    compute_time_semantic_positions,
+)
+import plotly.graph_objects as go
+import io, contextlib
 
-def std_sigmoid(x):
-    mu = np.mean(x)
-    std = np.std(x)
-    transform = (x - mu) / (std)
-    return 1 / (1 + np.exp(-1 * transform))
+def squarify_text(text):
+    """Make a string more square by adding newlines"""
+    words = text.split()
+    if not words:
+        return ""
 
+    total_chars = sum(len(w) for w in words) + len(words) - 1
+    target_width = np.ceil(np.sqrt(total_chars))
 
-def cluster_avg_1D(cluster_data, y_data):
-    """Average out the y_data in each cluster,
-    to use as y-axis positions for the graph visualization"""
-    clusters = np.unique(cluster_data)
-    avg_arr = np.zeros(np.shape(clusters))
-    i = 0
-    for cluster in clusters:
-        if cluster == -2:
-            continue
-        cl_idx = (cluster_data == cluster).nonzero()
-        sum_ = 0
-        for val in y_data[cl_idx]:
-            sum_ += val
-        sum_ /= np.size(cl_idx)
-        avg_arr[i] = sum_
-        i += 1
+    lines = []
+    current_line = []
 
-    return avg_arr
+    for word in words:
+        # length if we add this word to the current line
+        projected_len = sum(len(w) for w in current_line) + len(current_line) + len(word)
 
+        if projected_len <= target_width:
+            current_line.append(word)
+        else:
+            lines.append(" ".join(current_line))
+            current_line = [word]
 
-def cluster_most_common(cluster_data, y_data):
-    """Get the most common y_data val in each cluster"""
-    clusters = np.unique(cluster_data)
-    most_arr = np.zeros(np.shape(clusters), dtype=int)
-    i = 0
+    if current_line:
+        lines.append(" ".join(current_line))
 
-    for cluster in clusters:
-        if cluster == -2:
-            continue
-        cl_idx = (cluster_data == cluster).nonzero()
-        values, counts = np.unique(y_data[cl_idx], return_counts=True)
-        most_ = values[np.argmax(counts)]
-        most_arr[i] = int(most_)
-        i += 1
-
-    return most_arr
-
-
-def epsilon_balls(data, epsilon):
-    """Return (distances, indices) of points in B(r,x)"""
-    distances = []
-    indices = []
-    for x in tqdm(data):
-        d = np.linalg.norm(x - data, axis=1)
-        idx = (d < epsilon).nonzero()
-        dist = d[idx]
-        distances.append(dist)
-        indices.append(idx)
-    return distances, indices
-
-
-def graph_to_holoviews(G, dataset_func=None):
-    """Take TemporalGraph.G and output the required HoloViews objects for a modified Sankey diagram."""
-    try:
-        import holoviews
-    except ImportError as e:
-        print(f"Graph to holoviews requires holoviews: {e}")
-    
-    nxNodes = G.nodes()
-    nodes = nxNodes  # lol
-    cnt = 0
-    orphans = []
-    idx = 0
-    for node in nxNodes:
-        if G.degree(node) == 0:
-            cnt += 1
-            orphans.append(node)
-            continue
-        G.nodes()[node]["index"] = idx
-        idx += 1
-
-    for node in orphans:
-        G.remove_node(node)
-    nxNodes = G.nodes()
-    if cnt != 0:
-        print(f"Warning: removed {cnt} orphan nodes from the graph.")
-    nodes_ = {"index": [], "size": [], "label": [], "colour": [], "column": []}
-    for i, node in enumerate(nxNodes):
-        nodes_["index"].append(i)
-        nodes_["size"].append(nodes[node]["count"])
-        try:
-            nodes_["label"].append(nodes[node]["label"])
-        except KeyError:
-            nodes_["label"].append(nodes[node]["index"])
-        nodes_["colour"].append("#ffffff")
-        nodes_["column"].append(nodes[node]["slice_no"])
-
-    cmap = {nodes[node]["index"]: nodes[node]["colour"] for node in nodes}
-    try:
-        nodes = holoviews.Dataset(nodes_, "index", ["size", "label", "colour", "column"])
-    except NameError:
-        nodes = dataset_func(nodes_, "index", ["size", "label", "colour", "column"])
-
-    edges = []
-
-    for u, v, d in G.edges(data=True):
-        uidx = nxNodes[u]["index"]
-        vidx = nxNodes[v]["index"]
-        u_size = nxNodes[u]["count"]
-        v_size = nxNodes[v]["count"]
-        edges.append((uidx, vidx, (u_size * d["src_weight"], v_size * d["dst_weight"])))
-
-    return nodes, edges, cmap
-
-
-def compute_cluster_yaxis(clusters, semantic_dist, func=cluster_avg_1D):
-    y_data = []
-    for tslice in clusters:
-        y_datum = func(tslice, semantic_dist)
-        y_data.append(y_datum)
-
-    return y_data
-
+    return "\n".join(lines)
 
 def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep=" "):
     """Using a bag of words corresponding to each data point, get highly informative
@@ -140,7 +54,7 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
     ## Building cluster labels (crudely)
     IWT = InformationWeightTransformer()
     keywords = []
-    for i in trange(len(TG.slices)):
+    for i in trange(len(TG.slices), desc='Generating keywords'):
         # build a vector for each cluster by summing the vectors of its constituent data
         cluster_vectors = []
         for cl in np.unique(TG.clusters[i]):
@@ -181,26 +95,60 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
         s += word[-1]
         label_attrs[node] = s
 
-    print("Complete.        ")
     nx.set_node_attributes(TG.G, label_attrs, "label")
-    return TG
+    return label_attrs
 
+def plot_text_labels(
+    axis,
+    vertices,
+    vertex_positions,
+    vertex_labels,
+    vertex_label_kwargs,
+):
+    texts = []
+    from adjustText import adjust_text
+    for node in vertices:
+        x,y = vertex_positions[node]
+        texts.append(
+            axis.text(x, y, vertex_labels.get(node,''), **vertex_label_kwargs)
+        )
+    with contextlib.redirect_stdout(io.StringIO()):
+        # For some reason, adjust_text keeps printing stuff
+        texts, patches = adjust_text(
+            texts,
+            arrowprops=dict(arrowstyle="-",color='k', alpha=0.25),
+            ax=axis,
+            min_arrow_len=1,
+            avoid_self=False,
+            expand_axes=True,
+            time_lim = 5,
+        )
+    return axis
 
 def time_semantic_plot(
     TG,
     semantic_axis,
     ax=None,
     vertices=None,
-    label_edges=False,
+    cluster_labels={},
+    cluster_label_kwargs={},
+    edge_labels=None,
     bundle=False,
+    layout_optimization='barycenter',
+    layout_optimization_kwargs={},
     edge_scaling=1,
+    node_scaling=1,
+    node_size_bounds: tuple[float] = (5,25),
+    edge_weight_bounds: tuple[float] = (5,25),
+    node_size_scale='linear',
     node_kwargs={},
     edge_kwargs={},
 ):
     """
     Create a time-semantic plot of the graph ``TemporalGraph.G``.
 
-    Parameters:
+        Parameters
+        ----------
         TemporalGraph: temporal_mapper.TemporalGraph
             The temporal graph object to plot.
         semantic_axis: ndarray
@@ -209,13 +157,33 @@ def time_semantic_plot(
             Matplotlib axis to draw on
         vertices: list (optional, default=None)
             List of nodes in TG.G to include in the plot.
-        label_edges: bool (optional, default=False)
-            If true, include text labels of the edge weight on top of edges.
+        cluster_labels: dict (optional, default={})
+            Dictionary of labels with `cluster_labels[node]` a string to label vertex `node`.
+        cluster_label_kwargs: dict (optional, default={})
+            Keyword arguments for `matplotlib.axis.text` used when plotting cluster labels.
+        edge_labels: dict (optional, default=None)
+            Dictionary of labels with `edge_labels[e]` a string to label edge `e`.
+        bundle: bool (optional, default=False)
+            If true, uses the edge-bundling algorithm from datashader to plot edges.
+        layout_optimization: string (optional, default='barycenter')
+            Optimization method used to reduce edge-crossings: one of None, "none", "force-directed" or "barycenter"
         edge_scaling: float (optional, default = 1)
             Scales the thickness of edges, larger is thicker.
-        bundle: bool (optional, default=True)
+        node_scaling: float (optional, default = 10)
+            Scales the size of vertices
+        node_size_scale: string (optional, default='linear')
+            Specifies linear or logarithmic scaling for node sizes
+        bundle: bool (optional, default=False)
             If true, bundle the edges of the graph using datashader's hammer_bundle function.
-    Returns: matplotlib.axes
+        node_kwargs: dict (optional, default={})
+            Keyword arguments passed to networkx.draw_networkx_nodes()
+        edge_kwargs: dict (optional, default={})
+            Keyword arguments passed to networkx.draw_networkx_edges()
+            
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The Axes object containing the temporal plot.
 
     """
     if ax is None:
@@ -223,20 +191,25 @@ def time_semantic_plot(
     if vertices is None:
         vertices = TG.G.nodes()
     G = TG.G.subgraph(vertices)
-
-    pos = {}
-    slice_no = nx.get_node_attributes(TG.G, "slice_no")
-    semantic_axis = np.squeeze(semantic_axis)
-    for node in vertices:
-        t = slice_no[node]
-        pt_idx = TG.get_vertex_data(node)
-        w = TG.weights[t, pt_idx]
-        node_ypos = np.average(semantic_axis[pt_idx], weights=w)
-        node_xpos = np.average(TG.time[pt_idx], weights=w)
-        pos[node] = (node_xpos, node_ypos)
-
+    if (layout_optimization == 'barycenter') and ('spacing' not in layout_optimization_kwargs.keys()):
+        layout_optimization_kwargs['spacing']=np.sqrt(node_scaling)
+    
+    compute_time_semantic_positions(
+        TG,
+        semantic_axis,
+        layout_optimization = layout_optimization,
+        layout_optimization_kwargs=layout_optimization_kwargs,
+    )
+    pos = nx.get_node_attributes(TG.G,'ts_pos')
     """ Plot nodes of graph. """
-    node_size = [5 * np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
+    node_size = compute_node_size(
+        TG,
+        G,
+        node_scaling,
+        node_size_scale,
+        node_size_bounds
+    )
+        
     if TG.n_components != 2:
         cval_dict = nx.get_node_attributes(TG.G, "cluster_no")
         node_clr = node_clr = [cval_dict[node] for node in vertices]
@@ -263,23 +236,19 @@ def time_semantic_plot(
     ax.tick_params(axis="x", labelrotation=90)
 
     """ Plot edges of graph. """
-    c = "k"
-    if "c" in edge_kwargs.keys():
-        c = edge_kwargs.pop("c")
-    if "color" in edge_kwargs.keys():
-        c = edge_kwargs.pop("color")
     if bundle == True:
         bundles = write_edge_bundling_datashader(TG, pos)
         x = bundles["x"].to_numpy()
         y = bundles["y"].to_numpy()
-        ax.plot(x, y, c=c, lw=0.5 * edge_scaling, **edge_kwargs)
-        if label_edges:
+        ax.plot(x, y, lw=0.5 * edge_scaling, **edge_kwargs)
+        if edge_labels is not None:
             print(
                 "Warning: edge labels are not supported with bundling, consider passing bundle=False"
             )
     else:
         edge_width = np.array([np.log(d["weight"]) for (u, v, d) in G.edges(data=True)])
-        edge_width /= np.amax(edge_width)
+        if len(edge_width)>0:
+            edge_width /= np.amax(edge_width)
         elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
         if "arrows" in edge_kwargs:
             arrows = edge_kwargs.pop("arrows")
@@ -290,13 +259,18 @@ def time_semantic_plot(
             edgelist=elarge,
             width=edge_scaling * 2.5 * edge_width,
             arrows=False,
-            edge_color=c,
             **edge_kwargs,
         )
-        if label_edges:
-            edge_labels = nx.get_edge_attributes(G, "weight")
-            nx.draw_networkx_edge_labels(G, pos, edge_labels)
-
+        if edge_labels is not None:
+            nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax)
+    if len(cluster_labels)>0:
+        ax = plot_text_labels(
+            axis = ax,
+            vertices = vertices,
+            vertex_positions = pos,
+            vertex_labels = cluster_labels,
+            vertex_label_kwargs = cluster_label_kwargs,
+        )
     return ax
 
 
@@ -312,7 +286,7 @@ def hex_desaturate(c, pc):
 def centroid_datamap(
     TG,
     ax=None,
-    label_edges=False,
+    edge_labels=None,
     vertices=None,
     edge_scaling=1,
     node_colouring="desaturate",
@@ -322,7 +296,8 @@ def centroid_datamap(
 ):
     """Plot the temporal graph in 2d with vertices at their cluster centroids.
 
-    Parameters:
+        Parameters
+        ----------
         TemporalGraph: temporal_mapper.TemporalGraph
             The temporal graph object to plot.
         ax: matplotlib.axes (optional, default=None)
@@ -333,13 +308,21 @@ def centroid_datamap(
             The override option will throw away the semantic colouring and colour points only based on their time value.
         vertices: list (optional, default=None)
             List of nodes in TG.G to include in the plot.
-        label_edges: bool (optional, default=False)
-            If true, include text labels of the edge weight on top of edges.
+        edge_labels: dict (optional, default=None)
+            Dictionary of labels with edge_labels[e] a string to label edge e.
         edge_scaling: float (optional, default = 1)
             Scales the thickness of edges, larger is thicker.
         bundle: bool (optional, default=True)
             If true, bundle the edges of the graph using datashader's hammer_bundle function.
-    Returns: matplotlib.axes
+        node_kwargs: dict (optional, default={})
+            Keyword arguments passed to networkx.draw_networkx_nodes()
+        edge_kwargs: dict (optional, default={})
+            Keyword arguments passed to networkx.draw_networkx_edges()
+            
+        Returns
+        -------
+        matplotlib.axes.Axes
+            The Axes object containing the centroid datamap.
 
     """
     if vertices is None:
@@ -348,13 +331,13 @@ def centroid_datamap(
     if ax is None:
         ax = plt.gca()
     try:
-        pos = nx.get_node_attributes(TG.G, "centroid")
+        pos = nx.get_node_attributes(G, "centroid")
     except AttributeError:
         TG.populate_node_attrs()
-        pos = nx.get_node_attributes(TG.G, "centroid")
+        pos = nx.get_node_attributes(G, "centroid")
 
     """ Plot nodes of graph """
-    node_size = [5 * np.log2(np.size(TG.get_vertex_data(node))) for node in vertices]
+    node_size = np.array([5 * np.log2(np.size(TG.get_vertex_data(node))) for node in vertices])
     slice_no = nx.get_node_attributes(TG.G, "slice_no")
     if node_colouring == "override":
         # Override cluster semantic colouring with time information
@@ -365,7 +348,7 @@ def centroid_datamap(
         pc = [(slice_no[node] + 1) / TG.N_checkpoints for node in vertices]
         node_clr = [
             hex_desaturate(colour_dict[node], pc[i])
-            for i, node in enumerate(colour_dict.keys())
+            for i, node in enumerate(vertices)
         ]
     else:
         print("Accepted values of node_colouring are 'desaturate' and 'override'.")
@@ -393,11 +376,12 @@ def centroid_datamap(
     if "color" in edge_kwargs.keys():
         c = edge_kwargs.pop("color")
     if bundle == True:
-        bundles = write_edge_bundling_datashader(TG, pos)
+        bundles = write_edge_bundling_datashader(TG, pos, vertices=vertices)
         x = bundles["x"].to_numpy()
         y = bundles["y"].to_numpy()
-
-        ax.plot(x, y, c=c, lw=0.5 * edge_scaling, **edge_kwargs)
+        if len(edge_kwargs.keys()) > 0:
+            print("Warning! You have passed edge_kwargs with bundle=True, which is not supported.")
+        ax.plot(x, y, c=c, lw=0.5 * edge_scaling)
     else:
         edge_width = np.array([np.log(d["weight"]) for (u, v, d) in G.edges(data=True)])
         edge_width /= np.amax(edge_width)
@@ -415,9 +399,7 @@ def centroid_datamap(
             edge_color=c,
             **edge_kwargs,
         )
-        if label_edges:
-            tmp_dict = nx.get_edge_attributes(TG.G, "weight")
-            edge_labels = {k: "{:.2f}".format(tmp_dict[k]) for k in tmp_dict}
+        if edge_labels is not None:
             nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax)
 
     return ax
@@ -450,13 +432,16 @@ def export_to_javascript(path, TM):
     return file
 
 
-def write_edge_bundling_datashader(TG, pos):
+def write_edge_bundling_datashader(TG, pos, vertices=None):
     """Use datashader to bundle edges from connected components together."""
+    if vertices is None:
+        vertices = TG.G.nodes()
+    G = TG.G.subgraph(vertices)
     bundled_df = None
-    for cpt in nx.connected_components(TG.G.to_undirected()):
+    for cpt in nx.connected_components(G.to_undirected()):
         if len(cpt) == 1:
             continue
-        cpt_subgraph = TG.G.subgraph(cpt)
+        cpt_subgraph = G.subgraph(cpt)
         edge_df = DataFrame()
         node_df = DataFrame()
         cpt_pos = {node: pos[node] for node in cpt}
@@ -482,6 +467,32 @@ def write_edge_bundling_datashader(TG, pos):
                 print(cpt_bundled_edges)
     return bundled_df
 
+
+def treemap(mapper, idx=None):
+    if idx is None:
+        dfs = []
+        for idx in range(mapper.N_checkpoints):
+            dfs.append(slice_df(mapper, idx))
+        dataframe = pd.concat(dfs, ignore_index=True) 
+        path = ['slice', 'node']
+    else:
+        dataframe = slice_df(mapper, idx)
+        path = ['node']
+
+    fig = px.treemap(
+        dataframe,
+        path=path,
+        values='count',
+        color='growth',
+        color_continuous_scale='RdYlGn',
+        color_continuous_midpoint=0,
+    )
+
+    fig.update_traces(
+        hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Growth: %{color:.2f}'
+    )
+
+    return fig
 
 def sliceograph(TM, ax=None, clrs=["r", "g", "b"]):
     """Produce a sliceograph of a TemporalMapper
@@ -509,3 +520,103 @@ def sliceograph(TM, ax=None, clrs=["r", "g", "b"]):
         slice_min = min(TM.time[slice_])
         ax.plot([slice_min, slice_max], [offset, offset], c=clrs[i % len(clrs)])
     return ax
+
+
+def compute_node_size(
+    mapper,
+    G,
+    node_scaling,
+    node_size_scale,
+    node_size_bounds,
+):
+    smin,smax = node_size_bounds
+    if node_size_scale == 'logarithmic':
+        node_size = [node_scaling * np.log2(np.size(mapper.get_vertex_data(node))) for node in G.nodes()]
+    elif node_size_scale == 'linear':
+        node_size = np.array([np.size(mapper.get_vertex_data(node)) for node in G.nodes()], dtype=np.float64)
+        node_size = node_size*node_scaling
+    elif node_size_scale == 'sigmoid':
+        raw = np.array(
+            [node_scaling*np.size(mapper.get_vertex_data(node)) for node in G.nodes()],
+            dtype=np.float64
+        )
+        mu = raw.mean()
+        sigma = raw.std() if raw.std() > 0 else 1.0
+        z = (raw - mu) / sigma
+        sig = 1.0 / (1.0 + np.exp(-z))
+        node_size = smin + (smax - smin) * sig
+    else:
+        raise ValueError("node_size_scale keyword argument must be 'linear' or 'logarithmic'.")
+    node_size = [np.clip(s,smin,smax) for s in node_size]
+    return node_size
+
+
+def prepare_plotly_graph_objects(
+    mapper,
+    positions,
+    hover_text = {},
+    edge_scaling: float = 1,
+    node_scaling: float = 1,
+    node_size_bounds: tuple[float] = (5,25),
+    edge_weight_bounds: tuple[float] = (0.1,5),
+    node_size_scale: str = 'linear',
+):
+    # https://plotly.com/python/network-graphs/
+    edge_traces = []
+    G = mapper.G
+    clr_dict = nx.get_node_attributes(G, "colour")
+    weight = nx.get_edge_attributes(G, "weight")
+    wmin, wmax = edge_weight_bounds
+    edge_size_dict = {
+        e:edge_scaling*np.clip(weight[e],wmin,wmax) for e in G.edges()
+    }
+    for (u, v) in G.edges():
+        x0, y0 = positions[u]
+        x1, y1 = positions[v]
+    
+        edge_traces.append(
+            go.Scatter(
+                x=[x0, x1, None],
+                y=[y0, y1, None],
+                mode="lines",
+                hoverinfo="none",
+                line=dict(
+                    width=edge_size_dict.get((u,v),'0.5'),
+                    color=clr_dict.get(u,'black'),
+                )
+            )
+        )
+        
+    node_x = []
+    node_y = []
+    colours = []
+    labels = []
+
+    node_size = compute_node_size(
+        mapper,
+        G,
+        node_scaling,
+        node_size_scale,
+        node_size_bounds
+    )
+    for node in G.nodes():
+        x,y = positions[node]
+        node_x.append(x)
+        node_y.append(y)
+        label_str = hover_text[node]
+        labels.append(label_str)
+        colours.append(G.nodes[node]['colour'])
+    
+    node_trace = go.Scatter(
+        x=node_x, y=node_y,
+        mode='markers',
+        hoverinfo='text',
+        marker=dict(
+            showscale=True,
+            size=node_size,
+            sizemode='area',
+            color=colours
+        ),
+        text=labels
+    )
+    return edge_traces, node_trace

@@ -1,15 +1,19 @@
 """UNCLASSIFIED // OFFICIAL USE ONLY / NON CLASSIFIÉ//RÉSERVÉ À DES FINS OFFICIELLES"""
 from temporalmapper import TemporalMapper
-import temporalmapper.weighted_clustering as tmwc
-import temporalmapper.utilities as tmutils
+import temporalmapper.kernels as tmwc
+import temporalmapper.plotting as tmutils
 import networkx as nx
 import numpy as np
 from tqdm import tqdm, trange
 from copy import deepcopy 
-from toponymy.toponymy import Toponymy
 from numpy import typing as npt
 import json
 import matplotlib.pyplot as plt
+
+try:
+    from toponymy import Toponymy
+except ImportError as e:
+    print(f"Chronoscope requires Toponymy: {e}")
 
 class Chronoscope:
     SERIAL_VERSION = 1
