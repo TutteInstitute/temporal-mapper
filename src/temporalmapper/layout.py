@@ -184,7 +184,7 @@ def best_nearest_neighbor(distances, component):
     return best_path, best_distance
 
 
-def two_opt_fast(distances, path, max_iterations=1000):
+def two_opt(distances, path, max_iterations=1000):
     """
     Faster 2-opt using numpy vectorization for distance calculations.
     """
@@ -231,7 +231,6 @@ def arrange_components(G,cpts):
     )
     # Find connected components
     components = find_connected_components(distances)
-    #print(f"Found {len(components)} connected component(s): {components}")
     
     all_paths = []
     total_distance = 0
@@ -251,7 +250,7 @@ def arrange_components(G,cpts):
             #print(f"  Greedy distance: {greedy_dist}")
             
             # Improve with 2-opt
-            path = two_opt_fast(distances, path)
+            path = two_opt(distances, path)
             component_distance = np.sum(distances[path[:-1], path[1:]])
             #print(f"  After 2-opt: {component_distance}")
             #print(f"  Path: {path}")
@@ -263,19 +262,6 @@ def arrange_components(G,cpts):
     final_path = np.concatenate(all_paths)
     
     return final_path, total_distance, components
-
-
-    if path is None:
-        raise ValueError("No valid ordering found (some objects unreachable)")
-    
-    print(f"Greedy distance: {greedy_dist}")
-    
-    # Improve with 2-opt
-    path = two_opt(distances, path)
-    
-    total_distance = np.sum(distances[path[:-1], path[1:]])
-    
-    return path, total_distance
 
 
 def component_ordered_layout(G, x_positions, spacing=5):

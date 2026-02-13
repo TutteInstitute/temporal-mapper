@@ -1,10 +1,12 @@
 import networkx as nx
 import numpy as np
+from numpy import typing as npt
+from collections.abc import Callable
 from tqdm import trange
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.validation import check_is_fitted
 from scipy.sparse import issparse
 from datamapplot.palette_handling import palette_from_datamap
@@ -75,24 +77,24 @@ class TemporalMapper(BaseEstimator):
     interactive_temporal_plot():
         Returns a Plotly figure containing an interactive temporal plot
     """
+    SERIAL_VERSION = 1
 
     def __init__(
         self,
-        time,
-        data,
-        clusterer,
-        N_checkpoints=None,
-        neighbours=50,
-        overlap=0.5,
-        inclusion_threshold=0.01,
-        clusters=None,
-        checkpoints=None,
-        show_outliers=False,
-        slice_method="time",
-        rate_sensitivity=1,
-        kernel=square,
-        kernel_params=None,
-        verbose=False,
+        time: npt.NDArray,
+        data: npt.NDArray,
+        clusterer: ClusterMixin,
+        N_checkpoints: int=None,
+        neighbours: int=50,
+        overlap: float=0.5,
+        inclusion_threshold: float=0.01,
+        checkpoints: list[float]=None,
+        show_outliers: bool=False,
+        slice_method: str="time",
+        rate_sensitivity: int=1,
+        kernel: Callable[[float,float,float,float],float]=square,
+        kernel_params: dict=None,
+        verbose: bool=False,
     ):
         """
         Parameters
@@ -124,8 +126,7 @@ class TemporalMapper(BaseEstimator):
             then the rate parameter is taken log2.
         kernel: function
             A function with signature ``f(t0, t, density, binwidth, epsilon=0.01, params=None)``.
-            Two options are included in weighted_clustering.py, ``weighted_clustering.square`` and
-            ``weighted_clustering.gaussian``.
+            Options are included in temporalmapper.kernels, default is ``temporalmapper.kernels.square``.
         kernel_parameters: tuple or None,
             Passed to `kernel` as params kwarg.
         verbose: bool
@@ -171,7 +172,7 @@ class TemporalMapper(BaseEstimator):
                 )
 
         self.clusterer = clusterer
-        self.clusters = clusters
+        self.clusters = None
         self.inclusion_threshold = inclusion_threshold
         self.g = overlap
         self.density = None
@@ -531,7 +532,7 @@ class TemporalMapper(BaseEstimator):
 
     def temporal_plot(
         self,
-        ax: mpl.axes = None,
+        ax: mpl.axes.Axes = None,
         title: str = None,
         cluster_labels: dict = None,
         cluster_label_kwargs: dict = None,
