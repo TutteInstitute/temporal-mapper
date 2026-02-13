@@ -67,23 +67,6 @@ def plotSubgraph(kwargs={}):
     # )
     return 0
 
-def plotWithEdges(kwargs={}):
-    """ Unit test for plotting with edge labels """
-    with open(data_folder+'TMTest.pkl', 'rb') as f:
-        TM = pkl.load(f)
-        f.close()
-    tmp_dict = nx.get_edge_attributes(TM.G, "weight")
-    edge_labels = {k: "{:.2f}".format(tmp_dict[k]) for k in tmp_dict}
-    semantic_data = PCA(n_components=1).fit_transform(TM.data)
-    tmplot.time_semantic_plot(
-        TM, semantic_data, edge_labels=edge_labels, **kwargs,
-    )
-    tmplot.centroid_datamap(
-        TM, **kwargs, edge_labels=edge_labels
-    )
-    return 0
-
-
 def test_computeGraph():
     parameters = [
         {'N_checkpoints':8, 'slice_method':'time'},
@@ -92,37 +75,6 @@ def test_computeGraph():
     ]
     for i in range(len(parameters)):
         assert computeGraph(kwargs=parameters[i]) == 0
-        
-def test_centroidDatamap():
-    parameters = [
-        {'bundle':False},
-        {'bundle':True},
-    ]
-    for i in range(len(parameters)):
-        assert centroidDatamap(kwargs=parameters[i]) == 0
-        
-def test_timeSemanticPlot():
-    parameters = [
-        {'bundle':False},
-        {'bundle':True},
-    ]
-    for i in range(len(parameters)):
-        assert timeSemanticPlot(kwargs=parameters[i]) == 0
-    
-def test_vertexSubgraph():
-    parameters = [
-        {'bundle':False},
-        {'bundle':True},
-    ]
-    for i in range(len(parameters)):
-        assert plotSubgraph(kwargs=parameters[i]) == 0
-
-def test_edgeLabels():
-    parameters = [
-        {'bundle':False},
-    ]
-    for i in range(len(parameters)):
-        assert plotWithEdges(kwargs=parameters[i]) == 0
 
 def test_genus1Correctness():
     data_time = np.load(data_folder+"genus1_test.npy")

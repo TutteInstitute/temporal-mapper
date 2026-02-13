@@ -172,7 +172,7 @@ def time_semantic_plot(
         node_scaling: float (optional, default = 10)
             Scales the size of vertices
         node_size_scale: string (optional, default='linear')
-            Specifies linear or logarithmic scaling for node sizes
+            Specifies linear, sigmoid or logarithmic scaling for node sizes
         bundle: bool (optional, default=False)
             If true, bundle the edges of the graph using datashader's hammer_bundle function.
         node_kwargs: dict (optional, default={})
@@ -530,6 +530,8 @@ def compute_node_size(
     node_size_bounds,
 ):
     smin,smax = node_size_bounds
+    if node_size_scale == 'log':
+        node_size_scale = 'logarithmic'
     if node_size_scale == 'logarithmic':
         node_size = [node_scaling * np.log2(np.size(mapper.get_vertex_data(node))) for node in G.nodes()]
     elif node_size_scale == 'linear':
@@ -546,7 +548,7 @@ def compute_node_size(
         sig = 1.0 / (1.0 + np.exp(-z))
         node_size = smin + (smax - smin) * sig
     else:
-        raise ValueError("node_size_scale keyword argument must be 'linear' or 'logarithmic'.")
+        raise ValueError("node_size_scale keyword argument must be 'linear' 'sigmoid' or 'logarithmic'.")
     node_size = [np.clip(s,smin,smax) for s in node_size]
     return node_size
 

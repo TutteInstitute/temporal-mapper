@@ -537,7 +537,7 @@ class TemporalMapper:
         edge_scaling: float = 1,
         node_scaling: float = 1,
         node_size_bounds: tuple[float] = (5,50),
-        edge_weight_bounds: float = 0.1,
+        edge_weight_bounds: float = (0.1,1),
         node_size_scale: str = 'sigmoid',
         layout_optimization: str = "barycenter",
         layout_optimization_kwargs: dict = {},
