@@ -1,4 +1,3 @@
-"""UNCLASSIFIED // OFFICIAL USE ONLY / NON CLASSIFIÉ//RÉSERVÉ À DES FINS OFFICIELLES"""
 from temporalmapper import TemporalMapper
 import temporalmapper.kernels as tmwc
 import temporalmapper.plotting as tmutils

@@ -4,6 +4,8 @@ from tqdm import trange
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
+from sklearn.base import BaseEstimator
+from sklearn.utils.validation import check_is_fitted
 from scipy.sparse import issparse
 from datamapplot.palette_handling import palette_from_datamap
 import matplotlib as mpl
@@ -50,7 +52,7 @@ minimal usage example:
 """
 
 
-class TemporalMapper:
+class TemporalMapper(BaseEstimator):
     """
     Generate and store a temporal graph - a 1D-mapper-style representation of temporal data.
 
@@ -82,6 +84,7 @@ class TemporalMapper:
         N_checkpoints=None,
         neighbours=50,
         overlap=0.5,
+        inclusion_threshold=0.01,
         clusters=None,
         checkpoints=None,
         show_outliers=False,
@@ -106,6 +109,8 @@ class TemporalMapper:
             array of time-points at which to cluster
         overlap: float
             A float in (0,1) which specifies the ``g`` parameter (see README)
+        inclusion_threshold: float
+            A float in [0,1) which specifies the minimum kernel weight for a point to be included in a slice.
         neighbours: float
             The number of nearest neighbours used in the density computation.
         show_outliers: bool
@@ -167,6 +172,7 @@ class TemporalMapper:
 
         self.clusterer = clusterer
         self.clusters = clusters
+        self.inclusion_threshold = inclusion_threshold
         self.g = overlap
         self.density = None
         self.rate = None
@@ -194,9 +200,7 @@ class TemporalMapper:
                 np.amin(self.time), np.amax(self.time), self.N_checkpoints + 2
             )[1:-1]
         self.checkpoints = checkpoints
-        if self.slice_method == "morse":
-            print("Warning: Morse checkpoint selection is barely working.")
-            self._compute_critical_points()
+
         return checkpoints
 
     def _compute_knn(self):
@@ -292,6 +296,7 @@ class TemporalMapper:
             self.kernel,
             self.g,
             self.kernel_params,
+            eps=self.inclusion_threshold,
         )
         self.clusters = clusters
         self.weights = weights
@@ -404,6 +409,7 @@ class TemporalMapper:
         self.add_edges()
         self.populate_edge_attrs()
         self.populate_node_attrs()
+        self.is_fitted_ = True
         return self
 
     def fit(self):
@@ -431,7 +437,7 @@ class TemporalMapper:
         Mainly required for visualization purposes.
         """
         if self.verbose:
-            print("Populating node centroids, colours, sizes...")
+            print("Populating node attributes, such as centroids, colours, sizes...")
 
         # Add cluster positions in 2D and sizes for visualization.
         centroids = {}
@@ -542,6 +548,7 @@ class TemporalMapper:
         layout_optimization: str = "barycenter",
         layout_optimization_kwargs: dict = {},
     ):
+        check_is_fitted(self, ["is_fitted_"])
         """    
         Generate a temporal plot of the Mapper graph on a specified matplotlib axis using sensible defaults.
     
@@ -679,6 +686,7 @@ class TemporalMapper:
             The Axes object containing the temporal plot.
 
         """
+        check_is_fitted(self, ["is_fitted_"])
         if vertices is None:
             vertices = self.G.nodes()
         G = self.G.subgraph(vertices)

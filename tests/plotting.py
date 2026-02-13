@@ -22,6 +22,16 @@ def plotInteractiveTemporal(kwargs={}):
     mapper.interactive_temporal_plot(**kwargs)
     return 0
 
+def plotTreemap(kwargs={}):
+    mapper = loadMapper(data_folder+'TMTest.pkl')
+    tm.plot.treemap(mapper)
+    return 0
+
+def plotSliceograph(kwargs={}):
+    mapper = loadMapper(data_folder+'TMTest.pkl')
+    tm.plot.sliceograph(mapper)
+    return 0
+
 def centroidDatamap(kwargs={}):
     """ Unit test for utilities_.centroid_datamap """
     with open(data_folder+'TMTest.pkl', 'rb') as f:
@@ -81,7 +91,16 @@ def test_interactive_temporal_plot():
     for i in range(len(parameters)):
         assert plotInteractiveTemporal(kwargs=parameters[i])==0
 
-        
+def test_treemap():
+    parameters = [{'index':None},{'index':0}]
+    for i in range(len(parameters)):
+        assert plotTreemap(kwargs=parameters[i])==0
+
+def test_sliceograph():
+    parameters = [{}]
+    for i in range(len(parameters)):
+        assert plotSliceograph(kwargs=parameters[i])==0
+
 def test_centroidDatamap():
     parameters = [
         {'bundle':False},

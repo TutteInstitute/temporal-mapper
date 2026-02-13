@@ -13,8 +13,14 @@ from temporalmapper.layout import (
     force_directed_y_layout,
     compute_time_semantic_positions,
 )
+from temporalmapper.analytics import (
+    nodes_in_slice,
+)
+from sklearn.utils.validation import check_is_fitted
 import plotly.graph_objects as go
+import plotly.express as px
 import io, contextlib
+import pandas as pd
 
 def squarify_text(text):
     """Make a string more square by adding newlines"""
@@ -467,16 +473,38 @@ def write_edge_bundling_datashader(TG, pos, vertices=None):
                 print(cpt_bundled_edges)
     return bundled_df
 
+def slice_df(mapper, idx):
+    G = mapper.G
+    counts = nx.get_node_attributes(G, 'count')
+    growth = nx.get_node_attributes(G, 'growth')
+    
+    nodes = nodes_in_slice(mapper, idx)
+    top_n = 5
 
-def treemap(mapper, idx=None):
-    if idx is None:
+    count_values = np.array([
+        counts[v] for v in nodes    
+    ])
+    growth_values = np.array([
+        growth[v] for v in nodes
+    ])
+    slice_df = pd.DataFrame({
+        'node':nodes,
+        'slice':[idx]*len(nodes),
+        'count':count_values,
+        'growth':growth_values,
+    })
+    return slice_df
+
+def treemap(mapper, index=None):
+    check_is_fitted(mapper, ["is_fitted_"])
+    if index is None:
         dfs = []
-        for idx in range(mapper.N_checkpoints):
-            dfs.append(slice_df(mapper, idx))
+        for index in range(mapper.N_checkpoints):
+            dfs.append(slice_df(mapper, index))
         dataframe = pd.concat(dfs, ignore_index=True) 
         path = ['slice', 'node']
     else:
-        dataframe = slice_df(mapper, idx)
+        dataframe = slice_df(mapper, index)
         path = ['node']
 
     fig = px.treemap(
