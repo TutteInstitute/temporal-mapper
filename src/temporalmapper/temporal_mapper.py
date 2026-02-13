@@ -714,7 +714,7 @@ class TemporalMapper:
                 hovermode = 'closest',
                 showlegend = False,
                 margin=dict(b=20,l=5,r=5,t=40),
-                xaxis=dict(showgrid=False, zeroline=False),
+                xaxis=dict(showgrid=True, zeroline=False),
                 yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             )
 

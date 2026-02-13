@@ -654,7 +654,7 @@ def prepare_plotly_graph_objects(
     edge_scaling: float = 1,
     node_scaling: float = 1,
     node_size_bounds: tuple[float] = (5,25),
-    edge_weight_bounds: tuple[float] = (5,25),
+    edge_weight_bounds: tuple[float] = (0.1,5),
     node_size_scale: str = 'linear',
 ):
     # https://plotly.com/python/network-graphs/
