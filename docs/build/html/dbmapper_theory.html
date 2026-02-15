@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Understanding DBMapper &mdash; Temporal Mapper 0.3.2 documentation</title>
+  <title>Understanding DBMapper &mdash; Temporal Mapper 1.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -14,7 +14,7 @@
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=71d9d8e6"></script>
+      <script src="_static/documentation_options.js?v=6efca38a"></script>
       <script src="_static/doctools.js?v=fd6eb6e6"></script>
       <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
       <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
@@ -24,7 +24,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Parameter Selection for Temporal Mapper" href="paramselection.html" />
-    <link rel="prev" title="Installation" href="installation.html" /> 
+    <link rel="prev" title="Quickstart" href="quickstart.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -49,6 +49,7 @@
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Understanding DBMapper</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Mapper">Mapper</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#DBMapper">DBMapper</a></li>
@@ -110,14 +111,14 @@
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>import temporalmapper as tm
-import temporalmapper.utilities as tmutils
-import temporalmapper.weighted_clustering as tmwc
-import numpy as np
-import matplotlib.pyplot as plt
-import requests, io
-from sklearn.cluster import DBSCAN
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">temporalmapper</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tm</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">temporalmapper.utilities</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tmutils</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">temporalmapper.weighted_clustering</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tmwc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span><span class="o">,</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">DBSCAN</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mpl_toolkits.axes_grid1</span><span class="w"> </span><span class="kn">import</span> <span class="n">make_axes_locatable</span>
 </pre></div>
 </div>
 </div>
@@ -127,13 +128,13 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>demo_data_file = requests.get(&quot;https://github.com/TutteInstitute/temporal-mapper/raw/docs/docs/data/mapper_demo_data.npy&quot;)
-data_time = np.load(io.BytesIO(demo_data_file.content))
-data_unsort = data_time[:,1].T
-time_unsort = data_time[:,0].T
-sorted_indices = np.argsort(time_unsort)
-data = data_unsort[sorted_indices]
-time = time_unsort[sorted_indices]
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">demo_data_file</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com/TutteInstitute/temporal-mapper/raw/docs/docs/data/mapper_demo_data.npy&quot;</span><span class="p">)</span>
+<span class="n">data_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">demo_data_file</span><span class="o">.</span><span class="n">content</span><span class="p">))</span>
+<span class="n">data_unsort</span> <span class="o">=</span> <span class="n">data_time</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+<span class="n">time_unsort</span> <span class="o">=</span> <span class="n">data_time</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+<span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">time_unsort</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">data_unsort</span><span class="p">[</span><span class="n">sorted_indices</span><span class="p">]</span>
+<span class="n">time</span> <span class="o">=</span> <span class="n">time_unsort</span><span class="p">[</span><span class="n">sorted_indices</span><span class="p">]</span>
 </pre></div>
 </div>
 </div>
@@ -141,14 +142,14 @@ time = time_unsort[sorted_indices]
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fig, ax = plt.subplots(1,1)
-fig.set_figwidth(11)
-fig.set_figheight(8.5)
-ax.scatter(time,data,s=0.1,c=&#39;k&#39;,alpha=0.8)
-ax.set_ylabel(&quot;Semantic space ($\mathbb{R}^d$)&quot;)
-ax.set_xlabel(&quot;f(x)&quot;)
-fig.dpi = 300
-plt.show()
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mf">8.5</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Semantic space ($\mathbb</span><span class="si">{R}</span><span class="s2">^d$)&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;f(x)&quot;</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">dpi</span> <span class="o">=</span> <span class="mi">300</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -164,17 +165,17 @@ plt.show()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>clusterer = DBSCAN(eps=0.1)
-N_checkpoints = 10
-mapper = tm.TemporalMapper(
-    time,
-    data,
-    clusterer,
-    N_checkpoints = N_checkpoints,
-    overlap = 0.5,
-    rate_sensitivity=0,
-)
-mapper.fit()
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">clusterer</span> <span class="o">=</span> <span class="n">DBSCAN</span><span class="p">(</span><span class="n">eps</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">N_checkpoints</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">mapper</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">TemporalMapper</span><span class="p">(</span>
+    <span class="n">time</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">clusterer</span><span class="p">,</span>
+    <span class="n">N_checkpoints</span> <span class="o">=</span> <span class="n">N_checkpoints</span><span class="p">,</span>
+    <span class="n">overlap</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">rate_sensitivity</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">mapper</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -193,11 +194,11 @@ mapper.fit()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>fig = plt.Figure(figsize = (10,3))
-ax = plt.axes()
-tmutils.sliceograph(mapper, ax=ax)
-plt.title(&quot;Open Cover $U$ of [-3,3]&quot;)
-plt.show()
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">3</span><span class="p">))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
+<span class="n">tmutils</span><span class="o">.</span><span class="n">sliceograph</span><span class="p">(</span><span class="n">mapper</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Open Cover $U$ of [-3,3]&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -214,18 +215,18 @@ plt.show()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>index_1 = 4
-index_2 = 5
-slice_1 = (mapper.weights[index_1] &gt;= 0.1).nonzero()
-slice_2 = (mapper.weights[index_2] &gt;= 0.1).nonzero()
-fig, (ax1,ax2) = plt.subplots(1,2)
-ax1.set_title(&quot;Clustering $X$ in bin 5&quot;)
-ax1.scatter(mapper.time[slice_1], mapper.data[slice_1],
-            s=0.5, c=mapper.clusters[index_1,slice_1])
-ax2.set_title(&quot;Clustering $X$ in bin 6&quot;)
-ax2.scatter(mapper.time[slice_2], mapper.data[slice_2],
-            s=0.5, c=mapper.clusters[index_2,slice_2])
-plt.show()
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">index_1</span> <span class="o">=</span> <span class="mi">4</span>
+<span class="n">index_2</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">slice_1</span> <span class="o">=</span> <span class="p">(</span><span class="n">mapper</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">index_1</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+<span class="n">slice_2</span> <span class="o">=</span> <span class="p">(</span><span class="n">mapper</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">index_2</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span><span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Clustering $X$ in bin 5&quot;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">mapper</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">slice_1</span><span class="p">],</span> <span class="n">mapper</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_1</span><span class="p">],</span>
+            <span class="n">s</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">mapper</span><span class="o">.</span><span class="n">clusters</span><span class="p">[</span><span class="n">index_1</span><span class="p">,</span><span class="n">slice_1</span><span class="p">])</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Clustering $X$ in bin 6&quot;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">mapper</span><span class="o">.</span><span class="n">time</span><span class="p">[</span><span class="n">slice_2</span><span class="p">],</span> <span class="n">mapper</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">slice_2</span><span class="p">],</span>
+            <span class="n">s</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">mapper</span><span class="o">.</span><span class="n">clusters</span><span class="p">[</span><span class="n">index_2</span><span class="p">,</span><span class="n">slice_2</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -244,13 +245,13 @@ plt.show()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>tmutils.time_semantic_plot(
-    mapper,
-    mapper.data,
-    layout_optimization=&#39;none&#39;,
-)
-plt.title(&quot;Mapper graph output&quot;)
-plt.show()
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tmutils</span><span class="o">.</span><span class="n">time_semantic_plot</span><span class="p">(</span>
+    <span class="n">mapper</span><span class="p">,</span>
+    <span class="n">mapper</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
+    <span class="n">layout_optimization</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Mapper graph output&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -275,18 +276,18 @@ plt.show()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>demo_data_file = requests.get(&quot;https://github.com/TutteInstitute/temporal-mapper/raw/docs/docs/data/genus1_demo.npy&quot;)
-data_time = np.load(io.BytesIO(demo_data_file.content))
-data_unsort = data_time[:,1].T
-time_unsort = data_time[:,0].T
-sorted_indices = np.argsort(time_unsort)
-data = data_unsort[sorted_indices]
-time = time_unsort[sorted_indices]
-fig, ax = plt.subplots(1,1)
-ax.scatter(time,data,s=0.1,c=&#39;k&#39;,alpha=0.8)
-ax.set_ylabel(&quot;Semantic space ($\mathbb{R}^d$)&quot;)
-ax.set_xlabel(&quot;f(x)&quot;)
-plt.show()
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">demo_data_file</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;https://github.com/TutteInstitute/temporal-mapper/raw/docs/docs/data/genus1_demo.npy&quot;</span><span class="p">)</span>
+<span class="n">data_time</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">demo_data_file</span><span class="o">.</span><span class="n">content</span><span class="p">))</span>
+<span class="n">data_unsort</span> <span class="o">=</span> <span class="n">data_time</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+<span class="n">time_unsort</span> <span class="o">=</span> <span class="n">data_time</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+<span class="n">sorted_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">time_unsort</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">data_unsort</span><span class="p">[</span><span class="n">sorted_indices</span><span class="p">]</span>
+<span class="n">time</span> <span class="o">=</span> <span class="n">time_unsort</span><span class="p">[</span><span class="n">sorted_indices</span><span class="p">]</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;Semantic space ($\mathbb</span><span class="si">{R}</span><span class="s2">^d$)&quot;</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;f(x)&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -303,38 +304,38 @@ plt.show()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span>checkpoint_numbers = [12,24,36,48]
-overlap_parameters = [0.8,0.6,0.4,0.2]
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">checkpoint_numbers</span> <span class="o">=</span> <span class="p">[</span><span class="mi">12</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">36</span><span class="p">,</span><span class="mi">48</span><span class="p">]</span>
+<span class="n">overlap_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.8</span><span class="p">,</span><span class="mf">0.6</span><span class="p">,</span><span class="mf">0.4</span><span class="p">,</span><span class="mf">0.2</span><span class="p">]</span>
 
-fig, axes = plt.subplots(4,4)
-fig.set_figwidth(11)
-fig.set_figheight(8.5)
-fig.dpi = 200
-axes = axes.reshape(4*4)
-clusterer = DBSCAN()
-j = 0
-for k in range(4*4):
-    mapper = tm.TemporalMapper(
-        time,
-        data,
-        clusterer,
-        N_checkpoints = checkpoint_numbers[k%4],
-        neighbours = 50,
-        overlap = overlap_parameters[j],
-        rate_sensitivity=0,
-        kernel=tmwc.square
-    )
-    mapper.fit()
-    tmutils.time_semantic_plot(mapper, data, ax=axes[k],
-                              layout_optimization=&#39;none&#39;)
-    xmin,xmax=axes[k].get_xlim()
-    ymin,ymax=axes[k].get_ylim()
-    axes[k].text(xmin+0.1,ymin+0.1,fr&#39;$n$={mapper.N_checkpoints}, $g$={mapper.g}, $k$={50}&#39;)
-    if k%4==3:
-        j+=1
-plt.subplots_adjust(wspace=0, hspace=0)
-plt.savefig(&#39;genus1-regular.png&#39;)
-plt.show()
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mf">8.5</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">dpi</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">clusterer</span> <span class="o">=</span> <span class="n">DBSCAN</span><span class="p">()</span>
+<span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="mi">4</span><span class="p">):</span>
+    <span class="n">mapper</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">TemporalMapper</span><span class="p">(</span>
+        <span class="n">time</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">clusterer</span><span class="p">,</span>
+        <span class="n">N_checkpoints</span> <span class="o">=</span> <span class="n">checkpoint_numbers</span><span class="p">[</span><span class="n">k</span><span class="o">%</span><span class="k">4</span>],
+        <span class="n">neighbours</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="n">overlap_parameters</span><span class="p">[</span><span class="n">j</span><span class="p">],</span>
+        <span class="n">rate_sensitivity</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">kernel</span><span class="o">=</span><span class="n">tmwc</span><span class="o">.</span><span class="n">square</span>
+    <span class="p">)</span>
+    <span class="n">mapper</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+    <span class="n">tmutils</span><span class="o">.</span><span class="n">time_semantic_plot</span><span class="p">(</span><span class="n">mapper</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+                              <span class="n">layout_optimization</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
+    <span class="n">xmin</span><span class="p">,</span><span class="n">xmax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+    <span class="n">ymin</span><span class="p">,</span><span class="n">ymax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">xmin</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span><span class="n">ymin</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span><span class="sa">fr</span><span class="s1">&#39;$n$=</span><span class="si">{</span><span class="n">mapper</span><span class="o">.</span><span class="n">N_checkpoints</span><span class="si">}</span><span class="s1">, $g$=</span><span class="si">{</span><span class="n">mapper</span><span class="o">.</span><span class="n">g</span><span class="si">}</span><span class="s1">, $k$=</span><span class="si">{</span><span class="mi">50</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">k</span><span class="o">%</span><span class="k">4</span>==3:
+        <span class="n">j</span><span class="o">+=</span><span class="mi">1</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">wspace</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;genus1-regular.png&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 <br/></pre></div>
 </div>
 </div>
@@ -370,16 +371,16 @@ plt.show()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>dbmapper = tm.TemporalMapper(
-    time,
-    data,
-    clusterer,
-    N_checkpoints = 30,
-    neighbours = 50,
-    rate_sensitivity=1,
-    kernel=tmwc.square
-)
-dbmapper.fit()
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">dbmapper</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">TemporalMapper</span><span class="p">(</span>
+    <span class="n">time</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">clusterer</span><span class="p">,</span>
+    <span class="n">N_checkpoints</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+    <span class="n">neighbours</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="n">rate_sensitivity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">kernel</span><span class="o">=</span><span class="n">tmwc</span><span class="o">.</span><span class="n">square</span>
+<span class="p">)</span>
+<span class="n">dbmapper</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -397,31 +398,31 @@ dbmapper.fit()
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span>idx=2
-slice_ = (dbmapper.weights[idx] &gt;= 0.1).nonzero()
-cp_with_ends = [np.amin(time)]+list(dbmapper.checkpoints)+[np.amax(time)]
-bin_width = (cp_with_ends[idx+1]-cp_with_ends[idx])
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">idx</span><span class="o">=</span><span class="mi">2</span>
+<span class="n">slice_</span> <span class="o">=</span> <span class="p">(</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">weights</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">nonzero</span><span class="p">()</span>
+<span class="n">cp_with_ends</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">amin</span><span class="p">(</span><span class="n">time</span><span class="p">)]</span><span class="o">+</span><span class="nb">list</span><span class="p">(</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">)</span><span class="o">+</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">time</span><span class="p">)]</span>
+<span class="n">bin_width</span> <span class="o">=</span> <span class="p">(</span><span class="n">cp_with_ends</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">cp_with_ends</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span>
 
-fig, (ax1,ax2) = plt.subplots(1,2)
-fig.set_figwidth(10)
+<span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span><span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 
-ax1.set_title(f&quot;$f$-Density&quot;)
-sca=ax1.scatter(time,data,s=1,c=dbmapper.density)
-divider = make_axes_locatable(ax1)
-cax = divider.append_axes(&#39;right&#39;, size=&#39;5%&#39;, pad=0.05)
-fig.colorbar(sca, cax=cax, orientation=&#39;vertical&#39;)
-ax1.set_xlabel(&quot;x-axis&quot;)
-ax1.set_ylabel(&quot;PCA to 1d&quot;)
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;$f$-Density&quot;</span><span class="p">)</span>
+<span class="n">sca</span><span class="o">=</span><span class="n">ax1</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">density</span><span class="p">)</span>
+<span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax1</span><span class="p">)</span>
+<span class="n">cax</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s1">&#39;right&#39;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s1">&#39;5%&#39;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">sca</span><span class="p">,</span> <span class="n">cax</span><span class="o">=</span><span class="n">cax</span><span class="p">,</span> <span class="n">orientation</span><span class="o">=</span><span class="s1">&#39;vertical&#39;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;x-axis&quot;</span><span class="p">)</span>
+<span class="n">ax1</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;PCA to 1d&quot;</span><span class="p">)</span>
 
 
-tstr = f&#39;Pullback of $({dbmapper.checkpoints[idx]-(bin_width/2)*(1+dbmapper.g):.2f},{dbmapper.checkpoints[idx]+bin_width/2*(1+dbmapper.g):.2f})$&#39;
-ax2.set_title(tstr)
-ax2.scatter(time,data,s=1,c=&#39;grey&#39;)
-ax2.scatter(time[slice_],data[slice_],s=1,c=&#39;red&#39;)
-ax2.set_xlabel(&quot;x-axis&quot;)
-ax2.axvline(dbmapper.checkpoints[idx]+(bin_width/2)*(1+dbmapper.g),c=&#39;k&#39;)
-ax2.axvline(dbmapper.checkpoints[idx]-(bin_width/2)*(1+dbmapper.g),c=&#39;k&#39;)
-plt.show()
+<span class="n">tstr</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;Pullback of $(</span><span class="si">{</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">-</span><span class="p">(</span><span class="n">bin_width</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">g</span><span class="p">)</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">,</span><span class="si">{</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">+</span><span class="n">bin_width</span><span class="o">/</span><span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">g</span><span class="p">)</span><span class="si">:</span><span class="s1">.2f</span><span class="si">}</span><span class="s1">)$&#39;</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">tstr</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">time</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;grey&#39;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">time</span><span class="p">[</span><span class="n">slice_</span><span class="p">],</span><span class="n">data</span><span class="p">[</span><span class="n">slice_</span><span class="p">],</span><span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;x-axis&quot;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">+</span><span class="p">(</span><span class="n">bin_width</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">g</span><span class="p">),</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+<span class="n">ax2</span><span class="o">.</span><span class="n">axvline</span><span class="p">(</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">checkpoints</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">-</span><span class="p">(</span><span class="n">bin_width</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">+</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">g</span><span class="p">),</span><span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -439,41 +440,41 @@ manifold with low density.</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span>checkpoint_numbers = [12,24,36,48]
-overlap_parameters = [0.8,0.6,0.4,0.2]
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">checkpoint_numbers</span> <span class="o">=</span> <span class="p">[</span><span class="mi">12</span><span class="p">,</span><span class="mi">24</span><span class="p">,</span><span class="mi">36</span><span class="p">,</span><span class="mi">48</span><span class="p">]</span>
+<span class="n">overlap_parameters</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.8</span><span class="p">,</span><span class="mf">0.6</span><span class="p">,</span><span class="mf">0.4</span><span class="p">,</span><span class="mf">0.2</span><span class="p">]</span>
 
-fig, axes = plt.subplots(4,4)
-fig.set_figwidth(11)
-fig.set_figheight(8.5)
-fig.dpi = 200
-axes = axes.reshape(4*4)
-clusterer = DBSCAN()
-j = 0
-for k in range(16):
-    dbmapper = tm.TemporalMapper(
-        time,
-        data,
-        clusterer,
-        N_checkpoints = checkpoint_numbers[k%4],
-        neighbours = 50,
-        overlap = overlap_parameters[j],
-        rate_sensitivity=1, ### Changing this from 0 -&gt; 1 activates DBMapper
-        kernel=tmwc.square,
-    )
-    dbmapper.fit()
-    tmutils.time_semantic_plot(
-        dbmapper,
-        data,
-        ax=axes[k],
-        layout_optimization=&#39;none&#39;,
-    )
-    xmin,xmax=axes[k].get_xlim()
-    ymin,ymax=axes[k].get_ylim()
-    axes[k].text(xmin+0.1,ymin+0.1,fr&#39;$n$={dbmapper.N_checkpoints}, $g$={dbmapper.g}, $k$={50}&#39;)
-    if k%4==3:
-        j+=1
-plt.subplots_adjust(wspace=0, hspace=0)
-plt.show()
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">11</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mf">8.5</span><span class="p">)</span>
+<span class="n">fig</span><span class="o">.</span><span class="n">dpi</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">clusterer</span> <span class="o">=</span> <span class="n">DBSCAN</span><span class="p">()</span>
+<span class="n">j</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">):</span>
+    <span class="n">dbmapper</span> <span class="o">=</span> <span class="n">tm</span><span class="o">.</span><span class="n">TemporalMapper</span><span class="p">(</span>
+        <span class="n">time</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">clusterer</span><span class="p">,</span>
+        <span class="n">N_checkpoints</span> <span class="o">=</span> <span class="n">checkpoint_numbers</span><span class="p">[</span><span class="n">k</span><span class="o">%</span><span class="k">4</span>],
+        <span class="n">neighbours</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+        <span class="n">overlap</span> <span class="o">=</span> <span class="n">overlap_parameters</span><span class="p">[</span><span class="n">j</span><span class="p">],</span>
+        <span class="n">rate_sensitivity</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="c1">### Changing this from 0 -&gt; 1 activates DBMapper</span>
+        <span class="n">kernel</span><span class="o">=</span><span class="n">tmwc</span><span class="o">.</span><span class="n">square</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">dbmapper</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+    <span class="n">tmutils</span><span class="o">.</span><span class="n">time_semantic_plot</span><span class="p">(</span>
+        <span class="n">dbmapper</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
+        <span class="n">layout_optimization</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">xmin</span><span class="p">,</span><span class="n">xmax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
+    <span class="n">ymin</span><span class="p">,</span><span class="n">ymax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
+    <span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">xmin</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span><span class="n">ymin</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span><span class="sa">fr</span><span class="s1">&#39;$n$=</span><span class="si">{</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">N_checkpoints</span><span class="si">}</span><span class="s1">, $g$=</span><span class="si">{</span><span class="n">dbmapper</span><span class="o">.</span><span class="n">g</span><span class="si">}</span><span class="s1">, $k$=</span><span class="si">{</span><span class="mi">50</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">k</span><span class="o">%</span><span class="k">4</span>==3:
+        <span class="n">j</span><span class="o">+=</span><span class="mi">1</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplots_adjust</span><span class="p">(</span><span class="n">wspace</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">hspace</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 <br/></pre></div>
 </div>
 </div>
@@ -492,7 +493,7 @@ plt.show()
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="installation.html" class="btn btn-neutral float-left" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="Quickstart" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="paramselection.html" class="btn btn-neutral float-right" title="Parameter Selection for Temporal Mapper" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

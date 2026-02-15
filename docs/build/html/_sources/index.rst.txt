@@ -11,6 +11,7 @@ which is built using the Density-Based Mapper algorithm.
     :caption: Contents:
 
     installation
+    quickstart
     dbmapper_theory
     paramselection
     temporal-plot
