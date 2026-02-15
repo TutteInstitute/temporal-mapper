@@ -164,7 +164,7 @@ def static_topic_summary(mapper, topic):
         'median':float(np.average(times, weights=[counts[s] for s in topic])),
     }
     topic_summary = {
-        'topic_name':cluster_labels[topic[0]],
+        'topic_name':cluster_labels.get(topic[0], ""),
         'final_node':topic[0],
         #'centroid':topic_centroid,
         'count':int(topic_count), 

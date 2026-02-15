@@ -1,12 +1,18 @@
+from warnings import warn
+import io, contextlib
+
+from tqdm import tqdm, trange
+from matplotlib.colors import to_rgba, rgb_to_hsv, hsv_to_rgb
 import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
+from pandas import DataFrame, concat
+from datashader.bundling import hammer_bundle
+from sklearn.utils.validation import check_is_fitted
+
 from vectorizers.transformers import InformationWeightTransformer
 from vectorizers import NgramVectorizer
-from tqdm import tqdm, trange
-from matplotlib.colors import to_rgba, rgb_to_hsv, hsv_to_rgb
-from datashader.bundling import hammer_bundle
-from pandas import DataFrame, concat
+
 from temporalmapper.layout import (
     temporal_barycenter_layout,
     component_ordered_layout,
@@ -16,11 +22,6 @@ from temporalmapper.layout import (
 from temporalmapper.analytics import (
     nodes_in_slice,
 )
-from sklearn.utils.validation import check_is_fitted
-import plotly.graph_objects as go
-import plotly.express as px
-import io, contextlib
-import pandas as pd
 
 def squarify_text(text):
     """Make a string more square by adding newlines"""
@@ -50,7 +51,7 @@ def squarify_text(text):
     return "\n".join(lines)
 
 def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep=" "):
-    """Using a bag of words corresponding to each data point, get highly informative
+    """Using a bag of words corresponding to each data point, get top n_words informative
     keywords for each cluster"""
     if ngram_vectorizer is None:
         ngram_vectorizer = NgramVectorizer()
@@ -487,7 +488,7 @@ def slice_df(mapper, idx):
     growth_values = np.array([
         growth[v] for v in nodes
     ])
-    slice_df = pd.DataFrame({
+    slice_df = DataFrame({
         'node':nodes,
         'slice':[idx]*len(nodes),
         'count':count_values,
@@ -496,25 +497,36 @@ def slice_df(mapper, idx):
     return slice_df
 
 def treemap(mapper, index=None):
+    try:
+        import plotly.express as px
+    except ImportError as e:
+        warn("Interactive treemap requires plotly")
+        raise e
+
     check_is_fitted(mapper, ["is_fitted_"])
     if index is None:
         dfs = []
         for index in range(mapper.N_checkpoints):
             dfs.append(slice_df(mapper, index))
-        dataframe = pd.concat(dfs, ignore_index=True) 
+        dataframe = concat(dfs, ignore_index=True) 
         path = ['slice', 'node']
     else:
         dataframe = slice_df(mapper, index)
         path = ['node']
 
-    fig = px.treemap(
-        dataframe,
-        path=path,
-        values='count',
-        color='growth',
-        color_continuous_scale='RdYlGn',
-        color_continuous_midpoint=0,
-    )
+    try:
+        fig = px.treemap(
+            dataframe,
+            path=path,
+            values='count',
+            color='growth',
+            color_continuous_scale='RdYlGn',
+            color_continuous_midpoint=0,
+        )
+    except NameError as e:
+        warn("Interactive treemap requires plotly")
+        raise e
+        
 
     fig.update_traces(
         hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Growth: %{color:.2f}'
@@ -592,6 +604,12 @@ def prepare_plotly_graph_objects(
     node_size_scale: str = 'linear',
 ):
     # https://plotly.com/python/network-graphs/
+    try:
+        import plotly.graph_objects as go
+    except ImportError as e:
+        warn("Interactive plotting requires plotly")
+        raise e
+
     edge_traces = []
     G = mapper.G
     clr_dict = nx.get_node_attributes(G, "colour")

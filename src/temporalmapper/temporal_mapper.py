@@ -1,18 +1,20 @@
-import networkx as nx
+from copy import deepcopy
+from collections.abc import Callable
+from warnings import warn
+
 import numpy as np
 from numpy import typing as npt
-from collections.abc import Callable
 from tqdm import trange
+import networkx as nx
+import matplotlib as mpl
+from datamapplot.palette_handling import palette_from_datamap
+from scipy.sparse import issparse
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
 from sklearn.base import BaseEstimator, ClusterMixin
 from sklearn.utils.validation import check_is_fitted
-from scipy.sparse import issparse
-from datamapplot.palette_handling import palette_from_datamap
-import matplotlib as mpl
-from copy import deepcopy
-import plotly.graph_objects as go
 
 from temporalmapper.utilities import(
     std_sigmoid,
@@ -21,7 +23,6 @@ from temporalmapper.utilities import(
 )
 from temporalmapper.plotting import (
     time_semantic_plot,
-    prepare_plotly_graph_objects,
 )
 from temporalmapper.layout import compute_time_semantic_positions
 from temporalmapper.kernels import square
@@ -186,7 +187,8 @@ class TemporalMapper(BaseEstimator):
         self.verbose = verbose
         self.disable = not verbose  # for tqdm
         self.show_outliers = False
-        self.k = neighbours
+        self.neighbours = neighbours 
+        self.k = self.neighbours 
         self.distance = None
         self.cbeta = None
 
@@ -643,7 +645,7 @@ class TemporalMapper(BaseEstimator):
         cluster_labels: dict = {},
         vertices = None,
         hover_text = {},
-        graph_layout: go.Layout = None,
+        graph_layout = None,
         layout_optimization: str = "barycenter",
         layout_optimization_kwargs: dict = {},
         edge_scaling: float = 1,
@@ -666,10 +668,12 @@ class TemporalMapper(BaseEstimator):
         hover_text : dict, default {}
             A dictionary with `hover_text[node]` containing a string with the text
             to display when hovering over vertex `node`.
+        graph_layout : plotly.graph_objects.Layout, default None
+            A plotly graph layout to use for the plot.
         edge_scaling : float, default 1
-            Scaling factor applied to edge weights or widths.
+            Scaling factor used to multiply edge weights.
         node_scaling : float, default 1
-            Scaling factor applied to node sizes.
+            Scaling factor used to multiply node sizes.
         node_size_bounds :  tuple[float], default (5,25)
             Size bounds to clip the node sizes to.
         edge_weight_bounds : tuple[float], default (0.1,1)
@@ -687,6 +691,15 @@ class TemporalMapper(BaseEstimator):
             The Axes object containing the temporal plot.
 
         """
+        ## [interactive] requirements
+        try:
+            import plotly.graph_objects as go
+            from temporalmapper.plotting import (
+                prepare_plotly_graph_objects
+            )
+        except ImportError as e:
+            warn("Interactive plotting requires plotly")
+            raise e
         check_is_fitted(self, ["is_fitted_"])
         if vertices is None:
             vertices = self.G.nodes()
