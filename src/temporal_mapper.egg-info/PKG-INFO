@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: temporal-mapper
-Version: 1.1.0
+Version: 1.2.0
 Summary: Implementation of density-based Mapper for temporal topic modelling.
 Author-email: Kaleb D Ruscitti <kaleb.ruscitti@uwaterloo.ca>
 License: BSD-3-Clause
@@ -33,7 +33,7 @@ align="left" width="200" height="120"
 src="./docs/icon.png" alt="Temporal Mapper Logo">
 ## Temporal Mapper
 
-### V.1.1.0 - February 02 2026
+### V.1.2.0 - February 15 2026
 -----------------------------------------------
 This is a library for using the Mapper for temporal topic modelling.
 Though things broadly work now, the edge cases have not been throughly 
