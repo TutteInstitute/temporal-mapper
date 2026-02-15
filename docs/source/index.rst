@@ -21,6 +21,7 @@ which is built using the Density-Based Mapper algorithm.
 
     temporal-plot
     centroid-datamap
+    growth-map
 
 .. toctree::
     :maxdepth: 2

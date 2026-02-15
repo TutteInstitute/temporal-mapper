@@ -7,7 +7,7 @@ TemporalMapper API
 
     .. autofunction:: temporalmapper.TemporalMapper.interactive_temporal_plot
 
-.. automodule:: temporalmapper.utilities
+.. automodule:: temporalmapper.plotting
    
     .. autofunction:: centroid_datamap
 

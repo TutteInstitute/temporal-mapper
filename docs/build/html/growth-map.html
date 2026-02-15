@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Centroid Datamap &mdash; Temporal Mapper 1.2.0 documentation</title>
+  <title>Interactive Growth Map &mdash; Temporal Mapper 1.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
@@ -23,8 +23,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Interactive Growth Map" href="growth-map.html" />
-    <link rel="prev" title="Temporal Plots" href="temporal-plot.html" /> 
+    <link rel="next" title="TemporalMapper API" href="api.html" />
+    <link rel="prev" title="Centroid Datamap" href="centroid-datamap.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -56,8 +56,8 @@
 <p class="caption" role="heading"><span class="caption-text">Visualizations:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="temporal-plot.html">Temporal Plots</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Centroid Datamap</a></li>
-<li class="toctree-l1"><a class="reference internal" href="growth-map.html">Interactive Growth Map</a></li>
+<li class="toctree-l1"><a class="reference internal" href="centroid-datamap.html">Centroid Datamap</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Interactive Growth Map</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
 <ul>
@@ -78,9 +78,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Centroid Datamap</li>
+      <li class="breadcrumb-item active">Interactive Growth Map</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/centroid-datamap.ipynb.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/growth-map.ipynb.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -88,13 +88,12 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="Centroid-Datamap">
-<h1>Centroid Datamap<a class="headerlink" href="#Centroid-Datamap" title="Link to this heading"></a></h1>
-<p>Temporal Mapper constructs a graph which does not have an inherent visualization. Moreover, if your data has <span class="math notranslate nohighlight">\(d\)</span> semantic dimensions, then the graph ‘naturally’ lives in <span class="math notranslate nohighlight">\(d+1\)</span> dimensions when including time.</p>
-<p>A centroid datamap of a <code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code> is a 2d plot where each vertex is plotted on the centroid of its constituent points.</p>
-<p>Let’s demonstrate a centroid datamap by fitting a <code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code> to a small dataset of 10,000 arXiv machine learning papers. The paper’s titles and abstracts were concatenated and embedded using the sentence transformer <a class="reference external" href="https://huggingface.co/sentence-transformers/all-mpnet-base-v2">all-mpnet-base-v2</a>, and then reduced to 2D with UMAP.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+  <section id="Interactive-Growth-Map">
+<h1>Interactive Growth Map<a class="headerlink" href="#Interactive-Growth-Map" title="Link to this heading"></a></h1>
+<p>A growth map of a Mapper graph is a visualization that displays each topics relative size and growth. It is inspired by a <a class="reference external" href="https://stockcharts.com/marketcarpet/">similar visualization often used to display stock market data</a>.</p>
+<p>Let’s demonstrate a growth map by fitting a <code class="docutils literal notranslate"><span class="pre">TemporalMapper</span></code> to a small dataset of 10,000 arXiv machine learning papers. The paper’s titles and abstracts were concatenated and embedded using the sentence transformer <a class="reference external" href="https://huggingface.co/sentence-transformers/all-mpnet-base-v2">all-mpnet-base-v2</a>, and then reduced to 2D with UMAP.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">temporalmapper</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tm</span>
@@ -105,14 +104,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.cluster</span><span class="w"> </span><span class="kn">import</span> <span class="n">DBSCAN</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fast_hdbscan</span><span class="w"> </span><span class="kn">import</span> <span class="n">HDBSCAN</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">datamapplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dmp</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
     <span class="s1">&#39;https://github.com/TutteInstitute/temporal-mapper/raw/refs/heads/docs/docs/data/ai_arxiv_coordinates.npy&#39;</span>
 <span class="p">)</span>
 <span class="n">map_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">))</span>
@@ -127,7 +119,7 @@
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
@@ -213,8 +205,8 @@
 </table>
 </div></div>
 </div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compute a time column T which is the number of days since Jan 01, 2018.</span>
@@ -228,14 +220,8 @@
     <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">date_to_T</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 <span class="p">)</span>
 <span class="n">time</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;T&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_numpy</span><span class="p">()</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">clusterer</span> <span class="o">=</span> <span class="n">HDBSCAN</span><span class="p">(</span>
+
+<span class="n">clusterer</span> <span class="o">=</span> <span class="n">HDBSCAN</span><span class="p">(</span>
     <span class="n">cluster_selection_method</span><span class="o">=</span><span class="s1">&#39;eom&#39;</span><span class="p">,</span>
     <span class="n">min_cluster_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
 <span class="p">)</span>
@@ -252,11 +238,11 @@
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="output_area rendered_html docutils container">
-<style>#sk-container-id-2 {
+<style>#sk-container-id-1 {
   /* Definition of color scheme common for light and dark mode */
   --sklearn-color-text: #000;
   --sklearn-color-text-muted: #666;
@@ -287,15 +273,15 @@
   }
 }
 
-#sk-container-id-2 {
+#sk-container-id-1 {
   color: var(--sklearn-color-text);
 }
 
-#sk-container-id-2 pre {
+#sk-container-id-1 pre {
   padding: 0;
 }
 
-#sk-container-id-2 input.sk-hidden--visually {
+#sk-container-id-1 input.sk-hidden--visually {
   border: 0;
   clip: rect(1px 1px 1px 1px);
   clip: rect(1px, 1px, 1px, 1px);
@@ -307,7 +293,7 @@
   width: 1px;
 }
 
-#sk-container-id-2 div.sk-dashed-wrapped {
+#sk-container-id-1 div.sk-dashed-wrapped {
   border: 1px dashed var(--sklearn-color-line);
   margin: 0 0.4em 0.5em 0.4em;
   box-sizing: border-box;
@@ -315,7 +301,7 @@
   background-color: var(--sklearn-color-background);
 }
 
-#sk-container-id-2 div.sk-container {
+#sk-container-id-1 div.sk-container {
   /* jupyter's `normalize.less` sets `[hidden] { display: none; }`
      but bootstrap.min.css set `[hidden] { display: none !important; }`
      so we also need the `!important` here to be able to override the
@@ -325,7 +311,7 @@
   position: relative;
 }
 
-#sk-container-id-2 div.sk-text-repr-fallback {
+#sk-container-id-1 div.sk-text-repr-fallback {
   display: none;
 }
 
@@ -341,14 +327,14 @@ div.sk-item {
 
 /* Parallel-specific style estimator block */
 
-#sk-container-id-2 div.sk-parallel-item::after {
+#sk-container-id-1 div.sk-parallel-item::after {
   content: "";
   width: 100%;
   border-bottom: 2px solid var(--sklearn-color-text-on-default-background);
   flex-grow: 1;
 }
 
-#sk-container-id-2 div.sk-parallel {
+#sk-container-id-1 div.sk-parallel {
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -356,28 +342,28 @@ div.sk-item {
   position: relative;
 }
 
-#sk-container-id-2 div.sk-parallel-item {
+#sk-container-id-1 div.sk-parallel-item {
   display: flex;
   flex-direction: column;
 }
 
-#sk-container-id-2 div.sk-parallel-item:first-child::after {
+#sk-container-id-1 div.sk-parallel-item:first-child::after {
   align-self: flex-end;
   width: 50%;
 }
 
-#sk-container-id-2 div.sk-parallel-item:last-child::after {
+#sk-container-id-1 div.sk-parallel-item:last-child::after {
   align-self: flex-start;
   width: 50%;
 }
 
-#sk-container-id-2 div.sk-parallel-item:only-child::after {
+#sk-container-id-1 div.sk-parallel-item:only-child::after {
   width: 0;
 }
 
 /* Serial-specific style estimator block */
 
-#sk-container-id-2 div.sk-serial {
+#sk-container-id-1 div.sk-serial {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -395,14 +381,14 @@ clickable and can be expanded/collapsed.
 
 /* Pipeline and ColumnTransformer style (default) */
 
-#sk-container-id-2 div.sk-toggleable {
+#sk-container-id-1 div.sk-toggleable {
   /* Default theme specific background. It is overwritten whether we have a
   specific estimator or a Pipeline/ColumnTransformer */
   background-color: var(--sklearn-color-background);
 }
 
 /* Toggleable label */
-#sk-container-id-2 label.sk-toggleable__label {
+#sk-container-id-1 label.sk-toggleable__label {
   cursor: pointer;
   display: flex;
   width: 100%;
@@ -415,13 +401,13 @@ clickable and can be expanded/collapsed.
   gap: 0.5em;
 }
 
-#sk-container-id-2 label.sk-toggleable__label .caption {
+#sk-container-id-1 label.sk-toggleable__label .caption {
   font-size: 0.6rem;
   font-weight: lighter;
   color: var(--sklearn-color-text-muted);
 }
 
-#sk-container-id-2 label.sk-toggleable__label-arrow:before {
+#sk-container-id-1 label.sk-toggleable__label-arrow:before {
   /* Arrow on the left of the label */
   content: "▸";
   float: left;
@@ -429,25 +415,25 @@ clickable and can be expanded/collapsed.
   color: var(--sklearn-color-icon);
 }
 
-#sk-container-id-2 label.sk-toggleable__label-arrow:hover:before {
+#sk-container-id-1 label.sk-toggleable__label-arrow:hover:before {
   color: var(--sklearn-color-text);
 }
 
 /* Toggleable content - dropdown */
 
-#sk-container-id-2 div.sk-toggleable__content {
+#sk-container-id-1 div.sk-toggleable__content {
   display: none;
   text-align: left;
   /* unfitted */
   background-color: var(--sklearn-color-unfitted-level-0);
 }
 
-#sk-container-id-2 div.sk-toggleable__content.fitted {
+#sk-container-id-1 div.sk-toggleable__content.fitted {
   /* fitted */
   background-color: var(--sklearn-color-fitted-level-0);
 }
 
-#sk-container-id-2 div.sk-toggleable__content pre {
+#sk-container-id-1 div.sk-toggleable__content pre {
   margin: 0.2em;
   border-radius: 0.25em;
   color: var(--sklearn-color-text);
@@ -455,79 +441,79 @@ clickable and can be expanded/collapsed.
   background-color: var(--sklearn-color-unfitted-level-0);
 }
 
-#sk-container-id-2 div.sk-toggleable__content.fitted pre {
+#sk-container-id-1 div.sk-toggleable__content.fitted pre {
   /* unfitted */
   background-color: var(--sklearn-color-fitted-level-0);
 }
 
-#sk-container-id-2 input.sk-toggleable__control:checked~div.sk-toggleable__content {
+#sk-container-id-1 input.sk-toggleable__control:checked~div.sk-toggleable__content {
   /* Expand drop-down */
   display: block;
   width: 100%;
   overflow: visible;
 }
 
-#sk-container-id-2 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {
+#sk-container-id-1 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {
   content: "▾";
 }
 
 /* Pipeline/ColumnTransformer-specific style */
 
-#sk-container-id-2 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {
+#sk-container-id-1 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {
   color: var(--sklearn-color-text);
   background-color: var(--sklearn-color-unfitted-level-2);
 }
 
-#sk-container-id-2 div.sk-label.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {
+#sk-container-id-1 div.sk-label.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {
   background-color: var(--sklearn-color-fitted-level-2);
 }
 
 /* Estimator-specific style */
 
 /* Colorize estimator box */
-#sk-container-id-2 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {
+#sk-container-id-1 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {
   /* unfitted */
   background-color: var(--sklearn-color-unfitted-level-2);
 }
 
-#sk-container-id-2 div.sk-estimator.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {
+#sk-container-id-1 div.sk-estimator.fitted input.sk-toggleable__control:checked~label.sk-toggleable__label {
   /* fitted */
   background-color: var(--sklearn-color-fitted-level-2);
 }
 
-#sk-container-id-2 div.sk-label label.sk-toggleable__label,
-#sk-container-id-2 div.sk-label label {
+#sk-container-id-1 div.sk-label label.sk-toggleable__label,
+#sk-container-id-1 div.sk-label label {
   /* The background is the default theme color */
   color: var(--sklearn-color-text-on-default-background);
 }
 
 /* On hover, darken the color of the background */
-#sk-container-id-2 div.sk-label:hover label.sk-toggleable__label {
+#sk-container-id-1 div.sk-label:hover label.sk-toggleable__label {
   color: var(--sklearn-color-text);
   background-color: var(--sklearn-color-unfitted-level-2);
 }
 
 /* Label box, darken color on hover, fitted */
-#sk-container-id-2 div.sk-label.fitted:hover label.sk-toggleable__label.fitted {
+#sk-container-id-1 div.sk-label.fitted:hover label.sk-toggleable__label.fitted {
   color: var(--sklearn-color-text);
   background-color: var(--sklearn-color-fitted-level-2);
 }
 
 /* Estimator label */
 
-#sk-container-id-2 div.sk-label label {
+#sk-container-id-1 div.sk-label label {
   font-family: monospace;
   font-weight: bold;
   display: inline-block;
   line-height: 1.2em;
 }
 
-#sk-container-id-2 div.sk-label-container {
+#sk-container-id-1 div.sk-label-container {
   text-align: center;
 }
 
 /* Estimator-specific */
-#sk-container-id-2 div.sk-estimator {
+#sk-container-id-1 div.sk-estimator {
   font-family: monospace;
   border: 1px dotted var(--sklearn-color-border-box);
   border-radius: 0.25em;
@@ -537,18 +523,18 @@ clickable and can be expanded/collapsed.
   background-color: var(--sklearn-color-unfitted-level-0);
 }
 
-#sk-container-id-2 div.sk-estimator.fitted {
+#sk-container-id-1 div.sk-estimator.fitted {
   /* fitted */
   background-color: var(--sklearn-color-fitted-level-0);
 }
 
 /* on hover */
-#sk-container-id-2 div.sk-estimator:hover {
+#sk-container-id-1 div.sk-estimator:hover {
   /* unfitted */
   background-color: var(--sklearn-color-unfitted-level-2);
 }
 
-#sk-container-id-2 div.sk-estimator.fitted:hover {
+#sk-container-id-1 div.sk-estimator.fitted:hover {
   /* fitted */
   background-color: var(--sklearn-color-fitted-level-2);
 }
@@ -636,7 +622,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
 
 /* "?"-specific style due to the `<a>` HTML tag */
 
-#sk-container-id-2 a.estimator_doc_link {
+#sk-container-id-1 a.estimator_doc_link {
   float: right;
   font-size: 1rem;
   line-height: 1em;
@@ -651,21 +637,21 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
   border: var(--sklearn-color-unfitted-level-1) 1pt solid;
 }
 
-#sk-container-id-2 a.estimator_doc_link.fitted {
+#sk-container-id-1 a.estimator_doc_link.fitted {
   /* fitted */
   border: var(--sklearn-color-fitted-level-1) 1pt solid;
   color: var(--sklearn-color-fitted-level-1);
 }
 
 /* On hover */
-#sk-container-id-2 a.estimator_doc_link:hover {
+#sk-container-id-1 a.estimator_doc_link:hover {
   /* unfitted */
   background-color: var(--sklearn-color-unfitted-level-3);
   color: var(--sklearn-color-background);
   text-decoration: none;
 }
 
-#sk-container-id-2 a.estimator_doc_link.fitted:hover {
+#sk-container-id-1 a.estimator_doc_link.fitted:hover {
   /* fitted */
   background-color: var(--sklearn-color-fitted-level-3);
 }
@@ -733,7 +719,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
     height: 14px;
     cursor: pointer;
 }
-</style><body><div id="sk-container-id-2" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>TemporalMapper(N_checkpoints=8,
+</style><body><div id="sk-container-id-1" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>TemporalMapper(N_checkpoints=8,
                checkpoints=array([ 66, 131, 169, 226, 276, 301, 372, 428]),
                clusterer=HDBSCAN(min_cluster_size=20),
                data=array([[-0.1915403 , -0.91268927],
@@ -744,7 +730,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
        [ 0.9528436 ,  1.0777863 ],
        [ 0.9529141 ,  1.0776262 ]], shape=(10000, 2), dtype=float32),
                slice_method=&#x27;data&#x27;,
-               time=array([  0,   0,   0, ..., 480, 480, 480], shape=(10000,)))</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br />On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden><div class="sk-item sk-dashed-wrapped"><div class="sk-label-container"><div class="sk-label fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-4" type="checkbox" ><label for="sk-estimator-id-4" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>TemporalMapper</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted" data-param-prefix="">
+               time=array([  0,   0,   0, ..., 480, 480, 480], shape=(10000,)))</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br />On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden><div class="sk-item sk-dashed-wrapped"><div class="sk-label-container"><div class="sk-label fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-1" type="checkbox" ><label for="sk-estimator-id-1" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>TemporalMapper</div></div><div><span class="sk-estimator-doc-link fitted">i<span>Fitted</span></span></div></label><div class="sk-toggleable__content fitted" data-param-prefix="">
         <div class="estimator-table">
             <details>
                 <summary>Parameters</summary>
@@ -867,7 +853,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                           this.parentElement.nextElementSibling)"
             ></i></td>
             <td class="param">kernel&nbsp;</td>
-            <td class="value">&lt;function squ...x7f10ff7b2160&gt;</td>
+            <td class="value">&lt;function squ...x7fcec5d67e20&gt;</td>
         </tr>
 
 
@@ -894,7 +880,7 @@ div.sk-label-container:hover .sk-estimator-doc-link.fitted:hover,
                 </table>
             </details>
         </div>
-    </div></div></div><div class="sk-parallel"><div class="sk-parallel-item"><div class="sk-item"><div class="sk-label-container"><div class="sk-label fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-5" type="checkbox" ><label for="sk-estimator-id-5" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>clusterer: HDBSCAN</div></div></label><div class="sk-toggleable__content fitted" data-param-prefix="clusterer__"><pre>HDBSCAN(min_cluster_size=20)</pre></div></div></div><div class="sk-serial"><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-6" type="checkbox" ><label for="sk-estimator-id-6" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>HDBSCAN</div></div></label><div class="sk-toggleable__content fitted" data-param-prefix="clusterer__">
+    </div></div></div><div class="sk-parallel"><div class="sk-parallel-item"><div class="sk-item"><div class="sk-label-container"><div class="sk-label fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-2" type="checkbox" ><label for="sk-estimator-id-2" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>clusterer: HDBSCAN</div></div></label><div class="sk-toggleable__content fitted" data-param-prefix="clusterer__"><pre>HDBSCAN(min_cluster_size=20)</pre></div></div></div><div class="sk-serial"><div class="sk-item"><div class="sk-estimator fitted sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-3" type="checkbox" ><label for="sk-estimator-id-3" class="sk-toggleable__label fitted sk-toggleable__label-arrow"><div><div>HDBSCAN</div></div></label><div class="sk-toggleable__content fitted" data-param-prefix="clusterer__">
         <div class="estimator-table">
             <details>
                 <summary>Parameters</summary>
@@ -1038,47 +1024,12 @@ document.querySelectorAll('.fa-regular.fa-copy').forEach(function(element) {
 });
 </script></body></div>
 </div>
-<p>Now that we’ve fit a temporal Mapper, we can use <code class="docutils literal notranslate"><span class="pre">centroid_datamap</span></code> from <code class="docutils literal notranslate"><span class="pre">temporal_mapper.utilities</span></code></p>
+<p>Now that we’ve fit a Mapper graph, we can use <code class="docutils literal notranslate"><span class="pre">tm.plotting.growth_map</span></code> to generate a growth map. The size of each square indicates the number of data points in the corresponding topic, and it’s colour represents the growth of that topic.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tm</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">centroid_datamap</span><span class="p">(</span><span class="n">mapper</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-&lt;Axes: &gt;
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="_images/centroid-datamap_7_1.png" src="_images/centroid-datamap_7_1.png" />
-</div>
-</div>
-<p>The optional <code class="docutils literal notranslate"><span class="pre">ax</span></code> parameter can be passed to add a centroid datamap to an existing matplotlib axis. In particular, the centroid_datamap is designed to be added on top of a DataMapPlot plot of the cluster points, if one so desires:</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">datamapplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dmp</span>
-
-<span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">dmp</span><span class="o">.</span><span class="n">create_plot</span><span class="p">(</span>
-    <span class="n">mapper</span><span class="o">.</span><span class="n">data</span><span class="p">,</span>
-    <span class="n">df</span><span class="p">[</span><span class="s1">&#39;arxiv&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">to_list</span><span class="p">(),</span>
-<span class="p">)</span>
-<span class="n">tm</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">centroid_datamap</span><span class="p">(</span><span class="n">mapper</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">bundle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span>
-<span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Topics in ar$\chi$iv AI papers, 2018-2019&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tm</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">growth_map</span><span class="p">(</span><span class="n">mapper</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1086,34 +1037,17 @@ document.querySelectorAll('.fa-regular.fa-copy').forEach(function(element) {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/centroid-datamap_9_0.png" src="_images/centroid-datamap_9_0.png" />
+<div class="admonition warning">
+<p>Data type cannot be displayed: application/vnd.plotly.v1+json</p>
 </div>
 </div>
-<p>By default, the centroid datamap matches colours with the temporal plot, to make it easier to relate the plots when viewing them side-by-side. To help convey the time information, vertices which correspond to earlier slices in the graph have their colour desaturated. This is a very subtle effect, so if you want to make the order of the vertices more obvious you can pass the option <code class="docutils literal notranslate"><span class="pre">node_colouring</span> <span class="pre">=</span> <span class="pre">'override'</span></code>. This overrides the datamapplot colours, instead colouring vertices from dark to
-light as you move from the beginning to end of the time range.</p>
+</div>
+<p>By default, growth_map displays topics across the entire time range, but we can pass an index parameter to show only the topics at a certain time slice.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
-
-<span class="n">tm</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">centroid_datamap</span><span class="p">(</span>
-    <span class="n">mapper</span><span class="p">,</span>
-    <span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">,</span>
-    <span class="n">node_colouring</span> <span class="o">=</span> <span class="s1">&#39;desaturate&#39;</span><span class="p">,</span>
-    <span class="n">bundle</span><span class="o">=</span><span class="kc">False</span>
-<span class="p">)</span>
-<span class="n">ax1</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Default node colouring&quot;</span><span class="p">)</span>
-<span class="n">tm</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">centroid_datamap</span><span class="p">(</span>
-    <span class="n">mapper</span><span class="p">,</span>
-    <span class="n">ax</span><span class="o">=</span><span class="n">ax2</span><span class="p">,</span>
-    <span class="n">node_colouring</span> <span class="o">=</span> <span class="s1">&#39;override&#39;</span><span class="p">,</span>
-    <span class="n">bundle</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">ax2</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;node_colouring = &#39;override&#39;&quot;</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figwidth</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-<span class="n">fig</span><span class="o">.</span><span class="n">set_figheight</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tm</span><span class="o">.</span><span class="n">plotting</span><span class="o">.</span><span class="n">growth_map</span><span class="p">(</span><span class="n">mapper</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1121,7 +1055,9 @@ light as you move from the beginning to end of the time range.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="_images/centroid-datamap_11_0.png" src="_images/centroid-datamap_11_0.png" />
+<div class="admonition warning">
+<p>Data type cannot be displayed: application/vnd.plotly.v1+json</p>
+</div>
 </div>
 </div>
 </section>
@@ -1130,8 +1066,8 @@ light as you move from the beginning to end of the time range.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="temporal-plot.html" class="btn btn-neutral float-left" title="Temporal Plots" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="growth-map.html" class="btn btn-neutral float-right" title="Interactive Growth Map" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="centroid-datamap.html" class="btn btn-neutral float-left" title="Centroid Datamap" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api.html" class="btn btn-neutral float-right" title="TemporalMapper API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

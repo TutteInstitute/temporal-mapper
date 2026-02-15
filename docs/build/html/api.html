@@ -20,7 +20,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Centroid Datamap" href="centroid-datamap.html" /> 
+    <link rel="prev" title="Interactive Growth Map" href="growth-map.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -42,14 +42,18 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Usage:</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="dbmapper_theory.html">Understanding DBMapper</a></li>
 <li class="toctree-l1"><a class="reference internal" href="paramselection.html">Parameter Selection for Temporal Mapper</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Visualizations:</span></p>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="temporal-plot.html">Temporal Plots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="centroid-datamap.html">Centroid Datamap</a></li>
+<li class="toctree-l1"><a class="reference internal" href="growth-map.html">Interactive Growth Map</a></li>
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
 <ul class="current">
@@ -59,6 +63,9 @@
 <li class="toctree-l3"><a class="reference internal" href="#temporalmapper.TemporalMapper.TemporalMapper.interactive_temporal_plot"><code class="docutils literal notranslate"><span class="pre">TemporalMapper.interactive_temporal_plot()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.plotting.centroid_datamap"><code class="docutils literal notranslate"><span class="pre">centroid_datamap()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.plotting.time_semantic_plot"><code class="docutils literal notranslate"><span class="pre">time_semantic_plot()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#temporalmapper.plotting.sliceograph"><code class="docutils literal notranslate"><span class="pre">sliceograph()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -166,13 +173,114 @@ to display when hovering over vertex <cite>node</cite>.</p>
 </section>
 </dd></dl>
 
-<span class="target" id="module-temporalmapper.utilities"></span></section>
+<dl class="py function" id="module-temporalmapper.plotting">
+<dt class="sig sig-object py" id="temporalmapper.plotting.centroid_datamap">
+<span class="sig-prename descclassname"><span class="pre">temporalmapper.plotting.</span></span><span class="sig-name descname"><span class="pre">centroid_datamap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vertices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_colouring</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'desaturate'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.plotting.centroid_datamap" title="Link to this definition"></a></dt>
+<dd><p>Plot the temporal graph in 2d with vertices at their cluster centroids.</p>
+<section id="id1">
+<h2>Parameters<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>TemporalGraph: temporal_mapper.TemporalGraph</dt><dd><p>The temporal graph object to plot.</p>
+</dd>
+<dt>ax: matplotlib.axes (optional, default=None)</dt><dd><p>Matplotlib axis to draw on</p>
+</dd>
+<dt>node_colouring: <code class="docutils literal notranslate"><span class="pre">'desaturate'</span></code> or <code class="docutils literal notranslate"><span class="pre">'override'</span></code> (optional, default=’desaturate’)</dt><dd><p>Determines how to incorporate temporal information in the color.
+The desaturate option will take the semantic colouring from datamapplot and desaturate points that are further back in time.
+The override option will throw away the semantic colouring and colour points only based on their time value.</p>
+</dd>
+<dt>vertices: list (optional, default=None)</dt><dd><p>List of nodes in TG.G to include in the plot.</p>
+</dd>
+<dt>edge_labels: dict (optional, default=None)</dt><dd><p>Dictionary of labels with edge_labels[e] a string to label edge e.</p>
+</dd>
+<dt>edge_scaling: float (optional, default = 1)</dt><dd><p>Scales the thickness of edges, larger is thicker.</p>
+</dd>
+<dt>bundle: bool (optional, default=True)</dt><dd><p>If true, bundle the edges of the graph using datashader’s hammer_bundle function.</p>
+</dd>
+<dt>node_kwargs: dict (optional, default={})</dt><dd><p>Keyword arguments passed to networkx.draw_networkx_nodes()</p>
+</dd>
+<dt>edge_kwargs: dict (optional, default={})</dt><dd><p>Keyword arguments passed to networkx.draw_networkx_edges()</p>
+</dd>
+</dl>
+</section>
+<section id="id2">
+<h2>Returns<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>matplotlib.axes.Axes</dt><dd><p>The Axes object containing the centroid datamap.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="temporalmapper.plotting.time_semantic_plot">
+<span class="sig-prename descclassname"><span class="pre">temporalmapper.plotting.</span></span><span class="sig-name descname"><span class="pre">time_semantic_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">semantic_axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vertices</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cluster_label_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_labels</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bundle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layout_optimization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'barycenter'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layout_optimization_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_scaling</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_size_bounds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(5,</span> <span class="pre">25)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_weight_bounds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">(5,</span> <span class="pre">25)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_size_scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">node_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">edge_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.plotting.time_semantic_plot" title="Link to this definition"></a></dt>
+<dd><p>Create a time-semantic plot of the graph <code class="docutils literal notranslate"><span class="pre">TemporalGraph.G</span></code>.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>TemporalGraph: temporal_mapper.TemporalGraph</dt><dd><p>The temporal graph object to plot.</p>
+</dd>
+<dt>semantic_axis: ndarray</dt><dd><p>Array of shape <code class="docutils literal notranslate"><span class="pre">(n_samples,)</span></code> with the 1D semantic data to use in the plot.</p>
+</dd>
+<dt>ax: matplotlib.axes (optional, default=None)</dt><dd><p>Matplotlib axis to draw on</p>
+</dd>
+<dt>vertices: list (optional, default=None)</dt><dd><p>List of nodes in TG.G to include in the plot.</p>
+</dd>
+<dt>cluster_labels: dict (optional, default={})</dt><dd><p>Dictionary of labels with <cite>cluster_labels[node]</cite> a string to label vertex <cite>node</cite>.</p>
+</dd>
+<dt>cluster_label_kwargs: dict (optional, default={})</dt><dd><p>Keyword arguments for <cite>matplotlib.axis.text</cite> used when plotting cluster labels.</p>
+</dd>
+<dt>edge_labels: dict (optional, default=None)</dt><dd><p>Dictionary of labels with <cite>edge_labels[e]</cite> a string to label edge <cite>e</cite>.</p>
+</dd>
+<dt>bundle: bool (optional, default=False)</dt><dd><p>If true, uses the edge-bundling algorithm from datashader to plot edges.</p>
+</dd>
+<dt>layout_optimization: string (optional, default=’barycenter’)</dt><dd><p>Optimization method used to reduce edge-crossings: one of None, “none”, “force-directed” or “barycenter”</p>
+</dd>
+<dt>edge_scaling: float (optional, default = 1)</dt><dd><p>Scales the thickness of edges, larger is thicker.</p>
+</dd>
+<dt>node_scaling: float (optional, default = 10)</dt><dd><p>Scales the size of vertices</p>
+</dd>
+<dt>node_size_scale: string (optional, default=’linear’)</dt><dd><p>Specifies linear, sigmoid or logarithmic scaling for node sizes</p>
+</dd>
+<dt>bundle: bool (optional, default=False)</dt><dd><p>If true, bundle the edges of the graph using datashader’s hammer_bundle function.</p>
+</dd>
+<dt>node_kwargs: dict (optional, default={})</dt><dd><p>Keyword arguments passed to networkx.draw_networkx_nodes()</p>
+</dd>
+<dt>edge_kwargs: dict (optional, default={})</dt><dd><p>Keyword arguments passed to networkx.draw_networkx_edges()</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>matplotlib.axes.Axes</dt><dd><p>The Axes object containing the temporal plot.</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="temporalmapper.plotting.sliceograph">
+<span class="sig-prename descclassname"><span class="pre">temporalmapper.plotting.</span></span><span class="sig-name descname"><span class="pre">sliceograph</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">TM</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clrs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['r',</span> <span class="pre">'g',</span> <span class="pre">'b']</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#temporalmapper.plotting.sliceograph" title="Link to this definition"></a></dt>
+<dd><p>Produce a sliceograph of a TemporalMapper</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><dl class="simple">
+<dt>TemporalMapper: temporalmapper.TemporalMapper</dt><dd><p>The temporal mapper object to plot.</p>
+</dd>
+<dt>ax: matplotlib.axes (optional, default=None)</dt><dd><p>Matplotlib axis to draw on</p>
+</dd>
+<dt>clrs: list(str) (optional, default=[‘r’,’g’,’b’])</dt><dd><p>A list of matplotlib colours, which will be cyclically to
+colour the intervals in the graph.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p>Returns: matplotlib.axes</p>
+</dd></dl>
+
+</section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="centroid-datamap.html" class="btn btn-neutral float-left" title="Centroid Datamap" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="growth-map.html" class="btn btn-neutral float-left" title="Interactive Growth Map" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>
