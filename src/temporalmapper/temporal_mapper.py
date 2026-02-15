@@ -1,25 +1,33 @@
-import networkx as nx
+from copy import deepcopy
+from collections.abc import Callable
+from warnings import warn
+
 import numpy as np
+from numpy import typing as npt
 from tqdm import trange
+import networkx as nx
+import matplotlib as mpl
+from datamapplot.palette_handling import palette_from_datamap
+from scipy.sparse import issparse
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.neighbors import NearestNeighbors
-from scipy.sparse import issparse
-from datamapplot.palette_handling import palette_from_datamap
-import matplotlib as mpl
-from copy import deepcopy
-import plotly.graph_objects as go
+from sklearn.base import BaseEstimator, ClusterMixin
+from sklearn.utils.validation import check_is_fitted
 
-from temporalmapper.utilities import (
+from temporalmapper.utilities import(
     std_sigmoid,
-    time_semantic_plot,
-    compute_time_semantic_positions,
-    prepare_plotly_graph_objects,
-)
-from temporalmapper.weighted_clustering import (
-    square,
     cosine_window,
     weighted_clusters,
+)
+from temporalmapper.plotting import (
+    time_semantic_plot,
+)
+from temporalmapper.layout import compute_time_semantic_positions
+from temporalmapper.kernels import square
+from temporalmapper.analytics import (
+    compute_growth,
 )
 
 """TemporalMapper class 
@@ -47,7 +55,7 @@ minimal usage example:
 """
 
 
-class TemporalMapper:
+class TemporalMapper(BaseEstimator):
     """
     Generate and store a temporal graph - a 1D-mapper-style representation of temporal data.
 
@@ -70,23 +78,24 @@ class TemporalMapper:
     interactive_temporal_plot():
         Returns a Plotly figure containing an interactive temporal plot
     """
+    SERIAL_VERSION = 1
 
     def __init__(
         self,
-        time,
-        data,
-        clusterer,
-        N_checkpoints=None,
-        neighbours=50,
-        overlap=0.5,
-        clusters=None,
-        checkpoints=None,
-        show_outliers=False,
-        slice_method="time",
-        rate_sensitivity=1,
-        kernel=square,
-        kernel_params=None,
-        verbose=False,
+        time: npt.NDArray,
+        data: npt.NDArray,
+        clusterer: ClusterMixin,
+        N_checkpoints: int=None,
+        neighbours: int=50,
+        overlap: float=0.5,
+        inclusion_threshold: float=0.01,
+        checkpoints: list[float]=None,
+        show_outliers: bool=False,
+        slice_method: str="time",
+        rate_sensitivity: int=1,
+        kernel: Callable[[float,float,float,float],float]=square,
+        kernel_params: dict=None,
+        verbose: bool=False,
     ):
         """
         Parameters
@@ -103,6 +112,8 @@ class TemporalMapper:
             array of time-points at which to cluster
         overlap: float
             A float in (0,1) which specifies the ``g`` parameter (see README)
+        inclusion_threshold: float
+            A float in [0,1) which specifies the minimum kernel weight for a point to be included in a slice.
         neighbours: float
             The number of nearest neighbours used in the density computation.
         show_outliers: bool
@@ -116,8 +127,7 @@ class TemporalMapper:
             then the rate parameter is taken log2.
         kernel: function
             A function with signature ``f(t0, t, density, binwidth, epsilon=0.01, params=None)``.
-            Two options are included in weighted_clustering.py, ``weighted_clustering.square`` and
-            ``weighted_clustering.gaussian``.
+            Options are included in temporalmapper.kernels, default is ``temporalmapper.kernels.square``.
         kernel_parameters: tuple or None,
             Passed to `kernel` as params kwarg.
         verbose: bool
@@ -163,11 +173,14 @@ class TemporalMapper:
                 )
 
         self.clusterer = clusterer
-        self.clusters = clusters
-        self.g = overlap
+        self.clusters = None
+        self.inclusion_threshold = inclusion_threshold
+        self.overlap = overlap
+        self.g = self.overlap
         self.density = None
         self.rate = None
-        self.sensitivity = rate_sensitivity
+        self.rate_sensitivity = rate_sensitivity
+        self.sensitivity = self.rate_sensitivity
         self.kernel = kernel
         self.kernel_params = kernel_params
         self.G = nx.DiGraph()
@@ -176,7 +189,8 @@ class TemporalMapper:
         self.verbose = verbose
         self.disable = not verbose  # for tqdm
         self.show_outliers = False
-        self.k = neighbours
+        self.neighbours = neighbours 
+        self.k = self.neighbours 
         self.distance = None
         self.cbeta = None
 
@@ -191,9 +205,7 @@ class TemporalMapper:
                 np.amin(self.time), np.amax(self.time), self.N_checkpoints + 2
             )[1:-1]
         self.checkpoints = checkpoints
-        if self.slice_method == "morse":
-            print("Warning: Morse checkpoint selection is barely working.")
-            self._compute_critical_points()
+
         return checkpoints
 
     def _compute_knn(self):
@@ -289,6 +301,7 @@ class TemporalMapper:
             self.kernel,
             self.g,
             self.kernel_params,
+            eps=self.inclusion_threshold,
         )
         self.clusters = clusters
         self.weights = weights
@@ -401,6 +414,7 @@ class TemporalMapper:
         self.add_edges()
         self.populate_edge_attrs()
         self.populate_node_attrs()
+        self.is_fitted_ = True
         return self
 
     def fit(self):
@@ -428,7 +442,7 @@ class TemporalMapper:
         Mainly required for visualization purposes.
         """
         if self.verbose:
-            print("Populating node centroids, colours, sizes...")
+            print("Populating node attributes, such as centroids, colours, sizes...")
 
         # Add cluster positions in 2D and sizes for visualization.
         centroids = {}
@@ -521,7 +535,7 @@ class TemporalMapper:
 
     def temporal_plot(
         self,
-        ax: mpl.axes = None,
+        ax: mpl.axes.Axes = None,
         title: str = None,
         cluster_labels: dict = None,
         cluster_label_kwargs: dict = None,
@@ -533,11 +547,12 @@ class TemporalMapper:
         edge_scaling: float = 1,
         node_scaling: float = 1,
         node_size_bounds: tuple[float] = (5,50),
-        edge_weight_bounds: float = 0.1,
+        edge_weight_bounds: float = (0.1,1),
         node_size_scale: str = 'sigmoid',
         layout_optimization: str = "barycenter",
         layout_optimization_kwargs: dict = {},
     ):
+        check_is_fitted(self, ["is_fitted_"])
         """    
         Generate a temporal plot of the Mapper graph on a specified matplotlib axis using sensible defaults.
     
@@ -631,7 +646,7 @@ class TemporalMapper:
         cluster_labels: dict = {},
         vertices = None,
         hover_text = {},
-        graph_layout: go.Layout = None,
+        graph_layout = None,
         layout_optimization: str = "barycenter",
         layout_optimization_kwargs: dict = {},
         edge_scaling: float = 1,
@@ -654,10 +669,12 @@ class TemporalMapper:
         hover_text : dict, default {}
             A dictionary with `hover_text[node]` containing a string with the text
             to display when hovering over vertex `node`.
+        graph_layout : plotly.graph_objects.Layout, default None
+            A plotly graph layout to use for the plot.
         edge_scaling : float, default 1
-            Scaling factor applied to edge weights or widths.
+            Scaling factor used to multiply edge weights.
         node_scaling : float, default 1
-            Scaling factor applied to node sizes.
+            Scaling factor used to multiply node sizes.
         node_size_bounds :  tuple[float], default (5,25)
             Size bounds to clip the node sizes to.
         edge_weight_bounds : tuple[float], default (0.1,1)
@@ -675,6 +692,16 @@ class TemporalMapper:
             The Axes object containing the temporal plot.
 
         """
+        ## [interactive] requirements
+        try:
+            import plotly.graph_objects as go
+            from temporalmapper.plotting import (
+                prepare_plotly_graph_objects
+            )
+        except ImportError as e:
+            warn("Interactive plotting requires plotly")
+            raise e
+        check_is_fitted(self, ["is_fitted_"])
         if vertices is None:
             vertices = self.G.nodes()
         G = self.G.subgraph(vertices)
@@ -710,7 +737,7 @@ class TemporalMapper:
                 hovermode = 'closest',
                 showlegend = False,
                 margin=dict(b=20,l=5,r=5,t=40),
-                xaxis=dict(showgrid=False, zeroline=False),
+                xaxis=dict(showgrid=True, zeroline=False),
                 yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
             )
 

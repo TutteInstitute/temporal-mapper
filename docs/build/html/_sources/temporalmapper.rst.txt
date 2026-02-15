@@ -1,7 +1,0 @@
-TemporalMapper
-================
-
-.. autoclass:: temporalmapper.TemporalMapper
-
-.. automodule:: temporalmapper
-   :members:

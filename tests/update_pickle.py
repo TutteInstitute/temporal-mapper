@@ -4,9 +4,6 @@ from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 
 import temporalmapper as tm
-import temporalmapper.utilities as tmutils
-import temporalmapper.weighted_clustering as tmwc
-
 def computeGraph(kwargs={}):
     """ Integration test from loading data to producing a graph. """
     data_time = np.load(data_folder+"genus1_test.npy")
@@ -26,7 +23,7 @@ def computeGraph(kwargs={}):
         slice_method='time',
         overlap = 0.5,
         rate_sensitivity=1,
-        kernel=tmwc.square,
+        kernel=tm.kernels.square,
     )
     TM.build()
     return TM

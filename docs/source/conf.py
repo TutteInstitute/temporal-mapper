@@ -9,7 +9,7 @@
 project = 'Temporal Mapper'
 copyright = '2024, Kaleb D Ruscitti'
 author = 'Kaleb D Ruscitti'
-release = '0.3.2'
+release = '1.2.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -30,3 +30,7 @@ exclude_patterns = ['**.ipynb_checkpoints']
 
 html_theme = 'sphinx_rtd_theme'
 #html_static_path = ['_static']
+
+
+import plotly.io as pio
+pio.renderers.default = 'sphinx_gallery'

@@ -8,13 +8,20 @@ which is built using the Density-Based Mapper algorithm.
 
 .. toctree::
     :maxdepth: 2
-    :caption: Contents:
+    :caption: Usage:
 
     installation
+    quickstart
     dbmapper_theory
     paramselection
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Visualizations:
+
     temporal-plot
     centroid-datamap
+    growth-map
 
 .. toctree::
     :maxdepth: 2

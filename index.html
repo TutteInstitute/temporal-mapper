@@ -1,0 +1,581 @@
+<!-- UNCLASSIFIED // OFFICIAL USE ONLY / NON CLASSIFIÉ//RÉSERVÉ À DES FINS OFFICIELLES  
+    Author: Kaleb D Ruscitti
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chronoscope of United Nations General Debate Transcripts</title>
+    <script src="https://cdn.plot.ly/plotly-3.3.0.min.js" charset="utf-8"></script>
+    <style>
+        #plotDiv {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        input[type=range] {
+            accent-color: #007bff;
+        }
+        
+        button {
+            padding: 6px 12px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            height: 100vh;
+        }
+        
+        .container {
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 90%;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 15px;
+            flex-shrink: 0;
+        }
+        
+        h1 {
+            color: #333;
+            font-size: 28px;
+        }
+        
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        label {
+            font-weight: 600;
+            color: #555;
+            font-size: 16px;
+        }
+        
+        select {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 2px solid #007bff;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        
+        select:hover {
+            border-color: #0056b3;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #0056b3;
+            box-shadow: 0 0 5px rgba(0, 86, 179, 0.5);
+        }
+        
+        .content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        .graph-section {
+            flex: 0 0 65%;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            min-width: 0;
+        }
+        
+        #plotDiv {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .info-text {
+            color: #666;
+            font-size: 14px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #007bff;
+            flex-shrink: 0;
+        }
+        
+        .panels-section {
+            flex: 1;
+            display: flex;
+            gap: 15px;
+            min-height: 0;
+        }
+        
+        .panel {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            background-color: #fafafa;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+            flex-shrink: 0;
+        }
+        
+        .panel-content {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.6;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        #treemapDiv {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .panel-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+        
+        .panel-controls label {
+            font-size: 14px;
+        }
+        
+        .panel-controls select {
+            flex: 1;
+            padding: 8px;
+            font-size: 14px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #007bff;
+            font-size: 16px;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Chronoscope of United Nations General Debate Transcripts </h1>
+            <h3>Demo of <a href=https://github.com/TutteInstitute/temporal-mapper>temporal-mapper</a> + <a href=https://github.com/tutteinstitute/toponymy>toponymy</a> for temporal topic modelling <h3 style="color:green;">UNCLASSIFIED // OFFICIAL USE ONLY</h3>
+            </h3>
+            <div class="controls">
+                <label for="layerSelect">Select Topic Layer:</label>
+                <select id="layerSelect"></select>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="graph-section">
+                <div id="plotDiv" class="loading">Loading data...</div>
+                <div class="info-text" id="infoText"></div>
+            </div>
+            
+            <div class="panels-section">
+                <div class="panel">
+                    <h3>Topic Growth Map</h3>
+                        <div class="panel-controls" style="flex-direction: column; align-items: stretch;">
+                            <label for="indexSlider">
+                                Time: <span id="sliderLabel"></span>
+                            </label>
+                            <input 
+                                type="range" 
+                                id="indexSlider" 
+                                min="0" 
+                                max="0" 
+                                step="1" 
+                                value="0"
+                                list="tickmarks"
+                                style="width: 100%;"
+                            />      
+                            <datalist id="tickmarks"></datalist>
+                        </div>
+                    <div id="treemapDiv" class="panel-content"></div>
+                </div>
+                
+                <div class="panel">
+                    <h3>Topic Hierarchy</h3>
+                    <div class="panel-content" id="hierarchyPanel">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+<script>
+    let graphsData = [];
+    const layerSelect = document.getElementById('layerSelect');
+    const indexSlider = document.getElementById('indexSlider');
+    const sliderLabel = document.getElementById('sliderLabel');
+    const plotDiv = document.getElementById('plotDiv');
+    const treemapDiv = document.getElementById('treemapDiv');
+    const infoText = document.getElementById('infoText');
+    const hierarchyPanel = document.getElementById('hierarchyPanel');
+    let currentTimeIndex = 0;
+    let currentLayer = null;
+    let networkNodeIndexMap = {};
+    let nodeIdToTopicName = {};
+    let treemapIndexMap = {};
+
+
+    // Load JSON file
+    async function loadGraphData(jsonPath = 'chronoscope.json') {
+        try {
+            const response = await fetch(jsonPath);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            graphsData = await response.json();
+            
+            // Populate layer selector
+            populateLayerSelector();
+            
+            // Set default to highest layer number
+            const highestLayer = Math.max(...graphsData.map(g => g.layer));
+            layerSelect.value = highestLayer;
+            currentLayer = highestLayer;
+
+            nodeIdToTopicName = {};
+            graphsData.forEach((graphData, layer)=>{
+                nodeIdToTopicName[layer] = {};
+                graphData.nodes.customdata.forEach((arr, i) => {
+                    const nodeId = arr[2];    // node_number
+                    const slice = arr[0];     // time index
+                    const cluster = arr[1];   // cluster number
+                    const label = arr[6] || `Node ${nodeId}`; 
+                    nodeIdToTopicName[layer][`${slice}:${cluster}`] = label;
+                });
+            });
+                
+            // Plot default layer
+            plotLayer(highestLayer);
+            
+        } catch (error) {
+            plotDiv.innerHTML = `<div class="loading" style="color: red;">Error loading data: ${error.message}</div>`;
+            console.error('Error loading graph data:', error);
+        }
+    }
+
+    function populateLayerSelector() {
+        // Sort layers numerically
+        const layers = graphsData.map(g => g.layer).sort((a, b) => a - b);
+        
+        layers.forEach(layer => {
+            const option = document.createElement('option');
+            option.value = layer;
+            option.textContent = `Layer ${layer}`;
+            layerSelect.appendChild(option);
+        });
+
+        // Add change event listener
+        layerSelect.addEventListener('change', (e) => {
+            currentLayer = parseInt(e.target.value);
+            plotLayer(currentLayer);
+        });
+    }
+
+    function updateSliderLabel(index, graphData) {
+        if (graphData.yaxis_ticks && graphData.yaxis_ticks[index]) {
+            sliderLabel.textContent = graphData.yaxis_ticks[index];
+        } else {
+            sliderLabel.textContent = index;
+        }
+    }
+    
+    function initializeSlider(graphData) {
+        const numIndices = graphData.yaxis_ticks.length;
+    
+        indexSlider.min = 0;
+        indexSlider.max = numIndices - 1;
+        indexSlider.value = 0;
+    
+        // Build tick marks
+        const datalist = document.getElementById("tickmarks");
+        datalist.innerHTML = "";
+    
+        graphData.yaxis_ticks.forEach((tick, i) => {
+            const option = document.createElement("option");
+            option.value = i;
+            option.label = tick;
+            datalist.appendChild(option);
+        });
+    
+        updateSliderLabel(0, graphData);
+    
+        indexSlider.oninput = null;
+        indexSlider.addEventListener("input", (e) => {
+            const index = parseInt(e.target.value);
+            updateSliderLabel(index, graphData);
+            plotTreemap(index);
+        });
+    
+        plotTreemap(0);
+    }
+
+
+    function handleIndexChange(e) {
+        plotTreemap(parseInt(e.target.value));
+    }
+    
+    function plotLayer(layer) {
+        // Find the graph data for this layer
+        const graphData = graphsData.find(g => g.layer === layer);
+        
+        if (!graphData) {
+            plotDiv.innerHTML = '<div class="loading" style="color: red;">Layer data not found</div>';
+            return;
+        }
+    
+        // Clear the loading class
+        plotDiv.classList.remove('loading');
+        plotDiv.innerHTML = '';
+    
+        // Combine edge and node traces
+        const traces = [
+            ...graphData.edges,
+            graphData.nodes
+        ];
+    
+        const layout = graphData.layout
+    
+        Plotly.newPlot(plotDiv, traces, layout, { 
+            responsive: true,
+            useResizeHandler: true
+        });
+        networkNodeIndexMap = {};
+        graphData.nodes.customdata.forEach((arr, i) => {
+                const nodeId = arr[2];    // node_number
+                const slice = arr[0];     // time index
+                const cluster = arr[1];   // cluster number
+                const label = arr[6] || `Node ${nodeId}`; 
+                networkNodeIndexMap[nodeId] = i;
+        });
+
+        plotDiv.on('plotly_hover', function(data) {
+            const point = data.points[0];
+            const nodeId = point.customdata[2];
+            const nodeSlice = point.customdata[0];
+            const nodeClusterNo = point.customdata[1];
+            const nodeKey = `${nodeSlice}:${nodeClusterNo}`
+            const treemapIndex = treemapIndexMap[nodeId];
+        
+            if (treemapIndex !== undefined) {
+                Plotly.Fx.hover(treemapDiv, [{
+                    curveNumber: 0,
+                    pointNumber: treemapIndex
+                }]);
+            }
+            updateHierarchyPanel(nodeKey, layer, graphsData.find(g => g.layer === currentLayer));
+        });
+        
+        plotDiv.on('plotly_unhover', function() {
+            Plotly.Fx.unhover(treemapDiv);
+            hierarchyPanel.innerHTML = "Hover a node to see hierarchy information.";
+        });
+    
+        const nodeCount = graphData.nodes.x.length;
+        const edgeCount = graphData.edges.length;
+        infoText.textContent = `Layer ${layer} • Nodes: ${nodeCount} • Edges: ${edgeCount}`;
+        
+        // Populate index selector with treemap data
+        if (graphData.treemap_data) {
+            initializeSlider(graphData);
+        }
+    }
+
+    function plotTreemap(indexValue) {
+        const graphData = graphsData.find(g => g.layer === currentLayer);
+        
+        if (!graphData || !graphData.treemap_data || !graphData.treemap_data[indexValue]) {
+            treemapDiv.innerHTML = '<div style="padding: 20px; color: red;">Treemap data not found</div>';
+            return;
+        }
+    
+        const data = graphData.treemap_data[indexValue];
+        
+        // Build treemap trace
+        const labels = [];
+        const parents = [];
+        const values = [];
+        const colors = [];
+        const nodeIds = [];
+        
+        // Add root
+        labels.push('All');
+        parents.push('');
+        values.push(0);
+        colors.push(0);
+        
+        // Add data
+        nodeIds.push(null); // for root
+        data.forEach(item => {
+            nodeIds.push(item.node_id);
+            labels.push(item.topic_name || `Node ${item.node}`);
+            parents.push('All');
+            values.push(item.count || 0);
+            // Use 0 if growth is null/NaN
+            colors.push(item.growth !== null && !isNaN(item.growth) ? item.growth : 0);
+        });
+        
+        const trace = {
+            type: 'treemap',
+            labels: labels,
+            parents: parents,
+            values: values,
+            customdata: nodeIds,
+            marker: {
+                colors: colors,
+                colorscale: 'RdYlGn',
+                cmid: 0,
+                showscale: true,
+                colorbar: {
+                    title: 'Growth'
+                }
+            },
+            hovertemplate: '<b>%{label}</b><br>Count: %{value}<br>Growth: %{color:.2f}<extra></extra>'
+        };
+        
+        const layout = {
+            title: `Treemap - Index ${indexValue}`,
+            margin: { b: 0, l: 0, r: 5, t: 0 }
+        };
+        
+        Plotly.react(treemapDiv, [trace], layout);
+        
+        treemapIndexMap = {};
+        nodeIds.forEach((nodeId, i) => {
+            treemapIndexMap[nodeId] = i + 1; 
+            // +1 because index 0 is root "All"
+        });  
+        treemapDiv.removeAllListeners?.();
+        treemapDiv.on('plotly_hover', function(data) {
+            const point = data.points[0];
+            const nodeId = point.customdata;
+        
+            const networkIndex = networkNodeIndexMap[nodeId];
+        
+            if (networkIndex !== undefined) {
+                Plotly.Fx.hover(plotDiv, [{
+                    curveNumber: graphData.edges.length, 
+                    // node trace is after edges
+                    pointNumber: networkIndex
+                }]);
+            }
+            const nodeData = graphData.nodes.customdata[nodeId];
+            const nodeKey = `${nodeData[0]}:${nodeData[1]}`;
+            updateHierarchyPanel(nodeKey, currentLayer, graphData);
+        });
+        
+        treemapDiv.on('plotly_unhover', function() {
+            Plotly.Fx.unhover(plotDiv);
+            hierarchyPanel.innerHTML = "Hover a node to see hierarchy information.";
+        });
+
+        
+    }
+    
+    function updateHierarchyPanel(nodeKey, layer, graphData) {
+        if (!graphData.cluster_trees) return;
+        // nodeKey is of the form "slice:cluster"
+        const [sliceStr, clusterStr] = nodeKey.split(':');
+        const hierarchyKey = `${layer}:${sliceStr}:${clusterStr}`
+        const timeIndex = parseInt(sliceStr);
+    
+        const tree = graphData.cluster_trees[timeIndex];
+        if (!tree) return;
+    
+        const info = tree[hierarchyKey];
+        if (!info) {
+            hierarchyPanel.innerHTML = `<b>No hierarchy data</b>`;
+            return;
+        }
+    
+        // Map parents/children to topic_name if available
+        function mapToTopicName(hierarchyKey){
+            const [layerStr, sliceStr, clusterStr] = hierarchyKey.split(":");
+            const node_layer = parseInt(layerStr);
+            return nodeIdToTopicName[node_layer][`${sliceStr}:${clusterStr}`];
+        }
+        const arrayThing = arr => arr.map(k => mapToTopicName[k] || k);
+        
+        const parents = info.parents.length
+            ? info.parents.map(p => `<li>${mapToTopicName(p)}</li>`).join('')
+            : "<li>None</li>";
+    
+        const children = info.children.length
+            ? info.children.map(c => `<li>${mapToTopicName(c)}</li>`).join('')
+            : "<li>None</li>";
+    
+        const clusterLabel = nodeIdToTopicName[layer][nodeKey] || nodeKey;
+    
+        hierarchyPanel.innerHTML = `
+            <b>Cluster:</b> ${clusterLabel} <br><br>
+            <b>Parents:</b>
+            <ul>${parents}</ul>
+            <b>Children:</b>
+            <ul>${children}</ul>
+        `;
+    }
+
+
+
+    // Load data when page loads
+    window.addEventListener('DOMContentLoaded', () => {
+        loadGraphData('chronoscope.json');
+    });
+
+</script>
+</body>
+</html>
