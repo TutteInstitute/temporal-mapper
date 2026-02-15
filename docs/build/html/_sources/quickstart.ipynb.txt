@@ -972,14 +972,6 @@
    "source": [
     "mapper.interactive_temporal_plot(layout_optimization='none')"
    ]
-  },
-  {
-   "cell_type": "code",
-   "execution_count": null,
-   "id": "f14d71e3",
-   "metadata": {},
-   "outputs": [],
-   "source": []
   }
  ],
  "metadata": {

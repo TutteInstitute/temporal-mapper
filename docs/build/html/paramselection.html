@@ -95,12 +95,10 @@
 <h1>Parameter Selection for Temporal Mapper<a class="headerlink" href="#Parameter-Selection-for-Temporal-Mapper" title="Link to this heading"></a></h1>
 <p>On this page, we will describe the critical parameters of <code class="docutils literal notranslate"><span class="pre">temporalmapper.TemporalMapper</span></code>, and give advice on how to select them for your data.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">temporalmapper</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tm</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">temporalmapper.utilities_</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tmutils</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">temporalmapper.weighted_clustering</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tmwc</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
@@ -138,7 +136,7 @@
 <p>To avoid having many artifacts, it is important that each time interval has enough points for the clustering to be reasonable. This gives a heuristic; if you need at least <span class="math notranslate nohighlight">\(s\)</span> points to trust the clustering algorithm, and you have <span class="math notranslate nohighlight">\(n\)</span> samples, then you can take <code class="docutils literal notranslate"><span class="pre">N_checkpoints</span></code> <span class="math notranslate nohighlight">\(\approxeq n/s\)</span>.</p>
 <p>For DBMapper, which is the default for <code class="docutils literal notranslate"><span class="pre">tm.TemporalMapper</span></code>, the clustering intervals get strictly larger than in default Mapper, and hence you can afford to choose a larger <code class="docutils literal notranslate"><span class="pre">N_checkpoints</span></code> then you would for Mapper.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><br/><span></span><span class="n">checkpoint_numbers</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span><span class="mi">25</span><span class="p">,</span><span class="mi">50</span><span class="p">,</span><span class="mi">100</span><span class="p">]</span>
@@ -157,10 +155,10 @@
         <span class="n">clusterer</span><span class="p">,</span>
         <span class="n">N_checkpoints</span> <span class="o">=</span> <span class="n">checkpoint_numbers</span><span class="p">[</span><span class="n">k</span><span class="p">],</span>
         <span class="n">neighbours</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
-        <span class="n">kernel</span><span class="o">=</span><span class="n">tmwc</span><span class="o">.</span><span class="n">square</span><span class="p">,</span>
+        <span class="n">kernel</span><span class="o">=</span><span class="n">tm</span><span class="o">.</span><span class="n">kernels</span><span class="o">.</span><span class="n">square</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">TM</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
-    <span class="n">tmutils</span><span class="o">.</span><span class="n">time_semantic_plot</span><span class="p">(</span><span class="n">TM</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">TM</span><span class="o">.</span><span class="n">temporal_plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">layout_optimization</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="n">cluster_labels</span><span class="o">=</span><span class="p">{})</span>
     <span class="n">xmin</span><span class="p">,</span><span class="n">xmax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">get_xlim</span><span class="p">()</span>
     <span class="n">ymin</span><span class="p">,</span><span class="n">ymax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">get_ylim</span><span class="p">()</span>
     <span class="n">axes</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">xmin</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span><span class="n">ymin</span><span class="o">+</span><span class="mf">0.1</span><span class="p">,</span><span class="sa">fr</span><span class="s1">&#39;$n$=</span><span class="si">{</span><span class="n">TM</span><span class="o">.</span><span class="n">N_checkpoints</span><span class="si">}</span><span class="s1">, $g$=</span><span class="si">{</span><span class="n">TM</span><span class="o">.</span><span class="n">g</span><span class="si">}</span><span class="s1">, $k$=</span><span class="si">{</span><span class="mi">50</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
@@ -197,15 +195,7 @@ bottlenecks in DBMapper, and therefore increasing <span class="math notranslate 
 <section id="Temporal-Kernel:-kernel">
 <h2>Temporal Kernel: <code class="docutils literal notranslate"><span class="pre">kernel</span></code><a class="headerlink" href="#Temporal-Kernel:-kernel" title="Link to this heading"></a></h2>
 <p>The choice of temporal kernel has two effects on the output of temporal mapper. The kernel defines weights for the samples, which are passed to the clustering algorithm, and which are used to weigh edges of the output graph.</p>
-<p>If you are using a clustering algorithm which does not support sample weights, and you are not using weighted edges on the Mapper graph, then there is no mathematical advantage to using a non-square kernel; in this case set <code class="docutils literal notranslate"><span class="pre">kernel=tmwc.square</span></code>, for a minor performance improvement.</p>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
-</pre></div>
-</div>
-</div>
+<p>If you are using a clustering algorithm which does not support sample weights, and you are not using weighted edges on the Mapper graph, then there is no mathematical advantage to using a non-square kernel; in this case set <code class="docutils literal notranslate"><span class="pre">kernel=tm.kernels.square</span></code>, for a minor performance improvement.</p>
 </section>
 </section>
 

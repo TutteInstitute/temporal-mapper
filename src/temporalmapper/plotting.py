@@ -496,11 +496,11 @@ def slice_df(mapper, idx):
     })
     return slice_df
 
-def treemap(mapper, index=None):
+def growth_map(mapper, index=None):
     try:
         import plotly.express as px
     except ImportError as e:
-        warn("Interactive treemap requires plotly")
+        warn("Interactive growth map requires plotly")
         raise e
 
     check_is_fitted(mapper, ["is_fitted_"])
@@ -514,18 +514,14 @@ def treemap(mapper, index=None):
         dataframe = slice_df(mapper, index)
         path = ['node']
 
-    try:
-        fig = px.treemap(
-            dataframe,
-            path=path,
-            values='count',
-            color='growth',
-            color_continuous_scale='RdYlGn',
-            color_continuous_midpoint=0,
-        )
-    except NameError as e:
-        warn("Interactive treemap requires plotly")
-        raise e
+    fig = px.treemap(
+        dataframe,
+        path=path,
+        values='count',
+        color='growth',
+        color_continuous_scale='RdYlGn',
+        color_continuous_midpoint=0,
+    )
         
 
     fig.update_traces(
