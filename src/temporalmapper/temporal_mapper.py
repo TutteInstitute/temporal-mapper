@@ -175,7 +175,8 @@ class TemporalMapper(BaseEstimator):
         self.clusterer = clusterer
         self.clusters = None
         self.inclusion_threshold = inclusion_threshold
-        self.g = overlap
+        self.overlap = overlap
+        self.g = self.overlap
         self.density = None
         self.rate = None
         self.sensitivity = rate_sensitivity
