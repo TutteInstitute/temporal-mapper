@@ -179,7 +179,8 @@ class TemporalMapper(BaseEstimator):
         self.g = self.overlap
         self.density = None
         self.rate = None
-        self.sensitivity = rate_sensitivity
+        self.rate_sensitivity = rate_sensitivity
+        self.sensitivity = self.rate_sensitivity
         self.kernel = kernel
         self.kernel_params = kernel_params
         self.G = nx.DiGraph()
