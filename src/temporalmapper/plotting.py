@@ -663,6 +663,6 @@ def prepare_plotly_graph_objects(
             color=colours
         ),
         text=labels,
-        customdata=[custom_data[node] for node in G.nodes()],
+        customdata=[custom_data.get(node,None) for node in G.nodes()],
     )
     return edge_traces, node_trace
