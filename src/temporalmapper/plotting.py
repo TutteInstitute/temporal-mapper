@@ -593,6 +593,7 @@ def prepare_plotly_graph_objects(
     mapper,
     positions,
     hover_text = {},
+    custom_data = {},
     edge_scaling: float = 1,
     node_scaling: float = 1,
     node_size_bounds: tuple[float] = (5,25),
@@ -661,6 +662,7 @@ def prepare_plotly_graph_objects(
             sizemode='area',
             color=colours
         ),
-        text=labels
+        text=labels,
+        customdata=[custom_data[node] for node in G.nodes()],
     )
     return edge_traces, node_trace
