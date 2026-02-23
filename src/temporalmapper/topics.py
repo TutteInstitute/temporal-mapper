@@ -1,8 +1,7 @@
 import networkx as nx
 import numpy as np
-from scipy.stats import multinomial
 
-def topic_contract(mapper, v):
+def topic_contract(mapper, v, dir='forward'):
     G = mapper.G.to_undirected()
     neighbours = G.neighbors(v)
     d = len([n for n in neighbours])

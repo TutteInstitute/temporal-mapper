@@ -305,6 +305,8 @@ class TemporalMapper(BaseEstimator):
         )
         self.clusters = clusters
         self.weights = weights
+        if not np.all(np.any(weights != -2, axis=1)):
+            print("Warning: Your mapper params do not form a cover.")
         return clusters
 
     def add_vertices(self, y_data=1):
@@ -548,6 +550,13 @@ class TemporalMapper(BaseEstimator):
         nx.set_node_attributes(G, topic, 'topic')
         for v in nx.topological_sort(G):
             topic_contract(self, v)
+
+        # now rename everything from 0 onwards
+        topics = nx.get_node_attributes(G, 'topic')
+        unique_vals = sorted(set(topics.values()))
+        remap = {old: new for new, old in enumerate(unique_vals)}
+        topics = {k: remap[v] for k, v in topics.items()}
+        nx.set_node_attributes(G,topics,'topic')
 
     def temporal_plot(
         self,
