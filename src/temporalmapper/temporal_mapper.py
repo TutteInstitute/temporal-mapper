@@ -86,7 +86,7 @@ class TemporalMapper(BaseEstimator):
         data: npt.NDArray | None=None, # compatibility
         clusterer: ClusterMixin=None,
         N_checkpoints: int=None,
-        neighbours: int=50,
+        neighbours: int=5,
         overlap: float=0.5,
         inclusion_threshold: float=0.01,
         checkpoints: list[float]=None,
@@ -201,6 +201,13 @@ class TemporalMapper(BaseEstimator):
 
     def _compute_knn(self):
         """Run sklearn NearestNeighbours to compute knns."""
+        if not isinstance(self.k, int) or self.k <= 0:
+            raise ValueError("'k' must be a positive integer.")
+        if self.k > self.n_samples:
+            raise ValueError(
+                f"'k' (neighbours={self.k}) must be <= n_samples = "
+                f"{self.n_samples}."
+            )
         if self.verbose:
             print("Computing k nearest neighbours...")
         std_time = np.copy(self.time)
@@ -276,7 +283,7 @@ class TemporalMapper(BaseEstimator):
         cluster of -2 means unclustered.
         """
         if self.clusterer is None:
-            raise AttributeError("`self.clusterer is None`")
+            raise ValueError("`self.clusterer is None`")
         if self.checkpoints is None:
             self._compute_checkpoints()
         if self.density is None:
@@ -349,8 +356,12 @@ class TemporalMapper(BaseEstimator):
         time_centers = np.zeros(len(slices))
         bin_width = np.zeros(len(slices))
         for k, slice_ in enumerate(slices):
-            time_centers[k] = np.median(self.time[slice_])
-            bin_width[k] = np.max(self.time[slice_]) - np.min(self.time[slice_])
+            if np.size(slice_)==0:
+                time_centers[k] = self.checkpoints[k]
+                bin_width[k] = 0
+            else:
+                time_centers[k] = np.median(self.time[slice_])
+                bin_width[k] = np.max(self.time[slice_]) - np.min(self.time[slice_])
 
         for i in trange(
             self.N_checkpoints - 1, disable=self.disable, desc="Adding edges"

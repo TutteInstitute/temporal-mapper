@@ -132,6 +132,9 @@ def weighted_clusters(
         slice_ = (weights[idx] >= eps).nonzero()
         slice_ = np.squeeze(slice_)
         data_slice = data[slice_]
+        if data_slice.shape[0]==0:
+            clusters[idx, slice_] = -2
+            continue
         if data[slice_].ndim == 1:
             data_slice = data_slice.reshape(-1, 1)
 
