@@ -8,18 +8,15 @@ class MapperClusterer():
             self,
             base_clusterer,
             mapper_params,
-            time, data,
         ):
         self.base_clusterer = base_clusterer
         self.mapper = TemporalMapper(
-            time=time,
-            data=data,
             clusterer=base_clusterer,
             **mapper_params
         )
 
     def fit(self, time, data):
-        self.mapper.fit()
+        self.mapper.fit(time, data)
         self.mapper.assign_topics()
         topics = nx.get_node_attributes(self.mapper.G, 'topic')
         dist = cdist(
@@ -33,6 +30,7 @@ class MapperClusterer():
         clusters = np.ones((data.shape),dtype=int)*-1
         for pt,t in enumerate(pt_max_cluster):
             topics[f'{t}:-2'] = -2
+            topics[f'{t}:-1'] = -1
             c = self.mapper.clusters[t,pt]
             clusters[pt] = topics[f'{t}:{c}']
         self.clusters = clusters

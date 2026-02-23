@@ -82,9 +82,9 @@ class TemporalMapper(BaseEstimator):
 
     def __init__(
         self,
-        time: npt.NDArray,
-        data: npt.NDArray,
-        clusterer: ClusterMixin,
+        time: npt.NDArray | None=None, # backwards
+        data: npt.NDArray | None=None, # compatibility
+        clusterer: ClusterMixin=None,
         N_checkpoints: int=None,
         neighbours: int=50,
         overlap: float=0.5,
@@ -134,23 +134,14 @@ class TemporalMapper(BaseEstimator):
             Does what you expect.
 
         """
-        if np.size(time) != np.shape(data)[0]:
-            raise AttributeError(
-                "Number of datapoints",
-                np.shape(data)[0],
-                "does not equal number of timestamps",
-                np.size(time),
-            )
-        self.time = np.array(time)
-        self.n_samples = np.size(time)
-        if len(data.shape) == 1:
-            data = data.reshape(-1, 1)
-        self.n_components = data.shape[1]
-        if issparse(data):
-            self.scaler = StandardScaler(copy=False, with_mean=False)
-        else:
-            self.scaler = StandardScaler(copy=False)
-        self.data = self.scaler.fit_transform(data)
+        if time is not None:
+            self.time = np.array(time)
+
+        if data is not None:
+            if len(data.shape) == 1:
+                data = data.reshape(-1, 1)
+            self.data = np.array(data)
+            
         self.checkpoints = checkpoints
         if slice_method in ["time", "data"]:
             self.slice_method = slice_method
@@ -284,6 +275,8 @@ class TemporalMapper(BaseEstimator):
         associated bin. A convention here is that a cluster of -1 means noise, and a
         cluster of -2 means unclustered.
         """
+        if self.clusterer is None:
+            raise AttributeError("`self.clusterer is None`")
         if self.checkpoints is None:
             self._compute_checkpoints()
         if self.density is None:
@@ -291,7 +284,7 @@ class TemporalMapper(BaseEstimator):
         if self.cbeta is None:
             self._compute_kernel_width()
         if self.verbose:
-            print("Clustering at each time slice...")
+            print("Clustering at each time slice.")
         clusters, weights = weighted_clusters(
             self.data,
             self.time,
@@ -306,6 +299,8 @@ class TemporalMapper(BaseEstimator):
         self.clusters = clusters
         self.weights = weights
         if not np.all(np.any(weights != -2, axis=1)):
+            # in theory this shouldn't happen, but it does sometimes
+            # (todo)
             print("Warning: Your mapper params do not form a cover.")
         return clusters
 
@@ -408,19 +403,54 @@ class TemporalMapper(BaseEstimator):
         return self
 
     def build(self):
-        """Run the fuzzy mapper algorithm to construct the temporal graph."""
+        """ Construct the density-based Mapper graph """
+        # quick data prep
+        self.n_samples = np.size(self.time)
+        data = self.data
+        if len(data.shape) == 1:
+            data = data.reshape(-1, 1)
+        self.n_components = data.shape[1]
+        if issparse(data):
+            self.scaler = StandardScaler(copy=False, with_mean=False)
+        else:
+            self.scaler = StandardScaler(copy=False)
+        self.data = self.scaler.fit_transform(data)
+        # dbmapper
         if self.clusters is None:
             self._cluster()
         self.add_vertices()
         self.build_adj_matrix()
         self.add_edges()
+        # extra attributes
         self.populate_node_attrs()
         self.populate_edge_attrs()
         self.is_fitted_ = True
         return self
 
-    def fit(self):
-        """SKlearn naming convention."""
+    def fit(
+            self,
+            time: npt.NDArray=None,
+            X: npt.NDArray=None,
+        ):
+        """ Construct the density-based Mapper graph """
+        # Backward compatibility fallback
+        if time is None and X is None:
+            time = self.time
+            X = self.data
+    
+        if time is None or X is None:
+            raise AttributeError("`time` and `data` must be provided to fit().")
+    
+        if np.size(time) != np.shape(X)[0]:
+            raise ValueError(
+                "Number of datapoints",
+                np.shape(data)[0],
+                "does not equal number of timestamps",
+                np.size(time),
+            )
+        self.time = time
+        self.data = X
+        
         return self.build()
 
     def populate_edge_attrs(self):
@@ -556,7 +586,7 @@ class TemporalMapper(BaseEstimator):
         unique_vals = sorted(set(topics.values()))
         remap = {old: new for new, old in enumerate(unique_vals)}
         topics = {k: remap[v] for k, v in topics.items()}
-        nx.set_node_attributes(G,topics,'topic')
+        nx.set_node_attributes(G, topics, 'topic')
 
     def temporal_plot(
         self,
