@@ -12,4 +12,5 @@ src/temporalmapper/kernels.py
 src/temporalmapper/layout.py
 src/temporalmapper/plotting.py
 src/temporalmapper/temporal_mapper.py
+src/temporalmapper/topics.py
 src/temporalmapper/utilities.py

@@ -412,8 +412,8 @@ class TemporalMapper(BaseEstimator):
         self.add_vertices()
         self.build_adj_matrix()
         self.add_edges()
-        self.populate_edge_attrs()
         self.populate_node_attrs()
+        self.populate_edge_attrs()
         self.is_fitted_ = True
         return self
 
@@ -423,6 +423,7 @@ class TemporalMapper(BaseEstimator):
 
     def populate_edge_attrs(self):
         """Add src_weight and dst_weight properties to every edge."""
+        drift = {}
         for u, v, d in self.G.edges(data=True):
             u_outdeg = self.G.out_degree(u, weight="weight")
             v_indeg = self.G.in_degree(v, weight="weight")
@@ -436,6 +437,10 @@ class TemporalMapper(BaseEstimator):
             percentage_inweight = d["weight"] / v_indeg
             percentage_inweight = round(percentage_inweight, 2)  # as above
             self.G[u][v]["dst_weight"] = percentage_inweight
+
+            centroids = nx.get_node_attributes(self.G, 'centroid')
+            drift[(u,v)] = np.linalg.norm(centroids[u]-centroids[v])
+        nx.set_edge_attributes(self.G, drift, 'drift')
 
     def populate_node_attrs(self, labels=None):
         """Add node attributes (dictionaries) to the vertices of the graph.
@@ -455,9 +460,9 @@ class TemporalMapper(BaseEstimator):
             size = np.size(self.get_vertex_data(node))
             size_list[node] = size
             pt_idx = self.get_vertex_data(node)
-            centroids[node] = [
+            centroids[node] = np.array([
                 np.mean(self.data[pt_idx, d]) for d in range(self.n_components)
-            ]
+            ])
         nx.set_node_attributes(self.G, centroids, "centroid")
         nx.set_node_attributes(self.G, size_list, "count")
 
@@ -532,6 +537,17 @@ class TemporalMapper(BaseEstimator):
             pca = PCA(n_components=1)
             y_initial_pos = pca.fit_transform(self.data)
         return y_initial_pos
+    
+    def assign_topics(self):
+        from temporalmapper.topics import topic_contract
+        # initialize every node as its own toipc:
+        G = self.G
+        topic = {
+            v:i for i,v in enumerate(G.nodes())
+        }
+        nx.set_node_attributes(G, topic, 'topic')
+        for v in nx.topological_sort(G):
+            topic_contract(self, v)
 
     def temporal_plot(
         self,

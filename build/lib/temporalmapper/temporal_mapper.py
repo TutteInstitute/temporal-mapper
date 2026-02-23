@@ -460,7 +460,6 @@ class TemporalMapper(BaseEstimator):
             ]
         nx.set_node_attributes(self.G, centroids, "centroid")
         nx.set_node_attributes(self.G, size_list, "count")
-        nx.set_node_attributes(self.G, compute_growth(self.G), "growth")
 
         # Compute cluster colours that correspond to datamapplot colours.
         if self.n_components != 2:
@@ -533,6 +532,17 @@ class TemporalMapper(BaseEstimator):
             pca = PCA(n_components=1)
             y_initial_pos = pca.fit_transform(self.data)
         return y_initial_pos
+    
+    def assign_topics(self):
+        from topics import multinomial_edge_contract
+        # initialize every node as its own toipc:
+        G = self.G
+        topic = {
+            v:i for i,v in enumerate(G.nodes())
+        }
+        nx.set_node_attributes(G, topic, 'topic')
+        for v in nx.topological_sort(G):
+            multinomial_edge_contract(self, v)
 
     def temporal_plot(
         self,
