@@ -34,5 +34,5 @@ jobs:
     - name: Test with pytest
       run: |
         pushd ./tests
-        pytest mapper.py
+        pytest mapper.py plotting.py clustering.py
         popd

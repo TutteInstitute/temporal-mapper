@@ -24,7 +24,7 @@ def plotInteractiveTemporal(kwargs={}):
 
 def plotTreemap(kwargs={}):
     mapper = loadMapper(data_folder+'TMTest.pkl')
-    tm.plot.treemap(mapper)
+    tm.plot.growth_map(mapper)
     return 0
 
 def plotSliceograph(kwargs={}):

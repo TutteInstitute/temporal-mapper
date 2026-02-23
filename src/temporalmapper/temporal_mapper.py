@@ -455,7 +455,7 @@ class TemporalMapper(BaseEstimator):
         if np.size(time) != np.shape(X)[0]:
             raise ValueError(
                 "Number of datapoints",
-                np.shape(data)[0],
+                np.shape(X)[0],
                 "does not equal number of timestamps",
                 np.size(time),
             )
