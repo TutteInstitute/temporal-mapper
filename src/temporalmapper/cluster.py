@@ -88,7 +88,8 @@ class MapperClusterer(ClusterMixin, BaseEstimator):
             clusterer=clone(self.base_clusterer),
             **(self.mapper_params or {})
         )
-        self.mapper_.fit(time, data)
+        self.mapper_.fit(X)
+        print(self.mapper_.G)
         self.mapper_.assign_topics()
         topics = nx.get_node_attributes(self.mapper_.G, 'topic')
         dist = cdist(
