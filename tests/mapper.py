@@ -4,6 +4,8 @@ import networkx as nx
 import pickle as pkl
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
+from sklearn.utils.estimator_checks import check_estimator
+from sklearn.cluster import AgglomerativeClustering
 
 import temporalmapper as tm
 import temporalmapper.plotting as tmplot
@@ -67,3 +69,16 @@ def test_genus1Correctness():
         loops += 1
     assert loops == 1
 
+def test_sklearnCompliance():
+    mapper = tm.Mapper(
+        clusterer = AgglomerativeClustering(
+            linkage='single',
+            distance_threshold = 0.75,
+            n_clusters = None,
+        ),
+        n_slices = 5,
+    )
+
+    results = check_estimator(mapper)
+    for check in results:
+        assert (check['status']=='passed')^check['expected_to_fail'] == True

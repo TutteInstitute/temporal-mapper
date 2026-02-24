@@ -27,9 +27,6 @@ from temporalmapper.plotting import (
 
 from temporalmapper.layout import compute_time_semantic_positions
 from temporalmapper.kernels import square
-from temporalmapper.analytics import (
-    compute_growth,
-)
 
 """TemporalMapper class 
 minimal usage example: 
@@ -177,9 +174,11 @@ class TemporalMapper(BaseEstimator):
 
     def build(self):
         """ Construct the density-based Mapper graph """
-        X = np.vstack([self.data.flatten(), self.time.flatten()]).T
+        X = np.hstack((self.data, self.time.reshape(-1,1)))
         self._mapper.fit(X)
 
+        self.n_samples = X.shape[0]
+        self.n_components = self.data.shape[1]
         self.populate_node_attrs()
         self.populate_edge_attrs()
         
@@ -197,8 +196,7 @@ class TemporalMapper(BaseEstimator):
                 " found array with 0 feature(s). "
                 f"Input X must have at least 2 columns, 1 feature(s) + time"
             )
-        self.n_samples = X.shape[0]
-        self.n_components = data.shape[1]
+
 
         self._mapper = self._mapper.fit(X)
         
