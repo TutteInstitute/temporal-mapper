@@ -1,5 +1,6 @@
 import numpy as np
 from tqdm import tqdm
+from warnings import warn
 
 def std_sigmoid(x):
     mu = np.mean(x)
@@ -109,9 +110,11 @@ def weighted_clusters(
     weights = np.zeros((np.size(checkpoints), np.size(time)))
 
     cp_with_ends = [np.amin(time)] + list(checkpoints) + [np.amax(time)]
+    bin_widths = []
     for idx, t0 in enumerate(checkpoints):
         bin_width = (cp_with_ends[idx + 2] - cp_with_ends[idx]) / 2
         bin_width *= 1 / (2 - overlap)
+        bin_widths.append(bin_width)
         if kernel_params == None:
             for i in np.arange(np.size(time)):
                 weights[idx, i] = kernel(
@@ -131,9 +134,20 @@ def weighted_clusters(
                 )
         slice_ = (weights[idx] >= eps).nonzero()
         slice_ = np.squeeze(slice_)
+        if np.shape(slice_) == ():
+            # This is when there is only 1 point in the slice.
+            slice_ = [slice_]
+        if np.size(slice_) == 0:
+            warn(f"The slice at index {idx} is empty.")
+            slice_ = []
+
         data_slice = data[slice_]
         if data_slice.shape[0]==0:
             clusters[idx, slice_] = -2
+            continue
+        if data_slice.shape[0]==1:
+            # Only one point, assign it to its own cluster.
+            clusters[idx, slice_] = 0
             continue
         if data[slice_].ndim == 1:
             data_slice = data_slice.reshape(-1, 1)
@@ -152,5 +166,5 @@ def weighted_clusters(
             cluster_labels = clusterer.fit(data_slice).labels_
 
         clusters[idx, slice_] = cluster_labels
-
+    
     return clusters, weights

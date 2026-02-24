@@ -305,7 +305,7 @@ class TemporalMapper(BaseEstimator):
         )
         self.clusters = clusters
         self.weights = weights
-        if not np.all(np.any(weights != -2, axis=1)):
+        if not np.all(np.any(weights > 0, axis=1)):
             # in theory this shouldn't happen, but it does sometimes
             # (todo)
             print("Warning: Your mapper params do not form a cover.")
