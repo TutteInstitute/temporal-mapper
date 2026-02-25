@@ -296,8 +296,13 @@ class TemporalMapper(BaseEstimator):
             cluster_positions = np.zeros((len(self.G.nodes()), 2))
             for k, pt in enumerate(centroids.values()):
                 cluster_positions[k] = pt
-            colours = np.array(palette_from_datamap(self.data, cluster_positions))
-            clr_dict = {node: colours[k] for k, node in enumerate(centroids.keys())}
+            try:
+                colours = np.array(palette_from_datamap(self.data, cluster_positions))
+                clr_dict = {node: colours[k] for k, node in enumerate(centroids.keys())}
+            except Exception as e:
+                # this can happen with really small datasets
+                warn(f"Generating colours with datamapplot failed: {e}")
+                clr_dict = {node: "#000000" for node in self.G.nodes()}
 
         nx.set_node_attributes(self.G, clr_dict, "colour")
         return 0

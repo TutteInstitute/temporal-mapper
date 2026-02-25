@@ -75,7 +75,6 @@ class Mapper(BaseEstimator):
         self._compute_density(data, time)
         self._compute_weights(data, time)
         self._cluster(data, time)
-        self.graph_ = nx.DiGraph()
         self._add_vertices()
         self._build_adjacency_matrix(time)
         self._add_edges()
@@ -161,10 +160,12 @@ class Mapper(BaseEstimator):
         cp_with_ends = [np.amin(time)] + list(self.midpoints_) + [np.amax(time)]
         bin_widths = []
         slices = []
+        gomic = []
         for idx, t0 in enumerate(self.midpoints_):
             bin_width = (cp_with_ends[idx + 2] - cp_with_ends[idx]) / 2
             bin_width *= 1 / (2 - self.overlap)
             bin_widths.append(bin_width)
+            gomic.append((t0-bin_width, t0+bin_width))
             for i in np.arange(np.size(time)):
                 weights[idx, i] = self.kernel(
                     t0,
@@ -185,7 +186,8 @@ class Mapper(BaseEstimator):
         if not np.all(np.any(weights > 0, axis=1)):
             # in theory this shouldn't happen, but it does sometimes (todo)
             warn("Your mapper params do not form a cover.")
-            
+
+        self.gomic_ = gomic
         self.weights_ = weights
         self.slices_ = slices
             
@@ -236,10 +238,15 @@ class Mapper(BaseEstimator):
         vertices in the networkx graph ``self.graph_``.
         """
         check_is_fitted(self, ["slices_","labels_"])
+        self.graph_ = nx.DiGraph()
         node_counter = 0
         for i in range(self.n_slices):
             slice_idx = self.slices_[i]
-            clusters = self.labels_[i][slice_idx]
+            try:
+                clusters = self.labels_[i][slice_idx]
+            except IndexError:
+                # This occurs for an empty slice.
+                clusters = {-1}
             for l, val in enumerate(np.unique(clusters)):
                 if (val == -1):
                     # No vertex for noise points
@@ -312,7 +319,7 @@ class Mapper(BaseEstimator):
   
     def _add_edges(self):
         """ Use the adj. matrix to add the weighted edges """
-        check_is_fitted(self, "adj_matrix_")
+        check_is_fitted(self, ["adj_matrix_"])
         i = j = 0
         verts = np.array(self.graph_.nodes())
         for row in self.adj_matrix_:

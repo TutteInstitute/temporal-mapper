@@ -260,6 +260,7 @@ def time_semantic_plot(
         elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
         if "arrows" in edge_kwargs:
             arrows = edge_kwargs.pop("arrows")
+        import matplotlib.patches as mpatches
         nx.draw_networkx_edges(
             G,
             pos,

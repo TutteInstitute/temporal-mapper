@@ -95,8 +95,6 @@ class MapperClusterer(ClusterMixin, BaseEstimator):
             self.mapper_.checkpoints.reshape(-1,1),
             time.reshape(-1,1)
         )
-        # The first column of 'dist' is the time index
-        # not a sample, so it must be dropped
         pt_max_cluster = np.argmin(
             dist,
             axis=0
@@ -107,6 +105,18 @@ class MapperClusterer(ClusterMixin, BaseEstimator):
             topics[f'{t}:-1'] = -1
             c = self.mapper_.clusters[t,pt]
             clusters[pt] = topics[f'{t}:{c}']
-        self.labels_ = clusters
+        # It can happen that a cluster has no points
+        # That are strongly in that cluster but no others
+        # In this case, a cluster label can have no points,
+        # So we quickly reindex just to be safe.
+        unique = np.unique(clusters)
+        non_noise = unique[unique != -1] 
+        remap = {old: new for new, old in enumerate(sorted(non_noise))}
+        # Apply remapping
+        new_labels = np.array([
+            -1 if x == -1 else remap[x]
+            for x in clusters
+        ])
+        self.labels_ = new_labels
         
         return self
