@@ -24,7 +24,9 @@ from temporalmapper.utilities import(
 from temporalmapper.plotting import (
     time_semantic_plot,
 )
-
+from temporalmapper.mapper import (
+    Mapper,
+)
 from temporalmapper.layout import compute_time_semantic_positions
 from temporalmapper.kernels import square
 

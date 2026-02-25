@@ -73,6 +73,7 @@ class Mapper(BaseEstimator):
 
         self._compute_midpoints(time)
         self._compute_density(data, time)
+        self._compute_weights(data, time)
         self._cluster(data, time)
         self.graph_ = nx.DiGraph()
         self._add_vertices()
@@ -153,35 +154,80 @@ class Mapper(BaseEstimator):
         )
         self.density_ = std_sigmoid(smoothed_densities)
         return self.density_
-    
+
+    def _compute_weights(self, data, time):
+        check_is_fitted(self, ["midpoints_", "density_"])
+        weights = np.zeros((np.size(self.midpoints_), np.size(time)))
+        cp_with_ends = [np.amin(time)] + list(self.midpoints_) + [np.amax(time)]
+        bin_widths = []
+        slices = []
+        for idx, t0 in enumerate(self.midpoints_):
+            bin_width = (cp_with_ends[idx + 2] - cp_with_ends[idx]) / 2
+            bin_width *= 1 / (2 - self.overlap)
+            bin_widths.append(bin_width)
+            for i in np.arange(np.size(time)):
+                weights[idx, i] = self.kernel(
+                    t0,
+                    time[i],
+                    self.density_[i],
+                    bin_width,
+                    params=self.kernel_params or {},
+                )
+            slice_ = (weights[idx] >= self.inclusion_threshold).nonzero()
+            slice_ = np.squeeze(slice_)
+            if np.shape(slice_) == ():
+                # This is when there is only 1 point in the slice.
+                slice_ = [slice_]
+            if np.size(slice_) == 0:
+                warn(f"The slice at index {idx} is empty.")
+                slice_ = []
+            slices.append(slice_)
+        if not np.all(np.any(weights > 0, axis=1)):
+            # in theory this shouldn't happen, but it does sometimes (todo)
+            warn("Your mapper params do not form a cover.")
+            
+        self.weights_ = weights
+        self.slices_ = slices
+            
     def _cluster(self, data, time):
         """For each slice, use the clustering algorithm to cluster the points in the
         slice. A convention here is that a cluster of -1 means noise, and a
         cluster of -2 means unclustered.
         """
-        check_is_fitted(self, ["midpoints_", "density_"])
+        check_is_fitted(self, ["slices_", "density_", "weights_"])
         if self.verbose:
             print("Clustering at each time slice.")
-        clusters, weights = weighted_clusters(
-            data,
-            time,
-            self.midpoints_,
-            self.density_ / np.median(self.density_),
-            clone(self.clusterer),
-            self.kernel,
-            self.overlap,
-            self.kernel_params,
-            eps=self.inclusion_threshold,
-        )
-        self.labels_ = clusters
-        self.weights_ = weights
-        if not np.all(np.any(weights > 0, axis=1)):
-            # in theory this shouldn't happen, but it does sometimes (todo)
-            warn("Your mapper params do not form a cover.")
 
-        slices = [(self.labels_[i] != -2).nonzero()[0] for i in range(self.n_slices)]
-        self.slices_ = slices
-            
+        clusters = np.ones((np.size(self.midpoints_), np.size(time)), dtype=int) * -2
+        for idx, slice_ in enumerate(self.slices_):
+            data_slice = data[slice_]
+            if data_slice.shape[0]==0:
+                clusters[idx, slice_] = -2
+                continue
+            if data_slice.shape[0]==1:
+                # Only one point, assign it to its own cluster.
+                clusters[idx, slice_] = 0
+                continue
+            if data[slice_].ndim == 1:
+                data_slice = data_slice.reshape(-1, 1)
+    
+            if ((self.weights_ < 1) & (0 < self.weights_)).any():
+                try:
+                    cluster_labels = clone(self.clusterer).fit(
+                        data_slice, sample_weight=self.weights_[idx, slice_]
+                    ).labels_
+                except:
+                    print(
+                        "Clusterer does not accept sample weights.",
+                        "Falling back to unweighted clustering."
+                    )
+                    cluster_labels = clone(self.clusterer).fit(data_slice).labels_
+            else:
+                cluster_labels = clone(self.clusterer).fit(data_slice).labels_
+    
+            clusters[idx, slice_] = cluster_labels
+     
+        self.labels_ = clusters            
         return self.labels_
 
     def _add_vertices(self):
