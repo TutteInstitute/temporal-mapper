@@ -187,11 +187,11 @@ class TemporalMapper(BaseEstimator):
         self.is_fitted_ = True
         return self
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, time_index=-1):
         X = check_array(X)
         self.n_features_in_ = X.shape[1]
-        time = X[:, -1]
-        data = np.delete(X, -1, axis=1)
+        time = X[:, time_index]
+        data = np.delete(X, time_index, axis=1)
         if data.shape[1] == 0:
             raise ValueError(
                 f"After removing last column (time),"

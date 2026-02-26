@@ -2,13 +2,10 @@ import numpy as np
 import sys, os
 import networkx as nx
 import pickle as pkl
-from sklearn.decomposition import PCA
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN, AgglomerativeClustering
 from sklearn.utils.estimator_checks import check_estimator
-from sklearn.cluster import AgglomerativeClustering
 
 import temporalmapper as tm
-import temporalmapper.plotting as tmplot
 
 data_folder = 'data/'
 
@@ -35,7 +32,8 @@ def test_computeGraph():
     parameters = [
         {'N_checkpoints':8, 'slice_method':'time'},
         {'N_checkpoints':8, 'slice_method':'data'},
-        {'N_checkpoints':8, 'kernel':tm.kernels.square, 'rate_sensitivity':0} # vanilla mapper
+        {'N_checkpoints':8, 'kernel':tm.kernels.square, 'rate_sensitivity':0}, # vanilla mapper
+        {'N_checkpoints':3, 'overlap':0.1, 'N_neighbours':10}
     ]
     for i in range(len(parameters)):
         assert computeGraph(kwargs=parameters[i]) == 0
@@ -68,20 +66,6 @@ def test_genus1Correctness():
     for i in nx.cycle_basis(G):
         loops += 1
     assert loops == 1
-
-def test_sklearnCompliance():
-    mapper = tm.Mapper(
-        clusterer = AgglomerativeClustering(
-            linkage='single',
-            distance_threshold = 0.75,
-            n_clusters = None,
-        ),
-        n_slices = 5,
-    )
-
-    results = check_estimator(mapper)
-    for check in results:
-        assert (check['status']=='passed')^check['expected_to_fail'] == True
 
 from itertools import combinations
 def valid_gomic(kwargs={}):

@@ -21,6 +21,7 @@ from temporalmapper.layout import (
 )
 from temporalmapper.analytics import (
     nodes_in_slice,
+    compute_growth,
 )
 
 def squarify_text(text):
@@ -259,6 +260,7 @@ def time_semantic_plot(
         elarge = [(u, v) for (u, v, d) in G.edges(data=True)]
         if "arrows" in edge_kwargs:
             arrows = edge_kwargs.pop("arrows")
+        import matplotlib.patches as mpatches
         nx.draw_networkx_edges(
             G,
             pos,
@@ -477,7 +479,7 @@ def write_edge_bundling_datashader(TG, pos, vertices=None):
 def slice_df(mapper, idx):
     G = mapper.G
     counts = nx.get_node_attributes(G, 'count')
-    growth = nx.get_node_attributes(G, 'growth')
+    growth = compute_growth(mapper.G)
     
     nodes = nodes_in_slice(mapper, idx)
     top_n = 5

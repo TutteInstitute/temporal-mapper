@@ -8,8 +8,10 @@ src/temporal_mapper.egg-info/requires.txt
 src/temporal_mapper.egg-info/top_level.txt
 src/temporalmapper/__init__.py
 src/temporalmapper/analytics.py
+src/temporalmapper/cluster.py
 src/temporalmapper/kernels.py
 src/temporalmapper/layout.py
+src/temporalmapper/mapper.py
 src/temporalmapper/plotting.py
 src/temporalmapper/temporal_mapper.py
 src/temporalmapper/topics.py

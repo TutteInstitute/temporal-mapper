@@ -1,49 +1,48 @@
 import networkx as nx
 import numpy as np
-from scipy.stats import multinomial
 
-# BIC = nLn + d/2 log n
-def multinomial_edge_contract(mapper, v):
-    G = mapper.G
-    neighbours = G.neighbours(v)
+def topic_contract(mapper, v, dir='forward'):
+    G = mapper.G.to_undirected()
+    neighbours = G.neighbors(v)
+    d = len([n for n in neighbours])
+    if d == 0:
+        return None
+    if (mapper.G.in_degree(v) == 1):
+        single_edge_contract(mapper.G, v)
+    if (d==1) and (mapper.G.out_degree(v) == 1):
+        # this is v a source
+        return None
     idxs = nx.get_node_attributes(G, 'slice_no')
     idx = idxs[v]
     w = mapper.weights[idx,:]
-    sizes = {
-        u:np.sum(w[mapper.get_vertex_data(u)])
-        for u in neighbours
-    }
-    obs_merged = [sizes[u] for u in neighbours]
-    n =  np.size(mapper.get_vertex_data(v))
-    rv_merged = multinomial(
-        n, obs_merged/np.sum(obs_merged)
+    sizes = np.array(
+        [np.sum(w[mapper.get_vertex_data(u)]) for u in neighbours]
     )
-    ll_merged = rv_merged.logpmf(
-        [int(sizes[u]) for u in neighbours]
-    )
-
-    sizes[v] = np.sum(w[mapper.get_vertex_data(v)])
-    obs_split = [sizes[u] for u in neighbours]
-    rv_split = multinomial(
-        n, obs_split/np.sum(obs_split)
-    )
-    ll_split= rv_split.logpmf(
-        [int(sizes[u]) for u in neighbours]
-    )
-
-    d = len(neighbours)
+    sizes /= np.sum(sizes)
+    impurity = 1 - np.sum(sizes**2)
     topic = nx.get_node_attributes(G, 'topic')
-    if (-2*n*ll_split+(d+1)*np.log(n)) >= (-2*n*ll_merge+d*np.log(n)):
-        # merge wins
+    if impurity <= 1/(2*d):
+        # highly homogeneous, merge node into most similar
         s=0
         best = v
         for u in neighbours:
             if sizes[u]>s:
                 s=sizes[u]
                 best = u
-        topic[v] = u
+        topic[v] = topic[best]
     else:
-        # split wins
         pass
     nx.set_node_attributes(G, topic, 'topic')
          
+def single_edge_contract(G, v):
+    # special case to check for large semantic drift.
+    drift = nx.get_edge_attributes(G, 'drift')
+    drifts = [drift[e] for e in G.edges()]
+    sigma = np.std(drifts)
+    # this line is stupid but I can't figure out
+    # how else to get just one edge out of an OutEdgeDataView
+    e = [e for e in G.in_edges(v)][0] 
+    if drift[e] < 2*sigma:
+        topic = nx.get_node_attributes(G, 'topic')
+        topic[v] = topic[e[0]]
+        nx.set_node_attributes(G, topic, 'topic')
