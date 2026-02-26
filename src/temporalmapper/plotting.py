@@ -23,6 +23,7 @@ from temporalmapper.analytics import (
     nodes_in_slice,
     compute_growth,
 )
+from temporalmapper.mapper import Mapper
 
 def squarify_text(text):
     """Make a string more square by adding newlines"""
@@ -532,12 +533,56 @@ def growth_map(mapper, index=None):
 
     return fig
 
-def sliceograph(TM, ax=None, clrs=["r", "g", "b"]):
-    """Produce a sliceograph of a TemporalMapper
+
+def sliceograph(mapper, clrs=[(255,0,0),(0,255,0),(0,0,255)]):
+    """
+        Visualize all the slices in the kerneled cover of a TemporalMapper, requires Plotly.
+
+        Parameters:
+        mapper: temporalmapper.TemporalMapper
+            The Mapper object to plot.
+        clrs: list(str) (optional, default=[(255,0,0),(0,255,0),(0,0,255)])
+            A list of RGB triples, which will be cyclically to
+            colour the intervals in the graph.
+    """
+    import plotly.graph_objects as go
+    fig = go.Figure()
+    for i, s in enumerate(mapper.slices):
+        colors = [
+            f'rgba({clrs[i%3][0]}, {clrs[i%3][1]}, {clrs[i%3][2]}, {mapper.weights[i,j]})'
+            for j in s
+        ]
+        if mapper.data.shape[1] == 1:
+            fig.add_trace(go.Scatter(
+                x=mapper.time[s],
+                y=mapper.data[s,0],
+                mode='markers',
+                marker=dict(
+                    color=colors,
+                    size=2,
+                )
+            ))
+        elif mapper.data.shape[1] == 2:
+            fig.add_trace(go.Scatter(
+                x=mapper.data[s,0],
+                y=mapper.data[s,1],
+                mode='markers',
+                marker=dict(
+                    color=colors,
+                    size=2,
+                )
+            ))
+        else:
+            raise ValueError("Cannot make a Sliceograph of 3+ dimensional data.")
+    return fig
+
+
+def view_gomic(mapper, ax=None, clrs=["r", "g", "b"]):
+    """Visualize the gomic of the Mapper object
 
     Parameters:
-        TemporalMapper: temporalmapper.TemporalMapper
-            The temporal mapper object to plot.
+        mapper: temporalmapper.mapper.Mapper
+            The Mapper object to plot.
         ax: matplotlib.axes (optional, default=None)
             Matplotlib axis to draw on
         clrs: list(str) (optional, default=['r','g','b'])
@@ -547,16 +592,21 @@ def sliceograph(TM, ax=None, clrs=["r", "g", "b"]):
     Returns: matplotlib.axes
 
     """
+    # Check if this is a TemporalMapper or a Mapper:
+    if hasattr(mapper, 'mapper_'):
+        mapper = mapper.mapper_
+    check_is_fitted(mapper, ['gomic_'])
     if ax is None:
         ax = plt.gca()
     ax.set_ylim(0, 1)
     ax.tick_params(left=False, bottom=True, labelleft=False, labelbottom=True)
-    for i in range(TM.N_checkpoints):
+    i = 0
+    for u in mapper.gomic_:
         offset = (0.01) * (i % 2) + 0.45
-        slice_ = (TM.weights[i] >= 0.1).nonzero()[0]
-        slice_max = max(TM.time[slice_])
-        slice_min = min(TM.time[slice_])
+        slice_max = u[0]
+        slice_min = u[1]
         ax.plot([slice_min, slice_max], [offset, offset], c=clrs[i % len(clrs)])
+        i += 1
     return ax
 
 

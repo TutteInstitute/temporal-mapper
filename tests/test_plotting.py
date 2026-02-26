@@ -32,6 +32,11 @@ def plotSliceograph(kwargs={}):
     tm.plot.sliceograph(mapper)
     return 0
 
+def plotGomic(kwargs={}):
+    mapper = loadMapper(data_folder+'TMTest.pkl')
+    tm.plot.view_gomic(mapper)
+    return 0
+
 def centroidDatamap(kwargs={}):
     """ Unit test for utilities_.centroid_datamap """
     with open(data_folder+'TMTest.pkl', 'rb') as f:

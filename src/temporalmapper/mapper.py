@@ -165,17 +165,19 @@ class Mapper(BaseEstimator):
     def _compute_weights(self, data, time):
         check_is_fitted(self, ["midpoints_", "density_"])
         weights = np.zeros((np.size(self.midpoints_), np.size(time)))
-        #cp_with_ends = [np.amin(time)] + list(self.midpoints_) + [np.amax(time)]
+        cp_with_ends = [np.amin(time)] + list(self.midpoints_) + [np.amax(time)]
         bin_widths = []
         slices = []
         gomic = []
         for idx, t0 in enumerate(self.midpoints_):
-            if idx == 0:
-                bin_width = t0-np.amin(time)
-            else:
-                bin_width = (t0-self.midpoints_[idx-1]) + (self.overlap-1)*bin_widths[idx-1]  
-            #bin_width = (cp_with_ends[idx + 2] - cp_with_ends[idx]) / 2
-            #bin_width *= 1 / (2 - self.overlap)
+            if self.slice_method=='data':
+                if idx == 0:
+                    bin_width = (self.midpoints_[1] - t0)/2
+                else:
+                    bin_width = (t0-self.midpoints_[idx-1]) + (self.overlap-1)*bin_widths[idx-1]  
+            elif self.slice_method=='time':
+                bin_width = (cp_with_ends[idx + 2] - cp_with_ends[idx]) / 2
+                bin_width *= 1 / (2 - self.overlap)
             bin_widths.append(bin_width)
             gomic.append((t0-bin_width, t0+bin_width))
             for i in np.arange(np.size(time)):

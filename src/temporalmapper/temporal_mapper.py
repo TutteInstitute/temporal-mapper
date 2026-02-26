@@ -228,6 +228,16 @@ class TemporalMapper(BaseEstimator):
         check_is_fitted(self._mapper, ['midpoints_'])
         return self._mapper.midpoints_
     
+    @property
+    def slices(self):
+        check_is_fitted(self._mapper, ['slices_'])
+        return self._mapper.slices_
+    
+    @property
+    def gomic_(self):
+        check_is_fitted(self._mapper, ['gomic_'])
+        return self._mapper.gomic_
+    
     def populate_edge_attrs(self):
         """Add src_weight and dst_weight properties to every edge."""
         drift = {}
