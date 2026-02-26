@@ -4,7 +4,6 @@ from warnings import warn
 
 import numpy as np
 from numpy import typing as npt
-from tqdm import trange
 import networkx as nx
 import matplotlib as mpl
 from datamapplot.palette_handling import palette_from_datamap
@@ -12,15 +11,9 @@ from scipy.sparse import issparse
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from sklearn.neighbors import NearestNeighbors
 from sklearn.base import BaseEstimator, ClusterMixin, clone
 from sklearn.utils.validation import check_is_fitted, check_array
 
-from temporalmapper.utilities import(
-    std_sigmoid,
-    cosine_window,
-    weighted_clusters,
-)
 from temporalmapper.plotting import (
     time_semantic_plot,
 )
@@ -89,7 +82,6 @@ class TemporalMapper(BaseEstimator):
         neighbours: int=5,
         overlap: float=0.5,
         inclusion_threshold: float=0.01,
-        show_outliers: bool=False,
         slice_method: str="time",
         rate_sensitivity: int=1,
         kernel: Callable[[float,float,float,float],float]=square,
@@ -115,8 +107,6 @@ class TemporalMapper(BaseEstimator):
             A float in [0,1) which specifies the minimum kernel weight for a point to be included in a slice.
         neighbours: float
             The number of nearest neighbours used in the density computation.
-        show_outliers: bool
-            If true, include unclustered points in the graph
         slice_method: str
             One of 'time' or 'data'. If time, generates N_checkpoints evenly spaced in time. If data,
             generates N_checkpoints such that there are equal amounts of data between the points.
@@ -157,7 +147,6 @@ class TemporalMapper(BaseEstimator):
         self.pos = None
         self.verbose = verbose
         self.disable = not verbose  # for tqdm
-        self.show_outliers = False
         self.neighbours = neighbours 
         density_based = False if rate_sensitivity == 0 else True
         self._mapper = Mapper(
@@ -475,6 +464,7 @@ class TemporalMapper(BaseEstimator):
             cluster_labels = cluster_labels,
             cluster_label_kwargs = cluster_label_kwargs,
             layout_optimization = layout_optimization,
+            layout_optimization_kwargs=layout_optimization_kwargs,
             node_kwargs = node_kwargs,
             edge_kwargs = edge_kwargs,
             edge_scaling = edge_scaling,

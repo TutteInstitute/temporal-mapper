@@ -3,8 +3,10 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.utils.estimator_checks import check_estimator
 import numpy as np
 import networkx as nx
+import pytest
 
-def test_sklearnCompliance():
+@pytest.mark.filterwarnings("ignore::UserWarning")
+def test_sklearn_compliance():
     mapper_params = dict(
         N_checkpoints = 5,
         neighbours = 5,
@@ -29,7 +31,7 @@ def test_sklearnCompliance():
     for check in results:
         assert (check['status']=='passed')^check['expected_to_fail'] == True
 
-def test_clusterShift():
+def test_cluster_shift():
     data_x1 = np.linspace(-3,0,1000)
     data_x1 += 0.1*np.random.randn(1000,)
     

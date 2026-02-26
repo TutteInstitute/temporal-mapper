@@ -8,7 +8,7 @@ data_folder = 'data/'
 
 from temporalmapper.kernels import square, gaussian
 
-@pytest.mark.filterwarnings("ignore:UserWarning")
+@pytest.mark.filterwarnings("ignore::UserWarning")
 def test_sklearn_compliance():
     # Is Mapper scikit-learn compliant?
     mapper = tm.Mapper(
@@ -115,3 +115,14 @@ def test_genus1_correctness():
     for _ in nx.cycle_basis(G):
         loops += 1
     assert loops == 1
+
+def test_weighted_clustering():
+    X = np.load(data_folder+"genus1_test.npy")
+    mapper = tm.Mapper(
+        clusterer = DBSCAN(),
+        time_index=0,
+        kernel=gaussian,
+        inclusion_threshold=0.5
+    )
+    mapper.fit(X)
+    assert hasattr(mapper, 'graph_')
