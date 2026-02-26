@@ -151,8 +151,11 @@ class Mapper(BaseEstimator):
                 for k, idx in enumerate(self.dist_indices_)
             ]
         )
-        self.density_ = std_sigmoid(smoothed_densities)
-        return self.density_
+        density = std_sigmoid(smoothed_densities)
+        d_min = 1/(1+self.overlap)
+        self.density_ = density + (1-np.amax(density)) # shift over to max=1
+        self.density_ = (self.density_+d_min)/(1+d_min)
+        return self.density_ 
 
     def _compute_weights(self, data, time):
         check_is_fitted(self, ["midpoints_", "density_"])

@@ -116,7 +116,7 @@ def valid_gomic(kwargs={}):
         u2 = TM._mapper.gomic_[i+1]
         g = (u1[1]-u2[0])/(u1[1]-u1[0])
         if np.abs(g-TM.overlap/2)>0.01:
-            valid = false
+            valid = False
     
     for (u1,u2,u3) in combinations(TM._mapper.gomic_, 3):
         i1 = get_intersection(u1,u2)
