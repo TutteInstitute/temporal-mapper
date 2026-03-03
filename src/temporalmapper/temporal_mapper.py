@@ -116,7 +116,7 @@ class TemporalMapper(BaseEstimator):
         kernel: function
             A function with signature ``f(t0, t, density, binwidth, epsilon=0.01, params=None)``.
             Options are included in temporalmapper.kernels, default is ``temporalmapper.kernels.square``.
-        kernel_parameters: tuple or None,
+        kernel_params: tuple or None,
             Passed to `kernel` as params kwarg.
         verbose: bool
             Does what you expect.
