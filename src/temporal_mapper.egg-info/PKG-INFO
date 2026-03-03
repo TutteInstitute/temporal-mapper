@@ -1,12 +1,20 @@
 Metadata-Version: 2.4
 Name: temporal-mapper
-Version: 1.2.0
+Version: 1.2.1
 Summary: Implementation of density-based Mapper for temporal topic modelling.
 Author-email: Kaleb D Ruscitti <kaleb.ruscitti@uwaterloo.ca>
-License: BSD-3-Clause license
-Keywords: Mapper,TDA,Morse Theory,Temporal Topic Modeling
+License: BSD-3-Clause
+Project-URL: Homepage, https://github.com/TutteInstitute/temporal-mapper
+Project-URL: Repository, https://github.com/TutteInstitute/temporal-mapper
+Project-URL: Documentation, https://temporal-mapper.readthedocs.io
+Keywords: mapper,tda,morse theory,temporal topic modeling
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Programming Language :: Python :: 3
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Science/Research
 Description-Content-Type: text/markdown
 License-File: LICENSE
+Requires-Dist: adjustText
 Requires-Dist: numpy
 Requires-Dist: matplotlib
 Requires-Dist: pandas
@@ -15,11 +23,9 @@ Requires-Dist: tqdm
 Requires-Dist: scikit-learn
 Requires-Dist: scipy
 Requires-Dist: networkx
-Requires-Dist: numba
-Provides-Extra: visualizations
-Requires-Dist: datamapplot; extra == "visualizations"
-Requires-Dist: datashader; extra == "visualizations"
-Requires-Dist: vectorizers; extra == "visualizations"
+Requires-Dist: datamapplot
+Requires-Dist: datashader
+Requires-Dist: vectorizers
 Dynamic: license-file
 
 <img
@@ -39,26 +45,14 @@ Complete documentation is under construction on [Read The Docs](
 https://temporal-mapper.readthedocs.io/en/latest/).
 
 ### Example:
-#### arXiv Papers 
-From the arXiv API, we can retrieve ~500,000 article titles and abstracts,
-use `SBERT` to embed them, and then UMAP to reduce to 2D.
+#### United Nations General Debate Corpus
+The [United Nations General Debate Corpus](https://journals.sagepub.com/doi/epub/10.1177/2053168017712821) 
+contains transcripts of the United Nations General Debates from 1970-2014. We can chunk and embed these transcripts
+using `SBERT` and produce a topic model of the dataset using [Toponymy](https://github.com/tutteinstitute/toponymy).
 
-Using [DataMapPlot](https://github.com/tutteinstitute/datamapplot) and
-[TopicNaming](https://github.com/tutteinstitute/topicnaming) we can
-produce a static plot of this data:
+Then using this repository, we can model the changes in the topics over time, producing a graph whose nodes are topics at a given time:
 
-![A DataMapPlot of ArXiV papers](./docs/arxiv_static.png 
-"A DataMapPlot of ArXiV Papers")
-
-Now, using this repository we can additionally analyse the temporal
-information. Using the Mapper algorithm with time as our lens
-function, we create a *temporal graph* of the topics (clusters)
-through time. The code includes two types of plots to visualize this
-graph:
-
-Centroid Plot             |  Temporal-Semantic Plot
-:-------------------------:|:-------------------------:
-![](./docs/arxiv_centroids.png)  |  ![](./docs/arxiv_time.png)
+ ![](./docs/un-temporal-mapper.png)
 
 ### Installation
 Install from PyPI:

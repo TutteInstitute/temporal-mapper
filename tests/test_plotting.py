@@ -24,12 +24,17 @@ def plotInteractiveTemporal(kwargs={}):
 
 def plotTreemap(kwargs={}):
     mapper = loadMapper(data_folder+'TMTest.pkl')
-    tm.plot.treemap(mapper)
+    tm.plot.growth_map(mapper)
     return 0
 
 def plotSliceograph(kwargs={}):
     mapper = loadMapper(data_folder+'TMTest.pkl')
     tm.plot.sliceograph(mapper)
+    return 0
+
+def plotGomic(kwargs={}):
+    mapper = loadMapper(data_folder+'TMTest.pkl')
+    tm.plot.view_gomic(mapper)
     return 0
 
 def centroidDatamap(kwargs={}):
@@ -115,27 +120,3 @@ def test_vertexSubgraph():
     ]
     for i in range(len(parameters)):
         assert plotSubgraph(kwargs=parameters[i]) == 0
-
-def plotWithEdges(kwargs={}):
-    """ Unit test for plotting with edge labels """
-    with open(data_folder+'TMTest.pkl', 'rb') as f:
-        mapper = pkl.load(f)
-        f.close()
-    tmp_dict = nx.get_edge_attributes(mapper.G, "weight")
-    edge_labels = {k: "{:.2f}".format(tmp_dict[k]) for k in tmp_dict}
-    semantic_data = mapper.initial_y_position() 
-    tm.plot.time_semantic_plot(
-        mapper, semantic_data, edge_labels=edge_labels, **kwargs,
-    )
-    tm.plot.centroid_datamap(
-        mapper, **kwargs, edge_labels=edge_labels
-    )
-    return 0
-
-
-def test_edgeLabels():
-    parameters = [
-        {'bundle':False},
-    ]
-    for i in range(len(parameters)):
-        assert plotWithEdges(kwargs=parameters[i]) == 0

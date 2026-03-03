@@ -3,11 +3,13 @@ align="left" width="200" height="120"
 src="./docs/icon.png" alt="Temporal Mapper Logo">
 ## Temporal Mapper
 
-### V.1.2.0 - February 15 2026
+### V.1.2.1 - March 03 2026
 -----------------------------------------------
-This is a library for using the Mapper for temporal topic modelling.
-Though things broadly work now, the edge cases have not been throughly 
-tested.
+This is a library for using the Mapper for temporal topic modelling. 
+The primary components are:
+* A scikit-learn compliant Mapper class `temporalmapper.Mapper` implementing density-based Mapper.
+* A much messier wrapper class `temporalmapper.TemporalMapper` that computes additional data useful for temporal topic modelling.
+* Interactive and static plotting functions such as `TemporalMapper.temporal_plot`.
 
 Direct questions to Kaleb D. Ruscitti: kaleb.ruscitti at uwaterloo.ca .
 
@@ -15,26 +17,14 @@ Complete documentation is under construction on [Read The Docs](
 https://temporal-mapper.readthedocs.io/en/latest/).
 
 ### Example:
-#### arXiv Papers 
-From the arXiv API, we can retrieve ~500,000 article titles and abstracts,
-use `SBERT` to embed them, and then UMAP to reduce to 2D.
+#### United Nations General Debate Corpus
+The [United Nations General Debate Corpus](https://journals.sagepub.com/doi/epub/10.1177/2053168017712821) 
+contains transcripts of the United Nations General Debates from 1970-2014. We can chunk and embed these transcripts
+using `SBERT` and produce a topic model of the dataset using [Toponymy](https://github.com/tutteinstitute/toponymy).
 
-Using [DataMapPlot](https://github.com/tutteinstitute/datamapplot) and
-[TopicNaming](https://github.com/tutteinstitute/topicnaming) we can
-produce a static plot of this data:
+Then using this repository, we can model the changes in the topics over time, producing a graph whose nodes are topics at a given time:
 
-![A DataMapPlot of ArXiV papers](./docs/arxiv_static.png 
-"A DataMapPlot of ArXiV Papers")
-
-Now, using this repository we can additionally analyse the temporal
-information. Using the Mapper algorithm with time as our lens
-function, we create a *temporal graph* of the topics (clusters)
-through time. The code includes two types of plots to visualize this
-graph:
-
-Centroid Plot             |  Temporal-Semantic Plot
-:-------------------------:|:-------------------------:
-![](./docs/arxiv_centroids.png)  |  ![](./docs/arxiv_time.png)
+ ![](./docs/un-temporal-mapper.png)
 
 ### Installation
 Install from PyPI:
