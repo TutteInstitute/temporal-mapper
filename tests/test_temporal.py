@@ -38,7 +38,7 @@ def test_compute_temporal_mapper():
     parameters = [
         {'N_checkpoints':8, 'slice_method':'time'},
         {'N_checkpoints':8, 'slice_method':'data'},
-        {'N_checkpoints':8, 'kernel':tm.kernels.square, 'rate_sensitivity':0}, # vanilla mapper
+        {'N_checkpoints':8, 'kernel':tm.kernels.square, 'density_based':False}, # vanilla mapper
         {'N_checkpoints':3, 'overlap':0.1, 'neighbours':10}
     ]
     for i in range(len(parameters)):

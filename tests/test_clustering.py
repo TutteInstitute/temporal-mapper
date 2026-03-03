@@ -12,7 +12,7 @@ def test_sklearn_compliance():
         neighbours = 5,
         overlap = 0.6,
         slice_method='time',
-        rate_sensitivity=1,
+        density_based=True,
         kernel=tm.kernels.square,
     )
     
@@ -66,7 +66,7 @@ def test_cluster_shift():
         neighbours = 20,
         overlap = 0.6,
         slice_method='time',
-        rate_sensitivity=1,
+        density_based=True,
         kernel=tm.kernels.square,
     )
     
