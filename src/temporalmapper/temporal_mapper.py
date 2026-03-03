@@ -83,7 +83,7 @@ class TemporalMapper(BaseEstimator):
         overlap: float=0.5,
         inclusion_threshold: float=0.01,
         slice_method: str="time",
-        rate_sensitivity: int=1,
+        density_based: bool=True,
         kernel: Callable[[float,float,float,float],float]=square,
         kernel_params: dict=None,
         verbose: bool=False,
@@ -110,10 +110,9 @@ class TemporalMapper(BaseEstimator):
         slice_method: str
             One of 'time' or 'data'. If time, generates N_checkpoints evenly spaced in time. If data,
             generates N_checkpoints such that there are equal amounts of data between the points.
-        rate_sensitivity: float
-            A positive float, or -1. The rate parameter is raised to this parameter, so higher numbers
-            means that the algorithm is more sensitive to changes in rate. If ``rate_sensivity == -1``,
-            then the rate parameter is taken log2.
+        density_based: float
+            Whether to use density-based Mapper. If False, skips the density computation and uses
+            a standard pullback Mapper cover.
         kernel: function
             A function with signature ``f(t0, t, density, binwidth, epsilon=0.01, params=None)``.
             Options are included in temporalmapper.kernels, default is ``temporalmapper.kernels.square``.
@@ -140,15 +139,13 @@ class TemporalMapper(BaseEstimator):
         self.inclusion_threshold = inclusion_threshold
         self.overlap = overlap
         self.rate = None
-        self.rate_sensitivity = rate_sensitivity
-        self.sensitivity = self.rate_sensitivity
+        self.density_based = density_based
         self.kernel = kernel
         self.kernel_params = kernel_params
         self.pos = None
         self.verbose = verbose
         self.disable = not verbose  # for tqdm
         self.neighbours = neighbours 
-        density_based = False if rate_sensitivity == 0 else True
         self._mapper = Mapper(
             clusterer = clusterer,
             n_slices = self.N_checkpoints,

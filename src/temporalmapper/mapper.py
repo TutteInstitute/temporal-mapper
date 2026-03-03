@@ -172,7 +172,7 @@ class Mapper(BaseEstimator):
         for idx, t0 in enumerate(self.midpoints_):
             if self.slice_method=='data':
                 if idx == 0:
-                    bin_width = (self.midpoints_[1] - t0)/2
+                    bin_width = (self.midpoints_[1] - t0)
                 else:
                     bin_width = (t0-self.midpoints_[idx-1]) + (self.overlap-1)*bin_widths[idx-1]  
             elif self.slice_method=='time':
