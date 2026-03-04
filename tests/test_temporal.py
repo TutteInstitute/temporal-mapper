@@ -26,6 +26,23 @@ def compute_temporal_mapper(kwargs={}):
     TM.build()
     return TM
 
+def test_fit_mapper(kwargs={}):
+    """ Integration test from loading data to fitting a graph. """
+    data_time = np.load(data_folder+"genus1_test.npy")
+    data_unsort = data_time[:,1].T
+    timestamps_unsort = data_time[:,0].T
+    sorted_indices = np.argsort(timestamps_unsort)
+    data = data_unsort[sorted_indices]
+    timestamps = timestamps_unsort[sorted_indices]
+    clusterer = DBSCAN()
+    TM = tm.TemporalMapper(
+        clusterer = clusterer,
+        **kwargs,
+    )
+    X = np.vstack([data, timestamps]).T
+    TM.fit(X)
+    return TM
+
 def test_random_utilities():
     TM = compute_temporal_mapper(kwargs={
         'N_checkpoints':10
