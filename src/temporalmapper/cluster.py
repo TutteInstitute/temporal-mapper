@@ -90,9 +90,9 @@ class MapperClusterer(ClusterMixin, BaseEstimator):
         )
         self.mapper_.fit(X)
         self.mapper_.assign_topics()
-        topics = nx.get_node_attributes(self.mapper_.G, 'topic')
+        topics = nx.get_node_attributes(self.mapper_.graph, 'topic')
         dist = cdist(
-            self.mapper_.checkpoints.reshape(-1,1),
+            self.mapper_.midpoints.reshape(-1,1),
             time.reshape(-1,1)
         )
         pt_max_cluster = np.argmin(

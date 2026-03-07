@@ -6,32 +6,32 @@ from sklearn.decomposition import PCA
 def compute_time_semantic_positions(
     mapper,
     semantic_axis,
-    layout_optimization='ordered',
-    layout_optimization_kwargs = {},
+    layout='ordered',
+    layout_kwargs = {},
 ):
     """ Compute node positions """
     x_pos = {}
     y_pos = {}
-    slice_no = nx.get_node_attributes(mapper.G, "slice_no")
+    slice_no = nx.get_node_attributes(mapper.graph, "slice_no")
     semantic_axis = np.squeeze(semantic_axis)
-    for node in mapper.G.nodes():
+    for node in mapper.graph.nodes():
         t = slice_no[node]
         pt_idx = mapper.get_vertex_data(node)
         w = mapper.weights[t, pt_idx]
         y_pos[node] = np.average(semantic_axis[pt_idx], weights=w)
         x_pos[node] = np.average(mapper.time[pt_idx], weights=w)
 
-    if layout_optimization == "force-directed":
-        y_init = [y_pos[node] for node in mapper.G.nodes()]
-        y_pos = force_directed_y_layout(mapper.G, x_pos, y_init=y_init, **layout_optimization_kwargs)
-    if layout_optimization == "barycenter":
-        y_pos = temporal_barycenter_layout(mapper.G, x_pos, **layout_optimization_kwargs)
-    if layout_optimization == "ordered":
-        y_pos = component_ordered_layout(mapper.G, x_pos, **layout_optimization_kwargs)
+    if layout == "force-directed":
+        y_init = [y_pos[node] for node in mapper.graph.nodes()]
+        y_pos = force_directed_y_layout(mapper.graph, x_pos, y_init=y_init, **layout_kwargs)
+    if layout == "barycenter":
+        y_pos = temporal_barycenter_layout(mapper.graph, x_pos, **layout_kwargs)
+    if layout == "ordered":
+        y_pos = component_ordered_layout(mapper.graph, x_pos, **layout_kwargs)
 
 
-    pos = {node: (x_pos[node], y_pos[node]) for node in mapper.G.nodes()}
-    nx.set_node_attributes(mapper.G, pos, name="ts_pos")
+    pos = {node: (x_pos[node], y_pos[node]) for node in mapper.graph.nodes()}
+    nx.set_node_attributes(mapper.graph, pos, name="ts_pos")
 
 def construct_components(G):
     sources = [node for node in G.nodes() if G.in_degree(node)==0]

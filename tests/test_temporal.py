@@ -44,7 +44,7 @@ def test_fit_mapper(kwargs={}):
     )
     X = np.vstack([data, timestamps]).T
     TM.fit(X)
-    assert hasattr(TM, "G")
+    assert hasattr(TM, "graph")
 
 def test_random_utilities():
     TM = compute_temporal_mapper(kwargs={
@@ -62,4 +62,4 @@ def test_compute_temporal_mapper():
         {'n_slices':3, 'overlap':0.1, 'n_neighbors':10}
     ]
     for i in range(len(parameters)):
-        assert hasattr(compute_temporal_mapper(kwargs=parameters[i]), "G")
+        assert hasattr(compute_temporal_mapper(kwargs=parameters[i]), "graph")

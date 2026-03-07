@@ -83,6 +83,6 @@ def test_cluster_shift():
     
     clusters = clusterer.fit_predict(data)
     mapper = clusterer.mapper_
-    G = mapper.G.to_undirected()
+    G = mapper.graph.to_undirected()
     assert nx.number_connected_components(G)==1
     assert np.size(np.unique(clusters)) > 1

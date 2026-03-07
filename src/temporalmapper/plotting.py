@@ -91,10 +91,10 @@ def generate_keyword_labels(word_bags, mapper, ngram_vectorizer=None, n_words=3,
             row = np.array(row)
             cluster_keywords.append(row)
         keywords.append(cluster_keywords)
-        t_attrs = nx.get_node_attributes(mapper.G, "slice_no")
-    cl_attrs = nx.get_node_attributes(mapper.G, "cluster_no")
+        t_attrs = nx.get_node_attributes(mapper.graph, "slice_no")
+    cl_attrs = nx.get_node_attributes(mapper.graph, "cluster_no")
     label_attrs = {}
-    for node in mapper.G.nodes():
+    for node in mapper.graph.nodes():
         t_idx = t_attrs[node]
         cl_idx = cl_attrs[node]
         words = keywords[t_idx][cl_idx]
@@ -104,7 +104,7 @@ def generate_keyword_labels(word_bags, mapper, ngram_vectorizer=None, n_words=3,
         s += word[-1]
         label_attrs[node] = s
 
-    nx.set_node_attributes(mapper.G, label_attrs, "label")
+    nx.set_node_attributes(mapper.graph, label_attrs, "label")
     return label_attrs
 
 def plot_text_labels(
@@ -143,8 +143,8 @@ def time_semantic_plot(
     cluster_label_kwargs={},
     edge_labels=None,
     bundle=False,
-    layout_optimization='barycenter',
-    layout_optimization_kwargs={},
+    layout='barycenter',
+    layout_kwargs={},
     edge_scaling=1,
     node_scaling=1,
     node_size_bounds: tuple[float] = (5,25),
@@ -165,7 +165,7 @@ def time_semantic_plot(
         ax: matplotlib.axes (optional, default=None)
             Matplotlib axis to draw on
         vertices: list (optional, default=None)
-            List of nodes in mapper.G to include in the plot.
+            List of nodes in mapper.graph to include in the plot.
         cluster_labels: dict (optional, default={})
             Dictionary of labels with `cluster_labels[node]` a string to label vertex `node`.
         cluster_label_kwargs: dict (optional, default={})
@@ -174,7 +174,7 @@ def time_semantic_plot(
             Dictionary of labels with `edge_labels[e]` a string to label edge `e`.
         bundle: bool (optional, default=False)
             If true, uses the edge-bundling algorithm from datashader to plot edges.
-        layout_optimization: string (optional, default='barycenter')
+        layout: string (optional, default='barycenter')
             Optimization method used to reduce edge-crossings: one of None, "none", "force-directed" or "barycenter"
         edge_scaling: float (optional, default = 1)
             Scales the thickness of edges, larger is thicker.
@@ -198,18 +198,18 @@ def time_semantic_plot(
     if ax is None:
         ax = plt.gca()
     if vertices is None:
-        vertices = mapper.G.nodes()
-    G = mapper.G.subgraph(vertices)
-    if (layout_optimization == 'barycenter') and ('spacing' not in layout_optimization_kwargs.keys()):
-        layout_optimization_kwargs['spacing']=np.sqrt(node_scaling)
+        vertices = mapper.graph.nodes()
+    G = mapper.graph.subgraph(vertices)
+    if (layout == 'barycenter') and ('spacing' not in layout_kwargs.keys()):
+        layout_kwargs['spacing']=np.sqrt(node_scaling)
 
     compute_time_semantic_positions(
         mapper,
         semantic_axis,
-        layout_optimization = layout_optimization,
-        layout_optimization_kwargs=layout_optimization_kwargs,
+        layout = layout,
+        layout_kwargs=layout_kwargs,
     )
-    pos = nx.get_node_attributes(mapper.G,'ts_pos')
+    pos = nx.get_node_attributes(mapper.graph,'ts_pos')
     """ Plot nodes of graph. """
     node_size = compute_node_size(
         mapper,
@@ -220,10 +220,10 @@ def time_semantic_plot(
     )
 
     if mapper.n_components != 2:
-        cval_dict = nx.get_node_attributes(mapper.G, "cluster_no")
+        cval_dict = nx.get_node_attributes(mapper.graph, "cluster_no")
         node_clr = node_clr = [cval_dict[node] for node in vertices]
     else:
-        clr_dict = nx.get_node_attributes(mapper.G, "colour")
+        clr_dict = nx.get_node_attributes(mapper.graph, "colour")
         node_clr = [clr_dict[node] for node in vertices]
     if bundle:
         alpha = 0.8
@@ -241,7 +241,7 @@ def time_semantic_plot(
         **node_kwargs,
     )
     ax.tick_params(left=False, bottom=True, labelleft=False, labelbottom=True)
-    ax.set_xticks(mapper.checkpoints)
+    ax.set_xticks(mapper.midpoints)
     ax.tick_params(axis="x", labelrotation=90)
 
     """ Plot edges of graph. """
@@ -317,7 +317,7 @@ def centroid_datamap(
             The desaturate option will take the semantic colouring from datamapplot and desaturate points that are further back in time.
             The override option will throw away the semantic colouring and colour points only based on their time value.
         vertices: list (optional, default=None)
-            List of nodes in mapper.G to include in the plot.
+            List of nodes in mapper.graph to include in the plot.
         edge_labels: dict (optional, default=None)
             Dictionary of labels with edge_labels[e] a string to label edge e.
         edge_scaling: float (optional, default = 1)
@@ -336,8 +336,8 @@ def centroid_datamap(
 
     """
     if vertices is None:
-        vertices = mapper.G.nodes()
-    G = mapper.G.subgraph(vertices)
+        vertices = mapper.graph.nodes()
+    G = mapper.graph.subgraph(vertices)
     if ax is None:
         ax = plt.gca()
     try:
@@ -348,13 +348,13 @@ def centroid_datamap(
 
     """ Plot nodes of graph """
     node_size = np.array([5 * np.log2(np.size(mapper.get_vertex_data(node))) for node in vertices])
-    slice_no = nx.get_node_attributes(mapper.G, "slice_no")
+    slice_no = nx.get_node_attributes(mapper.graph, "slice_no")
     if node_colouring == "override":
         # Override cluster semantic colouring with time information
         node_clr = [slice_no[node] for node in vertices]
     elif node_colouring == "desaturate":
         # Keep semantic colouring and desaturate nodes in the past
-        colour_dict = nx.get_node_attributes(mapper.G, "colour")
+        colour_dict = nx.get_node_attributes(mapper.graph, "colour")
         pc = [(slice_no[node] + 1) / mapper.n_checkpoints for node in vertices]
         node_clr = [
             hex_desaturate(colour_dict[node], pc[i])
@@ -418,17 +418,17 @@ def centroid_datamap(
 def export_to_javascript(path, mapper):
     """write the javascript file for Roberta's edge bundling code."""
     try:
-        pos = nx.get_node_attributes(mapper.G, "centroid")
+        pos = nx.get_node_attributes(mapper.graph, "centroid")
     except AttributeError:
         mapper.populate_node_attrs()
-        pos = nx.get_node_attributes(mapper.G, "centroid")
+        pos = nx.get_node_attributes(mapper.graph, "centroid")
     node_indices = {node: i for i, node in enumerate(pos.keys())}
     file = "const sampleData = {\n\tnodes: [\n"
-    for node in mapper.G.nodes():
+    for node in mapper.graph.nodes():
         x, y = pos[node]
         file += "\t{" + f"x: {x}, y:{y}" + "},\n"
     file += "],\n edges: [\n"
-    for src, dst, data in mapper.G.edges(data=True):
+    for src, dst, data in mapper.graph.edges(data=True):
         w = data["weight"]
         file += (
             "\t{"
@@ -445,8 +445,8 @@ def export_to_javascript(path, mapper):
 def write_edge_bundling_datashader(mapper, pos, vertices=None):
     """Use datashader to bundle edges from connected components together."""
     if vertices is None:
-        vertices = mapper.G.nodes()
-    G = mapper.G.subgraph(vertices)
+        vertices = mapper.graph.nodes()
+    G = mapper.graph.subgraph(vertices)
     bundled_df = None
     for cpt in nx.connected_components(G.to_undirected()):
         if len(cpt) == 1:
@@ -478,9 +478,9 @@ def write_edge_bundling_datashader(mapper, pos, vertices=None):
     return bundled_df
 
 def slice_df(mapper, idx):
-    G = mapper.G
+    G = mapper.graph
     counts = nx.get_node_attributes(G, 'count')
-    growth = compute_growth(mapper.G)
+    growth = compute_growth(mapper.graph)
     
     nodes = nodes_in_slice(mapper, idx)
     top_n = 5
@@ -660,7 +660,7 @@ def prepare_plotly_graph_objects(
         raise e
 
     edge_traces = []
-    G = mapper.G
+    G = mapper.graph
     clr_dict = nx.get_node_attributes(G, "colour")
     weight = nx.get_edge_attributes(G, "weight")
     wmin, wmax = edge_weight_bounds
