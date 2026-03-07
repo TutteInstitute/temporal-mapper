@@ -144,7 +144,7 @@ class Mapper(BaseEstimator):
         temporal_width = np.array(
             [max(time[idx]) - min(time[idx]) for idx in self.dist_indices_]
         )
-        density /= temporal_width
+        density = np.divide(density, temporal_width, out=np.zeros_like(density), where=temporal_width!=0)
 
         # apply the smoothing window:
         d_window = data_width_ / 10

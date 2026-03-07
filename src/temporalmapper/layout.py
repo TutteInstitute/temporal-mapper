@@ -4,7 +4,7 @@ from tqdm import tqdm
 from sklearn.decomposition import PCA
 
 def compute_time_semantic_positions(
-    TG,
+    mapper,
     semantic_axis,
     layout_optimization='ordered',
     layout_optimization_kwargs = {},
@@ -12,26 +12,26 @@ def compute_time_semantic_positions(
     """ Compute node positions """
     x_pos = {}
     y_pos = {}
-    slice_no = nx.get_node_attributes(TG.G, "slice_no")
+    slice_no = nx.get_node_attributes(mapper.G, "slice_no")
     semantic_axis = np.squeeze(semantic_axis)
-    for node in TG.G.nodes():
+    for node in mapper.G.nodes():
         t = slice_no[node]
-        pt_idx = TG.get_vertex_data(node)
-        w = TG.weights[t, pt_idx]
+        pt_idx = mapper.get_vertex_data(node)
+        w = mapper.weights[t, pt_idx]
         y_pos[node] = np.average(semantic_axis[pt_idx], weights=w)
-        x_pos[node] = np.average(TG.time[pt_idx], weights=w)
-        
+        x_pos[node] = np.average(mapper.time[pt_idx], weights=w)
+
     if layout_optimization == "force-directed":
-        y_init = [y_pos[node] for node in TG.G.nodes()]
-        y_pos = force_directed_y_layout(TG.G, x_pos, y_init=y_init, **layout_optimization_kwargs)
+        y_init = [y_pos[node] for node in mapper.G.nodes()]
+        y_pos = force_directed_y_layout(mapper.G, x_pos, y_init=y_init, **layout_optimization_kwargs)
     if layout_optimization == "barycenter":
-        y_pos = temporal_barycenter_layout(TG.G, x_pos, **layout_optimization_kwargs) 
+        y_pos = temporal_barycenter_layout(mapper.G, x_pos, **layout_optimization_kwargs)
     if layout_optimization == "ordered":
-        y_pos = component_ordered_layout(TG.G, x_pos, **layout_optimization_kwargs)
-        
-        
-    pos = {node: (x_pos[node], y_pos[node]) for node in TG.G.nodes()}
-    nx.set_node_attributes(TG.G, pos, name="ts_pos")
+        y_pos = component_ordered_layout(mapper.G, x_pos, **layout_optimization_kwargs)
+
+
+    pos = {node: (x_pos[node], y_pos[node]) for node in mapper.G.nodes()}
+    nx.set_node_attributes(mapper.G, pos, name="ts_pos")
 
 def construct_components(G):
     sources = [node for node in G.nodes() if G.in_degree(node)==0]
@@ -50,32 +50,28 @@ def construct_components(G):
         components[shortest_source].append(node)
     return components
 
-def min_path_between_sets(G, cp1, cp2):
+def min_path_between_sets(G, set1, set2):
     G_quotient = deepcopy(G)
-    
-    cp1 = set(cp1)
-    cp2 = set(cp2)
-    
-    # Ensure cp1 and cp2 don't overlap
-    if cp1 & cp2:
+
+    set1 = set(set1)
+    set2 = set(set2)
+
+    if set1 & set2:
         return 0
-    
-    # Create super-nodes for each set
-    u = 'cp1_super'
-    v = 'cp2_super'
-    
-    # Add super-nodes
-    G_quotient.add_node(u)
-    G_quotient.add_node(v)
-    
-    # Connect all vertices in cps to super-nodes with zero-weight edges
-    for node in cp1:
-        G_quotient.add_edge(u, node, weight=0)
-    for node in cp2:
-        G_quotient.add_edge(node, v, weight=0)
+
+    super_source = 'set1_super'
+    super_target = 'set2_super'
+
+    G_quotient.add_node(super_source)
+    G_quotient.add_node(super_target)
+
+    for node in set1:
+        G_quotient.add_edge(super_source, node, weight=0)
+    for node in set2:
+        G_quotient.add_edge(node, super_target, weight=0)
 
     try:
-        path_length = nx.shortest_path_length(G_quotient, u, v, weight='weight')
+        path_length = nx.shortest_path_length(G_quotient, super_source, super_target, weight='weight')
         return path_length
     except nx.NetworkXNoPath:
         return np.inf      
@@ -224,70 +220,76 @@ def two_opt(distances, path, max_iterations=1000):
     return path
 
 
-def arrange_components(G,cpts):
-    n_cpts = len(cpts)
-    distances = np.array(
-        [[min_path_between_sets(G, cpts[cp1],cpts[cp2]) for cp2 in cpts] for cp1 in cpts]
-    )
-    # Find connected components
-    components = find_connected_components(distances)
-    
+def arrange_components(G, component_dict):
+    from functools import lru_cache
+
+    components_list = list(component_dict.values())
+    n_components = len(components_list)
+    component_tuples = [tuple(sorted(comp)) for comp in components_list]
+
+    @lru_cache(maxsize=None)
+    def cached_min_path(idx1, idx2):
+        if idx1 == idx2:
+            return 0
+        return min_path_between_sets(
+            G,
+            component_tuples[idx1],
+            component_tuples[idx2]
+        )
+
+    distances = np.zeros((n_components, n_components))
+    for i in range(n_components):
+        distances[i, i] = 0
+        for j in range(i + 1, n_components):
+            d = cached_min_path(i, j)
+            distances[i, j] = d
+            distances[j, i] = d
+
+    connected_components = find_connected_components(distances)
+
     all_paths = []
     total_distance = 0
-    
-    # Optimize each component
-    for component in components:
-        #print(f"\nOptimizing component {component}...")
-        
+
+    for component in connected_components:
         if len(component) == 1:
-            # Single object, no optimization needed
             path = np.array(component)
             all_paths.append(path)
-            #print(f"  Single object: {path}")
         else:
-            # Multi-start greedy
             path, greedy_dist = best_nearest_neighbor(distances, component)
-            #print(f"  Greedy distance: {greedy_dist}")
-            
-            # Improve with 2-opt
             path = two_opt(distances, path)
             component_distance = np.sum(distances[path[:-1], path[1:]])
-            #print(f"  After 2-opt: {component_distance}")
-            #print(f"  Path: {path}")
-            
             all_paths.append(path)
             total_distance += component_distance
-    
-    # Concatenate all paths
+
     final_path = np.concatenate(all_paths)
-    
-    return final_path, total_distance, components
+
+    return final_path, total_distance, connected_components
 
 
 def component_ordered_layout(G, x_positions, spacing=5):
-    cpts = construct_components(G)
-    order = np.concatenate(arrange_components(G, cpts)[2])
+    component_dict = construct_components(G)
+    order = np.concatenate(arrange_components(G, component_dict)[2])
     y_pos = {}
-    cpt_sources = list(cpts.keys())
+    component_sources = list(component_dict.keys())
     current_y_value = 0
     for i in order:
-        s = cpt_sources[i]
-        nodes = cpts[s]
+        source = component_sources[i]
+        nodes = component_dict[source]
         subgraph = G.subgraph(nodes).copy()
-        cpt_y_pos = temporal_barycenter_layout(
+        component_y_pos = temporal_barycenter_layout(
             subgraph,
             x_positions,
             spacing=spacing,
         )
-        cpt_min = np.min(np.array([
-           cpt_y_pos[node] for node in nodes 
+        component_min = np.min(np.array([
+           component_y_pos[node] for node in nodes
         ]))
-        cpt_max = np.max(np.array([
-            cpt_y_pos[node] for node in nodes
+        component_max = np.max(np.array([
+            component_y_pos[node] for node in nodes
         ]))
         for node in nodes:
-            y_pos[node] = cpt_y_pos[node]-cpt_min+current_y_value
-        current_y_value += cpt_max-cpt_min + spacing
+            y_pos[node] = component_y_pos[node] - component_min + current_y_value
+        current_y_value += component_max - component_min + spacing
     return y_pos
 
 def initial_y_positions(G):

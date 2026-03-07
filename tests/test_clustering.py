@@ -8,8 +8,8 @@ import pytest
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_sklearn_compliance():
     mapper_params = dict(
-        N_checkpoints = 5,
-        neighbours = 5,
+        n_slices = 5,
+        n_neighbors = 5,
         overlap = 0.6,
         slice_method='time',
         density_based=True,
@@ -62,8 +62,8 @@ def test_cluster_shift():
     from sklearn.cluster import AgglomerativeClustering
     
     mapper_params = dict(
-        N_checkpoints = 10,
-        neighbours = 20,
+        n_slices = 10,
+        n_neighbors = 20,
         overlap = 0.6,
         slice_method='time',
         density_based=True,

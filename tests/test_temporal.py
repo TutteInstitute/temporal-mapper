@@ -2,6 +2,7 @@ import numpy as np
 import sys, os
 import networkx as nx
 import pickle as pkl
+import warnings
 from sklearn.cluster import DBSCAN
 
 import temporalmapper as tm
@@ -23,7 +24,9 @@ def compute_temporal_mapper(kwargs={}):
         clusterer,
         **kwargs,
     )
-    TM.build()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        TM.build()
     return TM
 
 def test_fit_mapper(kwargs={}):
@@ -41,22 +44,22 @@ def test_fit_mapper(kwargs={}):
     )
     X = np.vstack([data, timestamps]).T
     TM.fit(X)
-    return TM
+    assert hasattr(TM, "G")
 
 def test_random_utilities():
     TM = compute_temporal_mapper(kwargs={
-        'N_checkpoints':10
-    }) 
+        'n_slices':10
+    })
     TM.get_vertex_data('0:0')
     TM.assign_topics()
     TM.vertex_subgraph('0:1')
 
 def test_compute_temporal_mapper():
     parameters = [
-        {'N_checkpoints':8, 'slice_method':'time'},
-        {'N_checkpoints':8, 'slice_method':'data'},
-        {'N_checkpoints':8, 'kernel':tm.kernels.square, 'density_based':False}, # vanilla mapper
-        {'N_checkpoints':3, 'overlap':0.1, 'neighbours':10}
+        {'n_slices':8, 'slice_method':'time'},
+        {'n_slices':8, 'slice_method':'data'},
+        {'n_slices':8, 'kernel':tm.kernels.square, 'density_based':False}, # vanilla mapper
+        {'n_slices':3, 'overlap':0.1, 'n_neighbors':10}
     ]
     for i in range(len(parameters)):
         assert hasattr(compute_temporal_mapper(kwargs=parameters[i]), "G")

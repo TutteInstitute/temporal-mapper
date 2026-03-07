@@ -52,7 +52,7 @@ def squarify_text(text):
 
     return "\n".join(lines)
 
-def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep=" "):
+def generate_keyword_labels(word_bags, mapper, ngram_vectorizer=None, n_words=3, sep=" "):
     """Using a bag of words corresponding to each data point, get top n_words informative
     keywords for each cluster"""
     if ngram_vectorizer is None:
@@ -63,14 +63,14 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
     ## Building cluster labels (crudely)
     IWT = InformationWeightTransformer()
     keywords = []
-    for i in trange(len(TG.slices), desc='Generating keywords'):
+    for i in trange(len(mapper.slices), desc='Generating keywords'):
         # build a vector for each cluster by summing the vectors of its constituent data
         cluster_vectors = []
-        for cl in np.unique(TG.clusters[i]):
+        for cl in np.unique(mapper.clusters[i]):
             if (cl == -1) or (cl == -2):
                 # skip outliers
                 continue
-            cl_idx = (TG.clusters[i] == cl).nonzero()
+            cl_idx = (mapper.clusters[i] == cl).nonzero()
             vectors_in_cluster = ngram_vectors[cl_idx]
             cl_vector = np.sum(vectors_in_cluster, axis=0)
             cluster_vectors.append(cl_vector)
@@ -91,10 +91,10 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
             row = np.array(row)
             cluster_keywords.append(row)
         keywords.append(cluster_keywords)
-        t_attrs = nx.get_node_attributes(TG.G, "slice_no")
-    cl_attrs = nx.get_node_attributes(TG.G, "cluster_no")
+        t_attrs = nx.get_node_attributes(mapper.G, "slice_no")
+    cl_attrs = nx.get_node_attributes(mapper.G, "cluster_no")
     label_attrs = {}
-    for node in TG.G.nodes():
+    for node in mapper.G.nodes():
         t_idx = t_attrs[node]
         cl_idx = cl_attrs[node]
         words = keywords[t_idx][cl_idx]
@@ -104,7 +104,7 @@ def generate_keyword_labels(word_bags, TG, ngram_vectorizer=None, n_words=3, sep
         s += word[-1]
         label_attrs[node] = s
 
-    nx.set_node_attributes(TG.G, label_attrs, "label")
+    nx.set_node_attributes(mapper.G, label_attrs, "label")
     return label_attrs
 
 def plot_text_labels(
@@ -135,7 +135,7 @@ def plot_text_labels(
     return axis
 
 def time_semantic_plot(
-    TG,
+    mapper,
     semantic_axis,
     ax=None,
     vertices=None,
@@ -154,18 +154,18 @@ def time_semantic_plot(
     edge_kwargs={},
 ):
     """
-    Create a time-semantic plot of the graph ``TemporalGraph.G``.
+    Create a time-semantic plot of the mapper graph.
 
         Parameters
         ----------
-        TemporalGraph: temporal_mapper.TemporalGraph
-            The temporal graph object to plot.
+        mapper: temporal_mapper.TemporalMapper
+            The temporal mapper object to plot.
         semantic_axis: ndarray
             Array of shape ``(n_samples,)`` with the 1D semantic data to use in the plot.
         ax: matplotlib.axes (optional, default=None)
             Matplotlib axis to draw on
         vertices: list (optional, default=None)
-            List of nodes in TG.G to include in the plot.
+            List of nodes in mapper.G to include in the plot.
         cluster_labels: dict (optional, default={})
             Dictionary of labels with `cluster_labels[node]` a string to label vertex `node`.
         cluster_label_kwargs: dict (optional, default={})
@@ -188,7 +188,7 @@ def time_semantic_plot(
             Keyword arguments passed to networkx.draw_networkx_nodes()
         edge_kwargs: dict (optional, default={})
             Keyword arguments passed to networkx.draw_networkx_edges()
-            
+
         Returns
         -------
         matplotlib.axes.Axes
@@ -198,32 +198,32 @@ def time_semantic_plot(
     if ax is None:
         ax = plt.gca()
     if vertices is None:
-        vertices = TG.G.nodes()
-    G = TG.G.subgraph(vertices)
+        vertices = mapper.G.nodes()
+    G = mapper.G.subgraph(vertices)
     if (layout_optimization == 'barycenter') and ('spacing' not in layout_optimization_kwargs.keys()):
         layout_optimization_kwargs['spacing']=np.sqrt(node_scaling)
-    
+
     compute_time_semantic_positions(
-        TG,
+        mapper,
         semantic_axis,
         layout_optimization = layout_optimization,
         layout_optimization_kwargs=layout_optimization_kwargs,
     )
-    pos = nx.get_node_attributes(TG.G,'ts_pos')
+    pos = nx.get_node_attributes(mapper.G,'ts_pos')
     """ Plot nodes of graph. """
     node_size = compute_node_size(
-        TG,
+        mapper,
         G,
         node_scaling,
         node_size_scale,
         node_size_bounds
     )
-        
-    if TG.n_components != 2:
-        cval_dict = nx.get_node_attributes(TG.G, "cluster_no")
+
+    if mapper.n_components != 2:
+        cval_dict = nx.get_node_attributes(mapper.G, "cluster_no")
         node_clr = node_clr = [cval_dict[node] for node in vertices]
     else:
-        clr_dict = nx.get_node_attributes(TG.G, "colour")
+        clr_dict = nx.get_node_attributes(mapper.G, "colour")
         node_clr = [clr_dict[node] for node in vertices]
     if bundle:
         alpha = 0.8
@@ -241,12 +241,12 @@ def time_semantic_plot(
         **node_kwargs,
     )
     ax.tick_params(left=False, bottom=True, labelleft=False, labelbottom=True)
-    ax.set_xticks(TG.checkpoints)
+    ax.set_xticks(mapper.checkpoints)
     ax.tick_params(axis="x", labelrotation=90)
 
     """ Plot edges of graph. """
     if bundle == True:
-        bundles = write_edge_bundling_datashader(TG, pos)
+        bundles = write_edge_bundling_datashader(mapper, pos)
         x = bundles["x"].to_numpy()
         y = bundles["y"].to_numpy()
         ax.plot(x, y, lw=0.5 * edge_scaling, **edge_kwargs)
@@ -294,7 +294,7 @@ def hex_desaturate(c, pc):
 
 
 def centroid_datamap(
-    TG,
+    mapper,
     ax=None,
     edge_labels=None,
     vertices=None,
@@ -308,8 +308,8 @@ def centroid_datamap(
 
         Parameters
         ----------
-        TemporalGraph: temporal_mapper.TemporalGraph
-            The temporal graph object to plot.
+        mapper: temporal_mapper.TemporalMapper
+            The temporal mapper object to plot.
         ax: matplotlib.axes (optional, default=None)
             Matplotlib axis to draw on
         node_colouring: ``'desaturate'`` or ``'override'`` (optional, default='desaturate')
@@ -317,7 +317,7 @@ def centroid_datamap(
             The desaturate option will take the semantic colouring from datamapplot and desaturate points that are further back in time.
             The override option will throw away the semantic colouring and colour points only based on their time value.
         vertices: list (optional, default=None)
-            List of nodes in TG.G to include in the plot.
+            List of nodes in mapper.G to include in the plot.
         edge_labels: dict (optional, default=None)
             Dictionary of labels with edge_labels[e] a string to label edge e.
         edge_scaling: float (optional, default = 1)
@@ -336,26 +336,26 @@ def centroid_datamap(
 
     """
     if vertices is None:
-        vertices = TG.G.nodes()
-    G = TG.G.subgraph(vertices)
+        vertices = mapper.G.nodes()
+    G = mapper.G.subgraph(vertices)
     if ax is None:
         ax = plt.gca()
     try:
         pos = nx.get_node_attributes(G, "centroid")
     except AttributeError:
-        TG.populate_node_attrs()
+        mapper.populate_node_attrs()
         pos = nx.get_node_attributes(G, "centroid")
 
     """ Plot nodes of graph """
-    node_size = np.array([5 * np.log2(np.size(TG.get_vertex_data(node))) for node in vertices])
-    slice_no = nx.get_node_attributes(TG.G, "slice_no")
+    node_size = np.array([5 * np.log2(np.size(mapper.get_vertex_data(node))) for node in vertices])
+    slice_no = nx.get_node_attributes(mapper.G, "slice_no")
     if node_colouring == "override":
         # Override cluster semantic colouring with time information
         node_clr = [slice_no[node] for node in vertices]
     elif node_colouring == "desaturate":
         # Keep semantic colouring and desaturate nodes in the past
-        colour_dict = nx.get_node_attributes(TG.G, "colour")
-        pc = [(slice_no[node] + 1) / TG.N_checkpoints for node in vertices]
+        colour_dict = nx.get_node_attributes(mapper.G, "colour")
+        pc = [(slice_no[node] + 1) / mapper.n_checkpoints for node in vertices]
         node_clr = [
             hex_desaturate(colour_dict[node], pc[i])
             for i, node in enumerate(vertices)
@@ -386,7 +386,7 @@ def centroid_datamap(
     if "color" in edge_kwargs.keys():
         c = edge_kwargs.pop("color")
     if bundle == True:
-        bundles = write_edge_bundling_datashader(TG, pos, vertices=vertices)
+        bundles = write_edge_bundling_datashader(mapper, pos, vertices=vertices)
         x = bundles["x"].to_numpy()
         y = bundles["y"].to_numpy()
         if len(edge_kwargs.keys()) > 0:
@@ -415,20 +415,20 @@ def centroid_datamap(
     return ax
 
 
-def export_to_javascript(path, TM):
+def export_to_javascript(path, mapper):
     """write the javascript file for Roberta's edge bundling code."""
     try:
-        pos = nx.get_node_attributes(TM.G, "centroid")
+        pos = nx.get_node_attributes(mapper.G, "centroid")
     except AttributeError:
-        TM.populate_node_attrs()
-        pos = nx.get_node_attributes(TM.G, "centroid")
+        mapper.populate_node_attrs()
+        pos = nx.get_node_attributes(mapper.G, "centroid")
     node_indices = {node: i for i, node in enumerate(pos.keys())}
     file = "const sampleData = {\n\tnodes: [\n"
-    for node in TM.G.nodes():
+    for node in mapper.G.nodes():
         x, y = pos[node]
         file += "\t{" + f"x: {x}, y:{y}" + "},\n"
     file += "],\n edges: [\n"
-    for src, dst, data in TM.G.edges(data=True):
+    for src, dst, data in mapper.G.edges(data=True):
         w = data["weight"]
         file += (
             "\t{"
@@ -442,11 +442,11 @@ def export_to_javascript(path, TM):
     return file
 
 
-def write_edge_bundling_datashader(TG, pos, vertices=None):
+def write_edge_bundling_datashader(mapper, pos, vertices=None):
     """Use datashader to bundle edges from connected components together."""
     if vertices is None:
-        vertices = TG.G.nodes()
-    G = TG.G.subgraph(vertices)
+        vertices = mapper.G.nodes()
+    G = mapper.G.subgraph(vertices)
     bundled_df = None
     for cpt in nx.connected_components(G.to_undirected()):
         if len(cpt) == 1:
@@ -509,7 +509,7 @@ def growth_map(mapper, index=None):
     check_is_fitted(mapper, ["is_fitted_"])
     if index is None:
         dfs = []
-        for index in range(mapper.N_checkpoints):
+        for index in range(mapper.n_checkpoints):
             dfs.append(slice_df(mapper, index))
         dataframe = concat(dfs, ignore_index=True) 
         path = ['slice', 'node']

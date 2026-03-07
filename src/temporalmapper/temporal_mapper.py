@@ -23,8 +23,8 @@ from temporalmapper.mapper import (
 from temporalmapper.layout import compute_time_semantic_positions
 from temporalmapper.kernels import square
 
-"""TemporalMapper class 
-minimal usage example: 
+"""TemporalMapper class
+minimal usage example:
 
     # load from your data file:
     data : (n_dim, N_data) array-like
@@ -32,15 +32,10 @@ minimal usage example:
     # choose an sklearn-compliant clusterer:
     clusterer = HDBSCAN()
 
-    # init and build the graph:
-    mapper = TemporalGraph(
-        time,
-        data,
-        clusterer,
-        N_checkpoints = 10,
-    )
-    
-    mapper.build()
+    # sklearn-style API (recommended):
+    mapper = TemporalMapper(clusterer=clusterer, n_checkpoints=10)
+    X = np.hstack((data, time.reshape(-1, 1)))  # append time as last column
+    mapper.fit(X)
     myGraph = mapper.G
 
     # generate a matplotlib figure
@@ -78,8 +73,8 @@ class TemporalMapper(BaseEstimator):
         time: npt.NDArray | None=None, # backwards
         data: npt.NDArray | None=None, # compatibility
         clusterer: ClusterMixin=None,
-        N_checkpoints: int=5,
-        neighbours: int=5,
+        n_slices: int=5,
+        n_neighbors: int=5,
         overlap: float=0.5,
         inclusion_threshold: float=0.01,
         slice_method: str="time",
@@ -97,19 +92,17 @@ class TemporalMapper(BaseEstimator):
             data array (n dim)
         clusterer: sklearn clusterer
             the clusterer to use for the slice-wise clustering, must accept sample_weights
-        N_checkpoints: int
+        n_checkpoints: int
             number of time-points at which to cluster
-        checkpoints: arraylike
-            array of time-points at which to cluster
+        n_neighbors: int
+            The number of nearest neighbors used in the density computation.
         overlap: float
             A float in (0,1) which specifies the ``g`` parameter (see README)
         inclusion_threshold: float
             A float in [0,1) which specifies the minimum kernel weight for a point to be included in a slice.
-        neighbours: float
-            The number of nearest neighbours used in the density computation.
         slice_method: str
-            One of 'time' or 'data'. If time, generates N_checkpoints evenly spaced in time. If data,
-            generates N_checkpoints such that there are equal amounts of data between the points.
+            One of 'time' or 'data'. If time, generates n_checkpoints evenly spaced in time. If data,
+            generates n_checkpoints such that there are equal amounts of data between the points.
         density_based: float
             Whether to use density-based Mapper. If False, skips the density computation and uses
             a standard pullback Mapper cover.
@@ -135,7 +128,7 @@ class TemporalMapper(BaseEstimator):
         else:
             raise AttributeError("Accepted slice_method is 'time' or 'data'.")
         self.clusterer = clusterer
-        self.N_checkpoints = N_checkpoints
+        self.n_checkpoints = n_slices
         self.inclusion_threshold = inclusion_threshold
         self.overlap = overlap
         self.rate = None
@@ -145,11 +138,11 @@ class TemporalMapper(BaseEstimator):
         self.pos = None
         self.verbose = verbose
         self.disable = not verbose  # for tqdm
-        self.neighbours = neighbours 
+        self.n_neighbors = n_neighbors
         self._mapper = Mapper(
             clusterer = clusterer,
-            n_slices = self.N_checkpoints,
-            n_neighbors = self.neighbours,
+            n_slices = self.n_checkpoints,
+            n_neighbors = self.n_neighbors,
             overlap = self.overlap,
             inclusion_threshold = self.inclusion_threshold,
             slice_method = self.slice_method,
@@ -161,7 +154,18 @@ class TemporalMapper(BaseEstimator):
         )
 
     def build(self):
-        """ Construct the density-based Mapper graph """
+        """ Construct the density-based Mapper graph
+
+        .. deprecated::
+            The `build()` method is deprecated and will be removed in a future version.
+            Please use `fit()` instead for sklearn-compatible API.
+        """
+        warn(
+            "build() is deprecated and will be removed in a future version. "
+            "Please use fit() instead for sklearn-compatible API.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         X = np.hstack((self.data, self.time.reshape(-1,1)))
         self._mapper.fit(X)
 
@@ -169,7 +173,7 @@ class TemporalMapper(BaseEstimator):
         self.n_components = self.data.shape[1]
         self.populate_node_attrs()
         self.populate_edge_attrs()
-        
+
         self.is_fitted_ = True
         return self
 
@@ -185,9 +189,8 @@ class TemporalMapper(BaseEstimator):
                 f"Input X must have at least 2 columns, 1 feature(s) + time"
             )
 
-
         self._mapper = self._mapper.fit(X)
-        
+
         if issparse(data):
             self.scaler_ = StandardScaler(copy=False, with_mean=False)
         else:
@@ -195,8 +198,14 @@ class TemporalMapper(BaseEstimator):
         data = clone(self.scaler_).fit_transform(data)
         self.data = data
         self.time = time
-        
-        return self.build()
+
+        self.n_samples = X.shape[0]
+        self.n_components = self.data.shape[1]
+        self.populate_node_attrs()
+        self.populate_edge_attrs()
+
+        self.is_fitted_ = True
+        return self
 
 
     """ A bunch of property getters for self._mapper """
