@@ -20,7 +20,9 @@ def compute_time_semantic_positions(
         w = mapper.weights[t, pt_idx]
         y_pos[node] = np.average(semantic_axis[pt_idx], weights=w)
         x_pos[node] = np.average(mapper.time[pt_idx], weights=w)
-
+    
+    if layout == "semantic":
+        pass
     if layout == "force-directed":
         y_init = [y_pos[node] for node in mapper.graph.nodes()]
         y_pos = force_directed_y_layout(mapper.graph, x_pos, y_init=y_init, **layout_kwargs)

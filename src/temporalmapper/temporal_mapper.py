@@ -45,7 +45,7 @@ minimal usage example:
 
 class TemporalMapper(BaseEstimator):
     """
-    Generate and store a temporal graph - a 1D-mapper-style representation of temporal data.
+    Wrapper over density-based Mapper for Temporal Topic Modelling
 
     Attributes
     ----------
@@ -86,29 +86,25 @@ class TemporalMapper(BaseEstimator):
         """
         Parameters
         ----------
-        time: ndarray
-            time array (1 dim)
-        data: ndarray
-            data array (n dim)
         clusterer: sklearn clusterer
             the clusterer to use for the slice-wise clustering, must accept sample_weights
-        n_checkpoints: int
+        n_slices: int
             number of time-points at which to cluster
-        n_neighbors: int
+        n_neighbors: int (optional, default=5)
             The number of nearest neighbors used in the density computation.
-        overlap: float
+        overlap: float (optional, default=0.5)
             A float in (0,1) which specifies the ``g`` parameter (see README)
-        inclusion_threshold: float
+        inclusion_threshold: float (optional, default=0.1)
             A float in [0,1) which specifies the minimum kernel weight for a point to be included in a slice.
-        slice_method: str
+        slice_method: str (optional, default='time')
             One of 'time' or 'data'. If time, generates n_checkpoints evenly spaced in time. If data,
             generates n_checkpoints such that there are equal amounts of data between the points.
-        density_based: float
+        density_based: bool (optional, default=True)
             Whether to use density-based Mapper. If False, skips the density computation and uses
             a standard pullback Mapper cover.
-        kernel: function
+        kernel: function (optional, default=temporalmapper.kernels.square)
             A function with signature ``f(t0, t, density, binwidth, epsilon=0.01, params=None)``.
-            Options are included in temporalmapper.kernels, default is ``temporalmapper.kernels.square``.
+            Options are included in temporalmapper.kernels.
         kernel_params: tuple or None,
             Passed to `kernel` as params kwarg.
         verbose: bool
@@ -128,7 +124,9 @@ class TemporalMapper(BaseEstimator):
         else:
             raise AttributeError("Accepted slice_method is 'time' or 'data'.")
         self.clusterer = clusterer
-        self.n_checkpoints = n_slices
+        if clusterer is None:
+            warn("You have not passed a clusterer, this TemporalMapper cannot be fit.")
+        self.n_slices = n_slices
         self.inclusion_threshold = inclusion_threshold
         self.overlap = overlap
         self.rate = None
@@ -141,7 +139,7 @@ class TemporalMapper(BaseEstimator):
         self.n_neighbors = n_neighbors
         self._mapper = Mapper(
             clusterer = clusterer,
-            n_slices = self.n_checkpoints,
+            n_slices = self.n_slices,
             n_neighbors = self.n_neighbors,
             overlap = self.overlap,
             inclusion_threshold = self.inclusion_threshold,
@@ -149,7 +147,7 @@ class TemporalMapper(BaseEstimator):
             density_based = density_based,
             kernel = self.kernel,
             kernel_params = self.kernel_params,
-            time_index = -1,
+            lens_index = -1,
             verbose = int(self.verbose),
         )
 
@@ -177,11 +175,28 @@ class TemporalMapper(BaseEstimator):
         self.is_fitted_ = True
         return self
 
-    def fit(self, X, y=None, time_index=-1):
+    def fit(self, X, y=None, time_index:int=-1, drop_time:bool=True):
+        """ Fit the TemporalMapper
+            Parameters
+            ----------
+
+            X: ndarray
+                Should have shape (n_samples, n_features)
+            time_index: integer (optional, default = -1)
+                Which feature of `X` to use as time.
+            drop_time: bool (optional, default = True)
+                Whether to drop the time axis from `X` or not.
+        """
         X = check_array(X)
         self.n_features_in_ = X.shape[1]
+        #sort by time
+        #order = np.argsort(X[:, time_index])
+        #X = X[order]
         time = X[:, time_index]
-        data = np.delete(X, time_index, axis=1)
+        if drop_time:
+            data = np.delete(X, time_index, axis=1)
+        else:
+            data = X
         if data.shape[1] == 0:
             raise ValueError(
                 f"After removing last column (time),"
@@ -189,7 +204,8 @@ class TemporalMapper(BaseEstimator):
                 f"Input X must have at least 2 columns, 1 feature(s) + time"
             )
 
-        self._mapper = self._mapper.fit(X)
+        self._mapper.lens_index = time_index
+        self._mapper = self._mapper.fit(X, drop_time=drop_time)
 
         if issparse(data):
             self.scaler_ = StandardScaler(copy=False, with_mean=False)
@@ -343,6 +359,7 @@ class TemporalMapper(BaseEstimator):
         return np.concatenate(vals, axis=1)
 
     def edge_thresholded_subgraph(self, threshold):
+        """ Return a subgraph """
         edges_to_remove = [
             (u, v) for u, v, data in self.graph.edges(data=True)
             if data['weight'] < threshold
@@ -363,6 +380,7 @@ class TemporalMapper(BaseEstimator):
         return y_initial_pos
     
     def assign_topics(self):
+        """ Assign each vertex to a 'topic' based on its change over time. """
         from temporalmapper.topics import topic_contract
         G = self.graph
         topic = {
@@ -435,8 +453,9 @@ class TemporalMapper(BaseEstimator):
             Minimum edge weight for rendering.
         node_size_scale : {'linear', 'log', 'sigmoid'}, default 'sigmoid'
             Scaling mode used for node sizes.
-        layout : str, default 'barycenter'
-            Layout optimization method passed to `time_semantic_plot`.
+        layout : str, default ''
+            Layout optimization method passed to `time_semantic_plot`. By default 'ordered' is
+            used for >100 vertices and 'barycentered' is used for <=100 vertices.
         layout_kwargs : dict, optional
             Additional keyword arguments for the layout optimization routine.
     
@@ -456,6 +475,11 @@ class TemporalMapper(BaseEstimator):
             cluster_labels = {node:str(node) for node in vertices}
         if cluster_label_kwargs is None:
             cluster_label_kwargs = {}
+        if layout == '':
+            if len(vertices) <= 100:
+                layout = 'ordered'
+            else:
+                layout = 'barycenter'
 
         clr_dict = nx.get_node_attributes(G, "colour")
         edge_color_list = [
@@ -463,7 +487,6 @@ class TemporalMapper(BaseEstimator):
             for u, v in G.edges()
         ]
         edge_kwargs = {'edge_color':edge_color_list}
-        
         ax = time_semantic_plot(
             self,
             self.initial_y_position(),

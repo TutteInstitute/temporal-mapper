@@ -16,3 +16,7 @@ src/temporalmapper/plotting.py
 src/temporalmapper/temporal_mapper.py
 src/temporalmapper/topics.py
 src/temporalmapper/utilities.py
+tests/test_clustering.py
+tests/test_mapper.py
+tests/test_plotting.py
+tests/test_temporal.py

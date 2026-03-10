@@ -14,9 +14,6 @@ from vectorizers.transformers import InformationWeightTransformer
 from vectorizers import NgramVectorizer
 
 from temporalmapper.layout import (
-    temporal_barycenter_layout,
-    component_ordered_layout,
-    force_directed_y_layout,
     compute_time_semantic_positions,
 )
 from temporalmapper.analytics import (
@@ -300,7 +297,7 @@ def centroid_datamap(
     vertices=None,
     edge_scaling=1,
     node_colouring="desaturate",
-    bundle=True,
+    bundle=False,
     node_kwargs={},
     edge_kwargs={},
 ):
@@ -355,7 +352,7 @@ def centroid_datamap(
     elif node_colouring == "desaturate":
         # Keep semantic colouring and desaturate nodes in the past
         colour_dict = nx.get_node_attributes(mapper.graph, "colour")
-        pc = [(slice_no[node] + 1) / mapper.n_checkpoints for node in vertices]
+        pc = [(slice_no[node] + 1) / mapper.n_slices for node in vertices]
         node_clr = [
             hex_desaturate(colour_dict[node], pc[i])
             for i, node in enumerate(vertices)
@@ -500,6 +497,7 @@ def slice_df(mapper, idx):
     return slice_df
 
 def growth_map(mapper, index=None):
+    """ Compute a stock-market style treemap of relative growth of topics. """
     try:
         import plotly.express as px
     except ImportError as e:
@@ -509,7 +507,7 @@ def growth_map(mapper, index=None):
     check_is_fitted(mapper, ["is_fitted_"])
     if index is None:
         dfs = []
-        for index in range(mapper.n_checkpoints):
+        for index in range(mapper.n_slices):
             dfs.append(slice_df(mapper, index))
         dataframe = concat(dfs, ignore_index=True) 
         path = ['slice', 'node']
@@ -534,7 +532,7 @@ def growth_map(mapper, index=None):
     return fig
 
 
-def sliceograph(mapper, clrs=[(255,0,0),(0,255,0),(0,0,255)]):
+def sliceograph(mapper, clrs=[(255,0,0),(0,255,0),(0,0,255)], alpha: float=0.75):
     """
         Visualize all the slices in the kerneled cover of a TemporalMapper, requires Plotly.
 
@@ -544,18 +542,21 @@ def sliceograph(mapper, clrs=[(255,0,0),(0,255,0),(0,0,255)]):
         clrs: list(str) (optional, default=[(255,0,0),(0,255,0),(0,0,255)])
             A list of RGB triples, which will be cyclically to
             colour the intervals in the graph.
+        alpha: float (optional, default=0.75)
+            Default transparency (scaled by the kernel weights)
     """
     import plotly.graph_objects as go
     fig = go.Figure()
     for i, s in enumerate(mapper.slices):
         colors = [
-            f'rgba({clrs[i%3][0]}, {clrs[i%3][1]}, {clrs[i%3][2]}, {mapper.weights[i,j]})'
+            f'rgba({clrs[i%3][0]}, {clrs[i%3][1]}, {clrs[i%3][2]}, {alpha*mapper.weights[i,j]})'
             for j in s
         ]
         if mapper.data.shape[1] == 1:
             fig.add_trace(go.Scatter(
                 x=mapper.time[s],
                 y=mapper.data[s,0],
+                name=f"slice {i}",
                 mode='markers',
                 marker=dict(
                     color=colors,
@@ -566,6 +567,7 @@ def sliceograph(mapper, clrs=[(255,0,0),(0,255,0),(0,0,255)]):
             fig.add_trace(go.Scatter(
                 x=mapper.data[s,0],
                 y=mapper.data[s,1],
+                name=f"slice {i}",
                 mode='markers',
                 marker=dict(
                     color=colors,

@@ -32,7 +32,7 @@ def compute_graph(kwargs = {}):
             distance_threshold=0.75,
             n_clusters=None,
         ),
-        time_index=0,
+        lens_index=0,
         **kwargs
     )
     mapper.fit(X)
@@ -70,7 +70,7 @@ def valid_gomic(kwargs = {}):
             distance_threshold=0.75,
             n_clusters=None,
         ),
-        time_index=0,
+        lens_index=0,
         **kwargs
     )
     mapper.fit(X)
@@ -120,7 +120,7 @@ def test_weighted_clustering():
     X = np.load(data_folder+"genus1_test.npy")
     mapper = tm.Mapper(
         clusterer = DBSCAN(),
-        time_index=0,
+        lens_index=0,
         kernel=gaussian,
         inclusion_threshold=0.5
     )
