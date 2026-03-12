@@ -1,4 +1,4 @@
-.ipynb_checkpoints/*
+.ipynb_checkpoints
 __pycache__/*
 mapperplayground.ipynb
 .venv/*
@@ -13,4 +13,4 @@ holoviews-main/*
 fast_hdbscan/*
 tests.ipynb
 tests/__pycache__/*
-doc/build
+docs/build
