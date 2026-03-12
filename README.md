@@ -3,9 +3,9 @@ align="left" width="200" height="120"
 src="./docs/icon.png" alt="Temporal Mapper Logo">
 ## Temporal Mapper
 
-### V.1.2.1 - March 03 2026
+### V.1.3.0 - March 12th 2026
 -----------------------------------------------
-This is a library for using the Mapper for temporal topic modelling. 
+This is a library for using the Mapper algorithm for temporal topic modelling. 
 The primary components are:
 * A scikit-learn compliant Mapper class `temporalmapper.Mapper` implementing density-based Mapper.
 * A much messier wrapper class `temporalmapper.TemporalMapper` that computes additional data useful for temporal topic modelling.
@@ -13,7 +13,7 @@ The primary components are:
 
 Direct questions to Kaleb D. Ruscitti: kaleb.ruscitti at uwaterloo.ca .
 
-Complete documentation is under construction on [Read The Docs](
+More complete documentation is available on [Read The Docs](
 https://temporal-mapper.readthedocs.io/en/latest/).
 
 ### Example:
