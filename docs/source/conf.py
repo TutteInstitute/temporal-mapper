@@ -8,8 +8,8 @@
 
 project = 'Temporal Mapper'
 copyright = '2024, Kaleb D Ruscitti'
-author = 'Kaleb D Ruscitti'
-release = '1.2.0'
+author = 'Kaleb D. Ruscitti'
+release = '1.3.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -19,7 +19,7 @@ extensions = [
     'sphinx_rtd_theme',
     'nbsphinx',
     'sphinx.ext.napoleon',
-    'sphinx.ext.autosummary'
+    'sphinx.ext.autosummary',
 ]
 
 templates_path = ['_templates']

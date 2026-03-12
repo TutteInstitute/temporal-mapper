@@ -17,6 +17,7 @@
       ~Mapper.fit
       ~Mapper.get_metadata_routing
       ~Mapper.get_params
+      ~Mapper.set_fit_request
       ~Mapper.set_params
    
    

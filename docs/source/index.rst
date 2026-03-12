@@ -24,6 +24,12 @@ which is built using the Density-Based Mapper algorithm.
     growth-map
 
 .. toctree::
+    :maxdepth: 1
+    :caption: Examples:
+
+    toponymy-integration
+
+.. toctree::
     :maxdepth: 2
     :caption: Module Reference:
 

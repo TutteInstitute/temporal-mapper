@@ -13,3 +13,4 @@ holoviews-main/*
 fast_hdbscan/*
 tests.ipynb
 tests/__pycache__/*
+doc/build
