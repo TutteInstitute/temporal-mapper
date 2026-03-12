@@ -2,14 +2,14 @@ import networkx as nx
 import numpy as np
 
 def topic_contract(mapper, v, dir='forward'):
-    G = mapper.G.to_undirected()
+    G = mapper.graph.to_undirected()
     neighbours = G.neighbors(v)
     d = len([n for n in neighbours])
     if d == 0:
         return None
-    if (mapper.G.in_degree(v) == 1):
-        single_edge_contract(mapper.G, v)
-    if (d==1) and (mapper.G.out_degree(v) == 1):
+    if (mapper.graph.in_degree(v) == 1):
+        single_edge_contract(mapper.graph, v)
+    if (d==1) and (mapper.graph.out_degree(v) == 1):
         # this is v a source
         return None
     idxs = nx.get_node_attributes(G, 'slice_no')

@@ -1,5 +1,6 @@
 import numpy as np
 import pickle as pkl
+import warnings
 from sklearn.decomposition import PCA
 from sklearn.cluster import DBSCAN
 
@@ -11,21 +12,23 @@ def computeGraph(kwargs={}):
     sorted_indices = np.argsort(timestamps_unsort)
     data = data_time[sorted_indices]
     timestamps = timestamps_unsort[sorted_indices]
-    N_data = np.size(timestamps) 
+    N_data = np.size(timestamps)
     clusterer = DBSCAN()
     TM = tm.TemporalMapper(
         timestamps,
         data,
         clusterer,
         verbose=True,
-        N_checkpoints = 24,
-        neighbours = 50,
+        n_slices = 24,
+        n_neighbors = 50,
         slice_method='time',
         overlap = 0.5,
-        rate_sensitivity=1,
+        density_based = True,
         kernel=tm.kernels.square,
     )
-    TM.build()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        TM.build()
     return TM
 
 data_folder = 'data/'

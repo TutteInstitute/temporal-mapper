@@ -7,7 +7,7 @@ from sklearn.utils.validation import check_array
 
 class MapperClusterer(ClusterMixin, BaseEstimator):
     """
-    Mapper-based clustering estimator.
+    Mapper based sklearn compliant clusterer.
     
     The last column (or specified ``time_index``) 
     of ``X`` is interpreted as a time coordinate and
@@ -48,10 +48,12 @@ class MapperClusterer(ClusterMixin, BaseEstimator):
             base_clusterer:ClusterMixin=None,
             mapper_params:dict | None = None,
             time_index:int=-1,
+            drop_time:bool=True,
         ):
         self.base_clusterer = base_clusterer
         self.mapper_params = mapper_params
         self.time_index = time_index
+        self.drop_time = drop_time
 
     def fit(self, X, y=None):
         """
@@ -88,11 +90,13 @@ class MapperClusterer(ClusterMixin, BaseEstimator):
             clusterer=clone(self.base_clusterer),
             **(self.mapper_params or {})
         )
-        self.mapper_.fit(X)
+        self.mapper_.fit(X, drop_time=self.drop_time)
         self.mapper_.assign_topics()
-        topics = nx.get_node_attributes(self.mapper_.G, 'topic')
+        print(self.mapper_.clusters)
+        print(self.mapper_.weights)
+        topics = nx.get_node_attributes(self.mapper_.graph, 'topic')
         dist = cdist(
-            self.mapper_.checkpoints.reshape(-1,1),
+            self.mapper_.midpoints.reshape(-1,1),
             time.reshape(-1,1)
         )
         pt_max_cluster = np.argmin(
@@ -105,6 +109,7 @@ class MapperClusterer(ClusterMixin, BaseEstimator):
             topics[f'{t}:-1'] = -1
             c = self.mapper_.clusters[t,pt]
             clusters[pt] = topics[f'{t}:{c}']
+        print(clusters)
         # It can happen that a cluster has no points
         # That are strongly in that cluster but no others
         # In this case, a cluster label can have no points,
@@ -118,5 +123,6 @@ class MapperClusterer(ClusterMixin, BaseEstimator):
             for x in clusters
         ])
         self.labels_ = new_labels
+        print(new_labels)
         
         return self

@@ -77,15 +77,15 @@ def test_temporal_plot():
         },
         {
             'node_size_scale':'linear',
-            'layout_optimization':'barycenter',
+            'layout':'barycenter',
         },
         {
             'node_size_scale':"logarithmic",
-            'layout_optimization':'force',
+            'layout':'force',
         },
         {
             'node_size_scale':'sigmoid',
-            'layout_optimization':'ordered',
+            'layout':'ordered',
         }
     ]
     for i in range(len(parameters)):

@@ -1,16 +1,41 @@
 TemporalMapper API
-===============================
+=====================
 
-.. autoclass:: temporalmapper.TemporalMapper
+.. currentmodule:: temporalmapper
 
-    .. autofunction:: temporalmapper.TemporalMapper.temporal_plot
+Classes
+-------
 
-    .. autofunction:: temporalmapper.TemporalMapper.interactive_temporal_plot
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
 
-.. automodule:: temporalmapper.plotting
-   
-    .. autofunction:: centroid_datamap
+   TemporalMapper
+   Mapper
+   MapperClusterer
 
-    .. autofunction:: time_semantic_plot
-    
-    .. autofunction:: sliceograph
+
+Plotting Functions
+------------------
+
+.. currentmodule:: temporalmapper.plotting
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   sliceograph
+   view_gomic
+   growth_map
+   centroid_datamap
+   squarify_text
+   generate_keyword_labels
+
+
+Temporal Kernels
+------------------
+
+.. automodule:: temporalmapper.kernels
+    :members:
+    :undoc-members:
+    :show-inheritance:

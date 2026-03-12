@@ -23,8 +23,8 @@ from temporalmapper.mapper import (
 from temporalmapper.layout import compute_time_semantic_positions
 from temporalmapper.kernels import square
 
-"""TemporalMapper class 
-minimal usage example: 
+"""TemporalMapper class
+minimal usage example:
 
     # load from your data file:
     data : (n_dim, N_data) array-like
@@ -32,16 +32,11 @@ minimal usage example:
     # choose an sklearn-compliant clusterer:
     clusterer = HDBSCAN()
 
-    # init and build the graph:
-    mapper = TemporalGraph(
-        time,
-        data,
-        clusterer,
-        N_checkpoints = 10,
-    )
-    
-    mapper.build()
-    myGraph = mapper.G
+    # sklearn-style API (recommended):
+    mapper = TemporalMapper(clusterer=clusterer, n_checkpoints=10)
+    X = np.hstack((data, time.reshape(-1, 1)))  # append time as last column
+    mapper.fit(X)
+    myGraph = mapper.graph
 
     # generate a matplotlib figure
     mapper.temporal_plot()
@@ -50,11 +45,11 @@ minimal usage example:
 
 class TemporalMapper(BaseEstimator):
     """
-    Generate and store a temporal graph - a 1D-mapper-style representation of temporal data.
+    Wrapper over density-based Mapper for Temporal Topic Modelling
 
     Attributes
     ----------
-    G: networkx.classes.Digraph(Graph)
+    graph: networkx.classes.Digraph(Graph)
         The temporal graph itself.
 
     Methods
@@ -64,7 +59,7 @@ class TemporalMapper(BaseEstimator):
     get_vertex_data(str node):
         Returns the index of elements of ``data`` which are in vertex ``node``.
     get_dir_subvertices(str node, float threshold = 0.0, bool backwards=False):
-        Returns the vertices that descend from ``node`` with outedge weight at least ``threshold``. 
+        Returns the vertices that descend from ``node`` with outedge weight at least ``threshold``.
         If ``backwards = True``, returns the ancestors instead of descendants.
     temporal_plot():
         Returns a matplotlib axis containing a temporal plot
@@ -78,8 +73,8 @@ class TemporalMapper(BaseEstimator):
         time: npt.NDArray | None=None, # backwards
         data: npt.NDArray | None=None, # compatibility
         clusterer: ClusterMixin=None,
-        N_checkpoints: int=5,
-        neighbours: int=5,
+        n_slices: int=5,
+        n_neighbors: int=5,
         overlap: float=0.5,
         inclusion_threshold: float=0.01,
         slice_method: str="time",
@@ -91,32 +86,26 @@ class TemporalMapper(BaseEstimator):
         """
         Parameters
         ----------
-        time: ndarray
-            time array (1 dim)
-        data: ndarray
-            data array (n dim)
         clusterer: sklearn clusterer
             the clusterer to use for the slice-wise clustering, must accept sample_weights
-        N_checkpoints: int
+        n_slices: int
             number of time-points at which to cluster
-        checkpoints: arraylike
-            array of time-points at which to cluster
-        overlap: float
+        n_neighbors: int (optional, default=5)
+            The number of nearest neighbors used in the density computation.
+        overlap: float (optional, default=0.5)
             A float in (0,1) which specifies the ``g`` parameter (see README)
-        inclusion_threshold: float
+        inclusion_threshold: float (optional, default=0.1)
             A float in [0,1) which specifies the minimum kernel weight for a point to be included in a slice.
-        neighbours: float
-            The number of nearest neighbours used in the density computation.
-        slice_method: str
-            One of 'time' or 'data'. If time, generates N_checkpoints evenly spaced in time. If data,
-            generates N_checkpoints such that there are equal amounts of data between the points.
-        density_based: float
+        slice_method: str (optional, default='time')
+            One of 'time' or 'data'. If time, generates n_checkpoints evenly spaced in time. If data,
+            generates n_checkpoints such that there are equal amounts of data between the points.
+        density_based: bool (optional, default=True)
             Whether to use density-based Mapper. If False, skips the density computation and uses
             a standard pullback Mapper cover.
-        kernel: function
+        kernel: function (optional, default=temporalmapper.kernels.square)
             A function with signature ``f(t0, t, density, binwidth, epsilon=0.01, params=None)``.
-            Options are included in temporalmapper.kernels, default is ``temporalmapper.kernels.square``.
-        kernel_parameters: tuple or None,
+            Options are included in temporalmapper.kernels.
+        kernel_params: tuple or None,
             Passed to `kernel` as params kwarg.
         verbose: bool
             Does what you expect.
@@ -135,7 +124,9 @@ class TemporalMapper(BaseEstimator):
         else:
             raise AttributeError("Accepted slice_method is 'time' or 'data'.")
         self.clusterer = clusterer
-        self.N_checkpoints = N_checkpoints
+        if clusterer is None:
+            warn("You have not passed a clusterer, this TemporalMapper cannot be fit.")
+        self.n_slices = n_slices
         self.inclusion_threshold = inclusion_threshold
         self.overlap = overlap
         self.rate = None
@@ -145,23 +136,34 @@ class TemporalMapper(BaseEstimator):
         self.pos = None
         self.verbose = verbose
         self.disable = not verbose  # for tqdm
-        self.neighbours = neighbours 
+        self.n_neighbors = n_neighbors
         self._mapper = Mapper(
             clusterer = clusterer,
-            n_slices = self.N_checkpoints,
-            n_neighbors = self.neighbours,
+            n_slices = self.n_slices,
+            n_neighbors = self.n_neighbors,
             overlap = self.overlap,
             inclusion_threshold = self.inclusion_threshold,
             slice_method = self.slice_method,
             density_based = density_based,
             kernel = self.kernel,
             kernel_params = self.kernel_params,
-            time_index = -1,
+            lens_index = -1,
             verbose = int(self.verbose),
         )
 
     def build(self):
-        """ Construct the density-based Mapper graph """
+        """ Construct the density-based Mapper graph
+
+        .. deprecated::
+            The `build()` method is deprecated and will be removed in a future version.
+            Please use `fit()` instead for sklearn-compatible API.
+        """
+        warn(
+            "build() is deprecated and will be removed in a future version. "
+            "Please use fit() instead for sklearn-compatible API.",
+            DeprecationWarning,
+            stacklevel=2
+        )
         X = np.hstack((self.data, self.time.reshape(-1,1)))
         self._mapper.fit(X)
 
@@ -169,15 +171,32 @@ class TemporalMapper(BaseEstimator):
         self.n_components = self.data.shape[1]
         self.populate_node_attrs()
         self.populate_edge_attrs()
-        
+
         self.is_fitted_ = True
         return self
 
-    def fit(self, X, y=None, time_index=-1):
+    def fit(self, X, y=None, time_index:int=-1, drop_time:bool=True):
+        """ Fit the TemporalMapper
+            Parameters
+            ----------
+
+            X: ndarray
+                Should have shape (n_samples, n_features)
+            time_index: integer (optional, default = -1)
+                Which feature of `X` to use as time.
+            drop_time: bool (optional, default = True)
+                Whether to drop the time axis from `X` or not.
+        """
         X = check_array(X)
         self.n_features_in_ = X.shape[1]
+        #sort by time
+        #order = np.argsort(X[:, time_index])
+        #X = X[order]
         time = X[:, time_index]
-        data = np.delete(X, time_index, axis=1)
+        if drop_time:
+            data = np.delete(X, time_index, axis=1)
+        else:
+            data = X
         if data.shape[1] == 0:
             raise ValueError(
                 f"After removing last column (time),"
@@ -185,9 +204,9 @@ class TemporalMapper(BaseEstimator):
                 f"Input X must have at least 2 columns, 1 feature(s) + time"
             )
 
+        self._mapper.lens_index = time_index
+        self._mapper = self._mapper.fit(X, drop_time=drop_time)
 
-        self._mapper = self._mapper.fit(X)
-        
         if issparse(data):
             self.scaler_ = StandardScaler(copy=False, with_mean=False)
         else:
@@ -195,13 +214,19 @@ class TemporalMapper(BaseEstimator):
         data = clone(self.scaler_).fit_transform(data)
         self.data = data
         self.time = time
-        
-        return self.build()
+
+        self.n_samples = X.shape[0]
+        self.n_components = self.data.shape[1]
+        self.populate_node_attrs()
+        self.populate_edge_attrs()
+
+        self.is_fitted_ = True
+        return self
 
 
     """ A bunch of property getters for self._mapper """
     @property
-    def G(self):
+    def graph(self):
         check_is_fitted(self._mapper, 'graph_')
         return self._mapper.graph_
 
@@ -221,7 +246,7 @@ class TemporalMapper(BaseEstimator):
         return self._mapper.density_
 
     @property
-    def checkpoints(self):
+    def midpoints(self):
         check_is_fitted(self._mapper, ['midpoints_'])
         return self._mapper.midpoints_
     
@@ -238,23 +263,23 @@ class TemporalMapper(BaseEstimator):
     def populate_edge_attrs(self):
         """Add src_weight and dst_weight properties to every edge."""
         drift = {}
-        for u, v, d in self.G.edges(data=True):
-            u_outdeg = self.G.out_degree(u, weight="weight")
-            v_indeg = self.G.in_degree(v, weight="weight")
+        for u, v, d in self.graph.edges(data=True):
+            u_outdeg = self.graph.out_degree(u, weight="weight")
+            v_indeg = self.graph.in_degree(v, weight="weight")
 
             percentage_outweight = d["weight"] / u_outdeg
             percentage_outweight = round(
                 percentage_outweight, 2
-            )  # otherwise the graph labels look horrible
-            self.G[u][v]["src_weight"] = percentage_outweight
+            )
+            self.graph[u][v]["src_weight"] = percentage_outweight
 
             percentage_inweight = d["weight"] / v_indeg
-            percentage_inweight = round(percentage_inweight, 2)  # as above
-            self.G[u][v]["dst_weight"] = percentage_inweight
+            percentage_inweight = round(percentage_inweight, 2)
+            self.graph[u][v]["dst_weight"] = percentage_inweight
 
-            centroids = nx.get_node_attributes(self.G, 'centroid')
+            centroids = nx.get_node_attributes(self.graph, 'centroid')
             drift[(u,v)] = np.linalg.norm(centroids[u]-centroids[v])
-        nx.set_edge_attributes(self.G, drift, 'drift')
+        nx.set_edge_attributes(self.graph, drift, 'drift')
 
     def populate_node_attrs(self, labels=None):
         """Add node attributes (dictionaries) to the vertices of the graph.
@@ -263,12 +288,11 @@ class TemporalMapper(BaseEstimator):
         if self.verbose:
             print("Populating node attributes, such as centroids, colours, sizes...")
 
-        # Add cluster positions in 2D and sizes for visualization.
         centroids = {}
         size_list = {}
-        t_attrs = nx.get_node_attributes(self.G, "slice_no")
-        cl_attrs = nx.get_node_attributes(self.G, "cluster_no")
-        for node in self.G.nodes():
+        t_attrs = nx.get_node_attributes(self.graph, "slice_no")
+        cl_attrs = nx.get_node_attributes(self.graph, "cluster_no")
+        for node in self.graph.nodes():
             t_idx = t_attrs[node]
             cl_idx = cl_attrs[node]
             size = np.size(self.get_vertex_data(node))
@@ -277,45 +301,42 @@ class TemporalMapper(BaseEstimator):
             centroids[node] = np.array([
                 np.mean(self.data[pt_idx, d]) for d in range(self.n_components)
             ])
-        nx.set_node_attributes(self.G, centroids, "centroid")
-        nx.set_node_attributes(self.G, size_list, "count")
+        nx.set_node_attributes(self.graph, centroids, "centroid")
+        nx.set_node_attributes(self.graph, size_list, "count")
 
-        # Compute cluster colours that correspond to datamapplot colours.
         if self.n_components != 2:
             if self.verbose:
                 print("Warning: Cluster colours are only implemented for 2d data.")
-            clr_dict = {node: "#000000" for node in self.G.nodes()}
+            clr_dict = {node: "#000000" for node in self.graph.nodes()}
         else:
             if self.verbose:
                 print("Computing cluster colours...")
             clr_dict = {}
-            cluster_positions = np.zeros((len(self.G.nodes()), 2))
+            cluster_positions = np.zeros((len(self.graph.nodes()), 2))
             for k, pt in enumerate(centroids.values()):
                 cluster_positions[k] = pt
             try:
                 colours = np.array(palette_from_datamap(self.data, cluster_positions))
                 clr_dict = {node: colours[k] for k, node in enumerate(centroids.keys())}
             except Exception as e:
-                # this can happen with really small datasets
                 warn(f"Generating colours with datamapplot failed: {e}")
-                clr_dict = {node: "#000000" for node in self.G.nodes()}
+                clr_dict = {node: "#000000" for node in self.graph.nodes()}
 
-        nx.set_node_attributes(self.G, clr_dict, "colour")
+        nx.set_node_attributes(self.graph, clr_dict, "colour")
         return 0
 
     def get_vertex_data(self, node):
-        t_idx = self.G.nodes()[node]["slice_no"]
-        cl_idx = self.G.nodes()[node]["cluster_no"]
+        t_idx = self.graph.nodes()[node]["slice_no"]
+        cl_idx = self.graph.nodes()[node]["cluster_no"]
         vals_in_cl = (self.clusters[t_idx] == cl_idx).nonzero()
         return vals_in_cl[0]
 
     def get_dir_subvertices(self, v, threshold=0.1, backwards=True):
         vertices = [v]
-        # Given a vertex, propagate forwards and backwards in time to obtain that vertices' subgraph.
         if not backwards:
-            _edges = self.G.out_edges(v, data=True)
+            _edges = self.graph.out_edges(v, data=True)
         else:
-            _edges = self.G.in_edges(v, data=True)
+            _edges = self.graph.in_edges(v, data=True)
         for a, b, d in _edges:
             if d["weight"] >= threshold:
                 if not backwards:
@@ -338,11 +359,12 @@ class TemporalMapper(BaseEstimator):
         return np.concatenate(vals, axis=1)
 
     def edge_thresholded_subgraph(self, threshold):
+        """ Return a subgraph """
         edges_to_remove = [
-            (u, v) for u, v, data in self.G.edges(data=True)
+            (u, v) for u, v, data in self.graph.edges(data=True)
             if data['weight'] < threshold
         ]
-        G_prime = deepcopy(self.G)
+        G_prime = deepcopy(self.graph)
         G_prime.remove_edges_from(edges_to_remove)
         return G_prime
     
@@ -358,9 +380,9 @@ class TemporalMapper(BaseEstimator):
         return y_initial_pos
     
     def assign_topics(self):
+        """ Assign each vertex to a 'topic' based on its change over time. """
         from temporalmapper.topics import topic_contract
-        # initialize every node as its own toipc:
-        G = self.G
+        G = self.graph
         topic = {
             v:i for i,v in enumerate(G.nodes())
         }
@@ -368,7 +390,6 @@ class TemporalMapper(BaseEstimator):
         for v in nx.topological_sort(G):
             topic_contract(self, v)
 
-        # now rename everything from 0 onwards
         topics = nx.get_node_attributes(G, 'topic')
         unique_vals = sorted(set(topics.values()))
         remap = {old: new for new, old in enumerate(unique_vals)}
@@ -391,8 +412,8 @@ class TemporalMapper(BaseEstimator):
         node_size_bounds: tuple[float] = (5,50),
         edge_weight_bounds: float = (0.1,1),
         node_size_scale: str = 'sigmoid',
-        layout_optimization: str = "barycenter",
-        layout_optimization_kwargs: dict = {},
+        layout: str = "barycenter",
+        layout_kwargs: dict = {},
     ):
         check_is_fitted(self, ["is_fitted_"])
         """    
@@ -413,7 +434,7 @@ class TemporalMapper(BaseEstimator):
             labels (e.g., fontsize, color).
         vertices : list of str, optional
             Subset of graph nodes to include in the plot. If None, all nodes in
-            `self.G` are used.
+            `self.graph` are used.
         bundle : bool, default False
             Whether to apply edge bundling in the visualization.
         edge_labels : dict, optional
@@ -432,9 +453,10 @@ class TemporalMapper(BaseEstimator):
             Minimum edge weight for rendering.
         node_size_scale : {'linear', 'log', 'sigmoid'}, default 'sigmoid'
             Scaling mode used for node sizes.
-        layout_optimization : str, default 'barycenter'
-            Layout optimization method passed to `time_semantic_plot`.
-        layout_optimization_kwargs : dict, optional
+        layout : str, default ''
+            Layout optimization method passed to `time_semantic_plot`. By default 'ordered' is
+            used for >100 vertices and 'barycentered' is used for <=100 vertices.
+        layout_kwargs : dict, optional
             Additional keyword arguments for the layout optimization routine.
     
         Returns
@@ -446,13 +468,18 @@ class TemporalMapper(BaseEstimator):
         if ax is None:
            fig, ax = mpl.pyplot.subplots(figsize=(12,8))
         if vertices is None:
-            vertices = self.G.nodes()
-        G = self.G.subgraph(vertices)
+            vertices = self.graph.nodes()
+        G = self.graph.subgraph(vertices)
             
         if cluster_labels is None:
             cluster_labels = {node:str(node) for node in vertices}
         if cluster_label_kwargs is None:
             cluster_label_kwargs = {}
+        if layout == '':
+            if len(vertices) <= 100:
+                layout = 'ordered'
+            else:
+                layout = 'barycenter'
 
         clr_dict = nx.get_node_attributes(G, "colour")
         edge_color_list = [
@@ -460,7 +487,6 @@ class TemporalMapper(BaseEstimator):
             for u, v in G.edges()
         ]
         edge_kwargs = {'edge_color':edge_color_list}
-        
         ax = time_semantic_plot(
             self,
             self.initial_y_position(),
@@ -470,8 +496,8 @@ class TemporalMapper(BaseEstimator):
             edge_labels = edge_labels,
             cluster_labels = cluster_labels,
             cluster_label_kwargs = cluster_label_kwargs,
-            layout_optimization = layout_optimization,
-            layout_optimization_kwargs=layout_optimization_kwargs,
+            layout = layout,
+            layout_kwargs=layout_kwargs,
             node_kwargs = node_kwargs,
             edge_kwargs = edge_kwargs,
             edge_scaling = edge_scaling,
@@ -490,8 +516,8 @@ class TemporalMapper(BaseEstimator):
         vertices = None,
         hover_text = {},
         graph_layout = None,
-        layout_optimization: str = "barycenter",
-        layout_optimization_kwargs: dict = {},
+        layout: str = "barycenter",
+        layout_kwargs: dict = {},
         edge_scaling: float = 1,
         node_scaling: float = 1,
         node_size_bounds: tuple[float] = (5,50),
@@ -508,7 +534,7 @@ class TemporalMapper(BaseEstimator):
             of the node identifiers.
         vertices : list of str, optional
             Subset of graph nodes to include in the plot. If None, all nodes in
-            `self.G` are used.
+            `self.graph` are used.
         hover_text : dict, default {}
             A dictionary with `hover_text[node]` containing a string with the text
             to display when hovering over vertex `node`.
@@ -524,9 +550,9 @@ class TemporalMapper(BaseEstimator):
             Minimum edge weight for rendering.
         node_size_scale : {'linear', 'log', 'sigmoid'}, default 'sigmoid'
             Scaling mode used for node sizes.
-        layout_optimization : str, default 'barycenter'
+        layout : str, default 'barycenter'
             Layout optimization method passed to `time_semantic_plot`.
-        layout_optimization_kwargs : dict, optional
+        layout_kwargs : dict, optional
             Additional keyword arguments for the layout optimization routine.
     
         Returns
@@ -546,8 +572,8 @@ class TemporalMapper(BaseEstimator):
             raise e
         check_is_fitted(self, ["is_fitted_"])
         if vertices is None:
-            vertices = self.G.nodes()
-        G = self.G.subgraph(vertices)
+            vertices = self.graph.nodes()
+        G = self.graph.subgraph(vertices)
         
         if len(hover_text)==0:
             # construct some default hover text.
@@ -561,10 +587,10 @@ class TemporalMapper(BaseEstimator):
         compute_time_semantic_positions(
             self,
             self.initial_y_position(),
-            layout_optimization = layout_optimization,
-            layout_optimization_kwargs = layout_optimization_kwargs
+            layout = layout,
+            layout_kwargs = layout_kwargs
         )
-        positions = nx.get_node_attributes(self.G,'ts_pos')
+        positions = nx.get_node_attributes(self.graph,'ts_pos')
         edge_traces, node_trace = prepare_plotly_graph_objects(
             self,
             positions,

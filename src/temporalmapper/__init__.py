@@ -6,5 +6,6 @@ import temporalmapper.mapper as mapper
 
 Mapper = mapper.Mapper
 TemporalMapper = tm_main.TemporalMapper
+MapperClusterer = cluster.MapperClusterer
 centroid_datamap = plot.centroid_datamap
 time_semantic_plot = plot.time_semantic_plot

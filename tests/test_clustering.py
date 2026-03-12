@@ -8,8 +8,8 @@ import pytest
 @pytest.mark.filterwarnings("ignore::UserWarning")
 def test_sklearn_compliance():
     mapper_params = dict(
-        N_checkpoints = 5,
-        neighbours = 5,
+        n_slices = 5,
+        n_neighbors = 5,
         overlap = 0.6,
         slice_method='time',
         density_based=True,
@@ -62,8 +62,8 @@ def test_cluster_shift():
     from sklearn.cluster import AgglomerativeClustering
     
     mapper_params = dict(
-        N_checkpoints = 10,
-        neighbours = 20,
+        n_slices = 10,
+        n_neighbors = 20,
         overlap = 0.6,
         slice_method='time',
         density_based=True,
@@ -83,6 +83,6 @@ def test_cluster_shift():
     
     clusters = clusterer.fit_predict(data)
     mapper = clusterer.mapper_
-    G = mapper.G.to_undirected()
+    G = mapper.graph.to_undirected()
     assert nx.number_connected_components(G)==1
     assert np.size(np.unique(clusters)) > 1

@@ -19,11 +19,18 @@ from sklearn.utils.validation import check_is_fitted, check_array
 from temporalmapper.utilities import(
     std_sigmoid,
     cosine_window,
-    weighted_clusters,
 )
 from temporalmapper.kernels import square
 
 class Mapper(BaseEstimator):
+    """
+    sklearn compliant density-based Mapper estimator.
+
+    Methods
+    -------
+    fit():
+        Run the density-based mapper algorithm to construct a Mapper graph.
+    """
     def __init__(
         self,
         clusterer: ClusterMixin,
@@ -35,9 +42,39 @@ class Mapper(BaseEstimator):
         density_based: bool = True,
         kernel: Callable[[float,float,float,float],float] = square,
         kernel_params: dict | None = None,
-        time_index: int = -1,
+        lens_index: int = -1,
         verbose: int = 0,
     ):
+        """
+        Parameters
+        ----------
+        clusterer: sklearn ClusterMixin
+            The clusterer to use for the slice-wise clustering.
+        n_slices: int
+            number of time-points at which to cluster
+        n_neighbors: int (optional, default=5)
+            The number of nearest neighbors used in the density computation.
+        overlap: float (optional, default=0.5)
+            A float in (0,1) which specifies the ``g`` parameter (see README)
+        inclusion_threshold: float (optional, default=0.1)
+            A float in [0,1) which specifies the minimum kernel weight for a point to be included in a slice.
+        slice_method: str (optional, default='time')
+            One of 'time' or 'data'. If time, generates n_checkpoints evenly spaced in time. If data,
+            generates n_checkpoints such that there are equal amounts of data between the points.
+        density_based: bool (optional, default=True)
+            Whether to use density-based Mapper. If False, skips the density computation and uses
+            a standard pullback Mapper cover.
+        kernel: function (optional, default=temporalmapper.kernels.square)
+            A function with signature ``f(t0, t, density, binwidth, epsilon=0.01, params=None)``.
+            Options are included in temporalmapper.kernels, default is ``temporalmapper.kernels.square``.
+        kernel_params: tuple or None,
+            Passed to `kernel` as params kwarg.
+        lens_index: int (optional, default=-1)
+            The index of expected input data to use as the lens-space function.
+        verbose: bool
+            Does what you expect.
+
+        """
         self.clusterer = clusterer
         self.n_slices = n_slices
         self.n_neighbors = n_neighbors
@@ -47,19 +84,25 @@ class Mapper(BaseEstimator):
         self.density_based = density_based
         self.kernel = kernel
         self.kernel_params = kernel_params
-        self.time_index = time_index
+        self.lens_index = lens_index
         self.verbose = verbose
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, drop_time:bool=True):
         X = check_array(X)
-        if not (-X.shape[1] <= self.time_index < X.shape[1]):
-            raise ValueError("Invalid time_index for input shape")
+        if not (-X.shape[1] <= self.lens_index < X.shape[1]):
+            raise ValueError("Invalid lens_index for input shape")
         self.n_features_in_ = X.shape[1]
-        time = X[:, self.time_index]
-        data = np.delete(X, self.time_index, axis=1)
+        # sort by time
+        #order = np.argsort(X[:, self.lens_index])
+        #X = X[order]
+        time = X[:, self.lens_index]
+        if drop_time:
+            data = np.delete(X, self.lens_index, axis=1)
+        else:
+            data = X
         if data.shape[1] == 0:
             raise ValueError(
-                f"After removing time_index={self.time_index},"
+                f"After removing lens_index={self.lens_index},"
                 " found array with 0 feature(s). "
                 f"Input X must have at least 2 columns, 1 feature(s) + time"
             )
@@ -144,7 +187,7 @@ class Mapper(BaseEstimator):
         temporal_width = np.array(
             [max(time[idx]) - min(time[idx]) for idx in self.dist_indices_]
         )
-        density /= temporal_width
+        density = np.divide(density, temporal_width, out=np.zeros_like(density), where=temporal_width!=0)
 
         # apply the smoothing window:
         d_window = data_width_ / 10

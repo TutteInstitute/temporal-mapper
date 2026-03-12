@@ -37,13 +37,13 @@ def compute_growth(G):
 
 def nodes_in_slice(mapper, idx):
     nodes = []
-    for node in mapper.G.nodes():
+    for node in mapper.graph.nodes():
         if node.split(':')[0]==str(idx):
             nodes.append(node)
     return nodes
     
 def slice_df(mapper, idx):
-    G = mapper.G
+    G = mapper.graph
     counts = nx.get_node_attributes(G, 'count')
     growth = compute_growth(G)
     
@@ -79,7 +79,7 @@ def semantic_shift(G):
     return shift
 
 def top_shifts(mapper, topN=10):
-    G = mapper.G
+    G = mapper.graph
     shifts = semantic_shift(G)
     non_nan_shifts = []
     non_nan_nodes = []
@@ -115,7 +115,7 @@ def get_previous_node(G,node):
     return u
 
 def static_topics(mapper):
-    G = mapper.G
+    G = mapper.graph
     #topic_enders = [n for n in G.nodes() if (G.degree(n) != 2) and (G.in_degree(n) == 1)]
     sources, sinks = sources_and_sinks(G)
     static_topics = {}
@@ -144,15 +144,15 @@ def static_topics(mapper):
     return static_topics
 
 def static_topic_summary(mapper, topic):
-    centroids = nx.get_node_attributes(mapper.G, 'centroid')
-    counts = nx.get_node_attributes(mapper.G, 'count')
-    time = nx.get_node_attributes(mapper.G, 'median_time')
-    cluster_labels = nx.get_node_attributes(mapper.G, 'topic_name')
+    centroids = nx.get_node_attributes(mapper.graph, 'centroid')
+    counts = nx.get_node_attributes(mapper.graph, 'count')
+    time = nx.get_node_attributes(mapper.graph, 'median_time')
+    cluster_labels = nx.get_node_attributes(mapper.graph, 'topic_name')
     if {} in [centroids,counts,time]:
         mapper.populate_node_attrs()
-        centroids = nx.get_node_attributes(mapper.G, 'centroid')
-        counts = nx.get_node_attributes(mapper.G, 'count')
-        time = nx.get_node_attributes(mapper.G, 'median_time')
+        centroids = nx.get_node_attributes(mapper.graph, 'centroid')
+        counts = nx.get_node_attributes(mapper.graph, 'count')
+        time = nx.get_node_attributes(mapper.graph, 'median_time')
 
     topic_centroid = np.average([centroids[s] for s in topic], axis=0, weights=[counts[s] for s in topic])
     topic_count = np.sum([counts[s] for s in topic])
