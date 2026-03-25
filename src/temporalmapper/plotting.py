@@ -98,7 +98,7 @@ def generate_keyword_labels(word_bags, mapper, ngram_vectorizer=None, n_words=3,
         s = ""
         for word in words[:-1]:
             s += word + sep
-        s += word[-1]
+        s += words[-1]
         label_attrs[node] = s
 
     nx.set_node_attributes(mapper.graph, label_attrs, "label")
