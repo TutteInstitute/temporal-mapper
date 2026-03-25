@@ -38,11 +38,11 @@ def single_edge_contract(G, v):
     # special case to check for large semantic drift.
     drift = nx.get_edge_attributes(G, 'drift')
     drifts = [drift[e] for e in G.edges()]
-    sigma = np.std(drifts)
+    threshold = np.median(drifts)
     # this line is stupid but I can't figure out
     # how else to get just one edge out of an OutEdgeDataView
     e = [e for e in G.in_edges(v)][0] 
-    if drift[e] < 2*sigma:
+    if drift[e] < threshold:
         topic = nx.get_node_attributes(G, 'topic')
         topic[v] = topic[e[0]]
         nx.set_node_attributes(G, topic, 'topic')
